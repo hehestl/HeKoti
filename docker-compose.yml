@@ -4,6 +4,11 @@
 # container receives POSTGRES_* (defaults below) and `docker-entrypoint.sh`
 # builds `DATABASE_URL` unless you set `DATABASE_URL` yourself (e.g. external DB).
 #
+# If you see Prisma `AuthenticationFailed`: ensure `DATABASE_URL` (if set) matches
+# `POSTGRES_*`, or remove `DATABASE_URL` so the entrypoint builds it. If you
+# changed `POSTGRES_PASSWORD` after Postgres was first created, reset the volume
+# or align credentials with the existing cluster.
+#
 # Migrations: on each `hekoti-app` start, `docker-entrypoint.sh` runs
 # `npx prisma migrate deploy` before `node server.js`.
 #

@@ -31,6 +31,8 @@ COPY --from=builder /app/node_modules/postgres-date ./node_modules/postgres-date
 COPY --from=builder /app/node_modules/postgres-interval ./node_modules/postgres-interval
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma CLI (provides `prisma/config` for prisma.config.ts). Standalone omits it; migrate deploy must resolve it.
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
