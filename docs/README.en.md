@@ -36,6 +36,7 @@ Key variables:
 - `AI_AGENTS_JSON`
 - `DONATE_LINKS_JSON`
 - `CRYPTO_DONATION_JSON`
+- `LANGUAGETOOL_URL` (optional; Docker Compose service `hekoti-languagetool`)
 
 ## AI agents
 
@@ -63,8 +64,10 @@ Chat is stored in DB (`AgentChannel` / `AgentMessage`) and rendered in the admin
 - `PATCH /api/pages/:id`
 - `POST /api/media/upload`
 - `POST /api/webhooks/incoming`
+- `GET /api/health` — aggregate probe (`200` requires database)
 - `GET /api/health/live`
 - `GET /api/health/ready`
+- `POST /api/spellcheck` — LanguageTool proxy (admin only; requires `LANGUAGETOOL_URL`)
 
 ## Operations checklist
 

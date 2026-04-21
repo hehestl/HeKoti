@@ -36,6 +36,7 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `AI_AGENTS_JSON`
 - `DONATE_LINKS_JSON`
 - `CRYPTO_DONATION_JSON`
+- `LANGUAGETOOL_URL` (опционально, контейнер `hekoti-languagetool` в Docker Compose)
 
 ## AI-агенты
 
@@ -63,8 +64,10 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `PATCH /api/pages/:id`
 - `POST /api/media/upload`
 - `POST /api/webhooks/incoming`
+- `GET /api/health` — сводная проверка (БД обязательна для `200`)
 - `GET /api/health/live`
 - `GET /api/health/ready`
+- `POST /api/spellcheck` — прокси к LanguageTool (только админ, нужен `LANGUAGETOOL_URL`)
 
 ## Чек-лист эксплуатации
 

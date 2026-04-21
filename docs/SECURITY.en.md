@@ -33,3 +33,5 @@ Recommended minimum headers:
 - Run `npm audit` regularly
 - Pin base image versions
 - Rebuild and redeploy after security updates
+- Enable **Dependabot** in GitHub (this repository ships `.github/dependabot.yml`) so vulnerable dependencies get upgrade PRs automatically
+- For sensitive deploys, store secrets in **GitHub Actions secrets** (or your host’s secret manager), not in the repository

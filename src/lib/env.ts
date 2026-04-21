@@ -23,6 +23,8 @@ const envSchema = z.object({
   AI_AGENTS_JSON: z.string().default("[]"),
   ASSETS_BASE_URL: z.string().default(""),
   LOCAL_UPLOAD_DIR: z.string().default("public/uploads"),
+  /** Optional LanguageTool HTTP API (e.g. http://hekoti-languagetool:8010). */
+  LANGUAGETOOL_URL: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

@@ -4,13 +4,13 @@ services:
     container_name: hekoti-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: hekoti
-      POSTGRES_USER: hekoti
-      POSTGRES_PASSWORD: hekoti
+      POSTGRES_DB: hekoti_db
+      POSTGRES_USER: hekoti_user
+      POSTGRES_PASSWORD: hekoti_password
     volumes:
       - hekoti_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hekoti -d hekoti"]
+      test: ["CMD-SHELL", "pg_isready -U hekoti_user -d hekoti_db"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,6 +27,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  hekoti-languagetool:
+    image: erikvl87/languagetool:latest
+    container_name: hekoti-languagetool
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8010/v2/languages >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
 
   hekoti-app:
     build:

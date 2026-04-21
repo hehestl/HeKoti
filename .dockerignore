@@ -1,0 +1,12 @@
+node_modules
+.next
+coverage
+.git
+.gitignore
+*.log
+npm-debug.log*
+.env
+.env.local
+.env.development
+.env.test
+.env.production
