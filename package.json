@@ -44,6 +44,9 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "eslint": "9.39.4"
+  },
   "devDependencies": {
     "dotenv": "^16.6.1",
     "@types/node": "^20",
@@ -52,7 +55,7 @@
     "@types/react-dom": "^19",
     "@types/sanitize-html": "^2.16.1",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
+    "eslint": "9.39.4",
     "eslint-config-next": "16.2.4",
     "typescript": "^5"
   }

@@ -1,17 +1,23 @@
+# syntax=docker/dockerfile:1
+# Fast rebuilds: enable BuildKit — `export DOCKER_BUILDKIT=1` or `docker buildx build`.
+# Layer cache: deps stages only re-run when package.json / lockfile change.
+
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit
 
-# Production `node_modules` only (no devDependencies). Used in the runner so Prisma CLI and
-# @prisma/config get the full transitive tree (effect, c12, …); cherry-picking packages breaks.
+# Production node_modules for the runner (Prisma CLI + full transitive tree).
 FROM node:22-alpine AS prod-deps
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev --prefer-offline --no-audit
 
 FROM node:22-alpine AS builder
 WORKDIR /app
+COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run db:generate && npm run build
@@ -21,14 +27,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3310
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 -G nodejs nextjs
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh && chown -R nextjs:nodejs /app
+
+COPY --chown=nextjs:nodejs --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs --from=builder /app/.next/standalone ./
+COPY --chown=nextjs:nodejs --from=builder /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
+COPY --chown=nextjs:nodejs --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER nextjs
 EXPOSE 3310
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

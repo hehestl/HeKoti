@@ -1,5 +1,7 @@
 # Hekoti stack: Postgres + Redis + app (+ optional LanguageTool).
 #
+# Faster image builds: `export DOCKER_BUILDKIT=1` (or set in ~/.docker/config.json `"features": { "buildkit": true }`).
+#
 # Database URL: you do not need DATABASE_URL in `.env` for Compose. The app
 # container receives POSTGRES_* (defaults below) and `docker-entrypoint.sh`
 # builds `DATABASE_URL` unless you set `DATABASE_URL` yourself (e.g. external DB).

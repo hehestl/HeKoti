@@ -10,3 +10,7 @@ npm-debug.log*
 .env.development
 .env.test
 .env.production
+
+# Smaller build context (multi-stage build produces .next inside the image, not from host)
+.cursor
+.github
