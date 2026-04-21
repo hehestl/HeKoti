@@ -12,6 +12,10 @@
 # Migrations: on each `hekoti-app` start, `docker-entrypoint.sh` runs
 # `npx prisma migrate deploy` before `node server.js`.
 #
+# Seed DB (tsx is a production dep so it exists in the image; no interactive npx):
+#   docker compose exec hekoti-app npm run db:seed
+#   docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
+#
 # Optional `.env`: use `required: false` so `docker compose up` works with zero
 # files; copy `.env.example` when you want to override secrets or app settings.
 
