@@ -27,7 +27,8 @@ Main use cases:
 
 Key variables:
 
-- `DATABASE_URL`
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (Compose defaults; used to build `DATABASE_URL` in the app container)
+- `DATABASE_URL` (optional in Docker Compose: built from `POSTGRES_*` in `docker-entrypoint.sh` unless set)
 - `REDIS_URL` (optional)
 - `PUBLIC_READ_MODE`
 - `ENABLED_LANGUAGES`

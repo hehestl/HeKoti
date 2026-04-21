@@ -24,15 +24,25 @@ https://t.me/PhiloraBot
 
 ## Quick start (Docker)
 
+Requires **Docker Compose v2.24+** (for optional `env_file`).
+
+Zero-config (no `.env` file — defaults for Postgres/Redis are in `docker-compose.yml` and `DATABASE_URL` is assembled in `docker-entrypoint.sh`):
+
+```bash
+docker compose up -d --build
+```
+
+With secrets and app tuning, copy the template once:
+
 ```bash
 cp .env.example .env
-# Edit .env: DATABASE_URL, HEKOTI_ADMIN_*, WEBHOOK_SECRET, etc.
+# Edit: POSTGRES_*, HEKOTI_ADMIN_*, WEBHOOK_SECRET, etc. (DATABASE_URL is optional in Compose)
 docker compose up -d --build
 ```
 
 ### Database migrations (automatic)
 
-On every **`hekoti-app` start**, `docker-entrypoint.sh` runs **`npx prisma migrate deploy`** using `DATABASE_URL` from your `.env`. An empty Postgres volume is fine: migrations apply before the web server binds.
+On every **`hekoti-app` start**, `docker-entrypoint.sh` runs **`npx prisma migrate deploy`** after building `DATABASE_URL` from `POSTGRES_*` (unless `DATABASE_URL` is already set, e.g. external database). An empty Postgres volume is fine: migrations apply before the web server binds.
 
 - To **skip** migrations (debug only): `HEKOTI_SKIP_MIGRATE=1` in `.env`.
 - **`docker compose build --no-cache`** is only for recovery (e.g. files were edited inside a running container, or a broken cached layer). After a normal `git pull`, **`docker compose up -d --build`** is enough.

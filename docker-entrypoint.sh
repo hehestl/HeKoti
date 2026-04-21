@@ -2,6 +2,14 @@
 set -e
 cd /app
 
+# If Compose (or .env) did not set DATABASE_URL, build it from POSTGRES_* (same defaults as postgres service).
+if [ -z "${DATABASE_URL:-}" ]; then
+  u="${POSTGRES_USER:-hekoti_user}"
+  p="${POSTGRES_PASSWORD:-hekoti_password}"
+  d="${POSTGRES_DB:-hekoti_db}"
+  export DATABASE_URL="postgresql://${u}:${p}@hekoti-postgres:5432/${d}?schema=public"
+fi
+
 if [ "${HEKOTI_SKIP_MIGRATE:-0}" = "1" ]; then
   echo "HEKOTI_SKIP_MIGRATE=1: skipping prisma migrate deploy"
   exec node server.js
@@ -19,7 +27,7 @@ if [ ! -f prisma.config.ts ]; then
 fi
 
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "ERROR: DATABASE_URL is empty. Set it in .env (Compose env_file) before starting the app."
+  echo "ERROR: DATABASE_URL is empty. Set DATABASE_URL or POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB (see docker-compose.yml)."
   exit 1
 fi
 

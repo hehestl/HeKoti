@@ -1,12 +1,14 @@
 # Hekoti stack: Postgres + Redis + app (+ optional LanguageTool).
 #
-# Migrations: on every `hekoti-app` container start, `docker-entrypoint.sh` runs
-# `npx prisma migrate deploy` against `DATABASE_URL` from `.env` — no manual
-# `docker exec` needed for a fresh or empty database.
+# Database URL: you do not need DATABASE_URL in `.env` for Compose. The app
+# container receives POSTGRES_* (defaults below) and `docker-entrypoint.sh`
+# builds `DATABASE_URL` unless you set `DATABASE_URL` yourself (e.g. external DB).
 #
-# Rebuild without cache (`docker compose build --no-cache`) is only needed if
-# you previously edited files inside a running container or hit a corrupted
-# image layer; normal `docker compose up -d --build` is enough after `git pull`.
+# Migrations: on each `hekoti-app` start, `docker-entrypoint.sh` runs
+# `npx prisma migrate deploy` before `node server.js`.
+#
+# Optional `.env`: use `required: false` so `docker compose up` works with zero
+# files; copy `.env.example` when you want to override secrets or app settings.
 
 services:
   hekoti-postgres:
@@ -14,13 +16,13 @@ services:
     container_name: hekoti-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: hekoti_db
-      POSTGRES_USER: hekoti_user
-      POSTGRES_PASSWORD: hekoti_password
+      POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
+      POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
     volumes:
       - hekoti_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hekoti_user -d hekoti_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -56,7 +58,13 @@ services:
     container_name: hekoti-app
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
+      POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
+      REDIS_URL: ${REDIS_URL:-redis://hekoti-redis:6379}
     depends_on:
       hekoti-postgres:
         condition: service_healthy

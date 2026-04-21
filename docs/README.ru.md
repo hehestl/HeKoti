@@ -27,7 +27,8 @@ Hekoti — open-source self-hosted вики, ориентированная на
 
 Ключевые переменные:
 
-- `DATABASE_URL`
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (дефолты в Compose; из них собирается `DATABASE_URL` в контейнере приложения)
+- `DATABASE_URL` (в Docker Compose необязателен: собирается из `POSTGRES_*` в `docker-entrypoint.sh`, если не задан явно)
 - `REDIS_URL` (опционально)
 - `PUBLIC_READ_MODE`
 - `ENABLED_LANGUAGES`
