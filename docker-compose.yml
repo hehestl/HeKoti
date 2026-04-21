@@ -1,3 +1,13 @@
+# Hekoti stack: Postgres + Redis + app (+ optional LanguageTool).
+#
+# Migrations: on every `hekoti-app` container start, `docker-entrypoint.sh` runs
+# `npx prisma migrate deploy` against `DATABASE_URL` from `.env` — no manual
+# `docker exec` needed for a fresh or empty database.
+#
+# Rebuild without cache (`docker compose build --no-cache`) is only needed if
+# you previously edited files inside a running container or hit a corrupted
+# image layer; normal `docker compose up -d --build` is enough after `git pull`.
+
 services:
   hekoti-postgres:
     image: postgres:17-alpine
@@ -56,6 +66,18 @@ services:
       - "3310:3310"
     volumes:
       - hekoti_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+(process.env.PORT||'3310')+'/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
 
 volumes:
   hekoti_pg_data:

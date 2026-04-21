@@ -1,10 +1,15 @@
-import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/** Local dev: load `.env` when `dotenv` is installed. Docker/Compose already injects env — no `dotenv` in the runtime image. */
+async function loadDotenvOptional() {
+  await import("dotenv/config").catch(() => {});
+}
+
 async function main() {
+  await loadDotenvOptional();
   const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin@hekoti.local";
   const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "change-me-now";
   const hash = await bcrypt.hash(adminPassword, 12);

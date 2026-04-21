@@ -26,16 +26,26 @@ https://t.me/PhiloraBot
 
 ```bash
 cp .env.example .env
+# Edit .env: DATABASE_URL, HEKOTI_ADMIN_*, WEBHOOK_SECRET, etc.
 docker compose up -d --build
 ```
 
-On container start, the image runs **`prisma migrate deploy`** automatically (see `docker-entrypoint.sh`). To skip that step (for example while debugging), set `HEKOTI_SKIP_MIGRATE=1` in `.env`.
+### Database migrations (automatic)
 
-Manual one-off migrate (only if your image includes `prisma/` — rebuild if you see “schema not found”):
+On every **`hekoti-app` start**, `docker-entrypoint.sh` runs **`npx prisma migrate deploy`** using `DATABASE_URL` from your `.env`. An empty Postgres volume is fine: migrations apply before the web server binds.
+
+- To **skip** migrations (debug only): `HEKOTI_SKIP_MIGRATE=1` in `.env`.
+- **`docker compose build --no-cache`** is only for recovery (e.g. files were edited inside a running container, or a broken cached layer). After a normal `git pull`, **`docker compose up -d --build`** is enough.
+
+### First admin user (seed)
+
+Migrations do **not** create the admin user. After the stack is up, run once (from the repo directory on the host):
 
 ```bash
-docker exec -it hekoti-app npx --yes prisma migrate deploy --schema prisma/schema.prisma
+docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
 ```
+
+(App image includes `prisma/`; `npx` fetches `tsx` if needed.)
 
 App URL: `http://localhost:3310`
 
