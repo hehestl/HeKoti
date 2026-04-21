@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Globe, Moon, Plus, Search, Sun } from "lucide-react";
-import { useMemo } from "react";
 import type { AiLink } from "@/lib/ai-links";
 
 type Option = { code: string; label: string };
@@ -19,8 +18,6 @@ export function TopBar({
   langs: Option[];
   ai: AiLink[];
 }) {
-  const { theme, setTheme } = useTheme();
-  const [logoSrc, setLogoSrc] = useState("/hekiv.png");
   const [query, setQuery] = useState("");
   const searchHref = useMemo(() => `/${lang}?q=${encodeURIComponent(query)}`, [lang, query]);
   return (
@@ -35,17 +32,20 @@ export function TopBar({
         background: "var(--panel)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Image
-          key={logoSrc}
-          src={logoSrc}
-          alt="Hekoti mascot"
-          width={28}
-          height={28}
-          onError={() => setLogoSrc("/hekiv.svg")}
-        />
+      <Link
+        href={`/${lang}`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          color: "inherit",
+          minWidth: 0,
+        }}
+        aria-label="Hekoti — на главную"
+      >
+        <Image src="/hekiv.svg" alt="" width={28} height={28} aria-hidden />
         <strong>Hekoti</strong>
-      </div>
+      </Link>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <select
           style={inputStyle}
@@ -96,13 +96,7 @@ export function TopBar({
             ))}
           </select>
         </div>
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          style={iconButtonStyle}
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
+        <ThemeToggleButton />
         <Link href={`/${lang}/login`} style={iconButtonStyle}>
           Login
         </Link>
@@ -132,3 +126,22 @@ const iconButtonStyle: React.CSSProperties = {
   color: "var(--fg)",
   cursor: "pointer",
 };
+
+/** Avoid hydration mismatch: `theme` from next-themes differs between server and first client paint. */
+function ThemeToggleButton() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark = theme === "dark";
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      style={iconButtonStyle}
+      aria-label="Toggle theme"
+      disabled={!mounted}
+    >
+      {!mounted ? <Moon size={16} /> : dark ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  );
+}
