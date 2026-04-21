@@ -32,6 +32,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 
 echo "Applying database migrations (prisma migrate deploy)..."
-npx --yes prisma migrate deploy
+# Do not use `npx prisma`: standalone images omit `node_modules/.bin`, so npx falls back to PATH (`sh: prisma: not found`).
+node ./node_modules/prisma/build/index.js migrate deploy
 
 exec node server.js
