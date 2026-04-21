@@ -27,7 +27,14 @@ https://t.me/PhiloraBot
 ```bash
 cp .env.example .env
 docker compose up -d --build
-docker exec -it hekoti-app npx prisma migrate deploy
+```
+
+On container start, the image runs **`prisma migrate deploy`** automatically (see `docker-entrypoint.sh`). To skip that step (for example while debugging), set `HEKOTI_SKIP_MIGRATE=1` in `.env`.
+
+Manual one-off migrate (only if your image includes `prisma/` — rebuild if you see “schema not found”):
+
+```bash
+docker exec -it hekoti-app npx --yes prisma migrate deploy --schema prisma/schema.prisma
 ```
 
 App URL: `http://localhost:3310`
