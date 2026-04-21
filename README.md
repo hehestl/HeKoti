@@ -56,6 +56,7 @@ docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
 ```
 
 The runtime image overlays the full **`pg`** driver tree (`pg`, `pg-types` with nested `postgres-*`, top-level `postgres-*`) plus **`node_modules/@prisma`** and **`bcryptjs`** from the builder so `tsx prisma/seed.ts` works under Next **standalone**; `npx` only fetches `tsx` if needed.
+If `DATABASE_URL` is not set, the seed script builds it from `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` (same defaults as `docker-compose.yml`).
 
 App URL: `http://localhost:3310`
 
