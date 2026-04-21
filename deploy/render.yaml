@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: hekoti
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter

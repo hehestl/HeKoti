@@ -1,0 +1,52 @@
+services:
+  hekoti-postgres:
+    image: postgres:17-alpine
+    container_name: hekoti-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hekoti
+      POSTGRES_USER: hekoti
+      POSTGRES_PASSWORD: hekoti
+    volumes:
+      - hekoti_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hekoti -d hekoti"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  hekoti-redis:
+    image: redis:7-alpine
+    container_name: hekoti-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - hekoti_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  hekoti-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hekoti-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      hekoti-postgres:
+        condition: service_healthy
+      hekoti-redis:
+        condition: service_healthy
+    ports:
+      - "3310:3310"
+    volumes:
+      - hekoti_uploads:/app/public/uploads
+
+volumes:
+  hekoti_pg_data:
+  hekoti_redis_data:
+  hekoti_uploads:

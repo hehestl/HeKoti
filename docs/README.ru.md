@@ -1,0 +1,75 @@
+# Документация Hekoti (RU)
+
+## Обзор
+
+Hekoti — open-source self-hosted вики, ориентированная на скорость, простую эксплуатацию и удобство админа.
+
+Основные сценарии:
+
+- Публичные страницы знаний с чистыми slug
+- Редактирование и управление только админом
+- Встроенный AI-чат для перевода, орфографии и поиска информации
+
+## Архитектура
+
+- Frontend + API: Next.js App Router
+- База данных: PostgreSQL
+- ORM: Prisma
+- Опциональный кэш и rate-limit: Redis
+- Авторизация: cookie-сессии + TOTP 2FA
+
+## Режимы работы
+
+- Публичное чтение + редактирование админом (по умолчанию)
+- Полностью приватный режим (`PUBLIC_READ_MODE=false`)
+
+## Настройка через ENV
+
+Ключевые переменные:
+
+- `DATABASE_URL`
+- `REDIS_URL` (опционально)
+- `PUBLIC_READ_MODE`
+- `ENABLED_LANGUAGES`
+- `HEKOTI_ADMIN_EMAIL`
+- `HEKOTI_ADMIN_PASSWORD`
+- `AI_AGENTS_JSON`
+- `DONATE_LINKS_JSON`
+- `CRYPTO_DONATION_JSON`
+
+## AI-агенты
+
+Можно сразу подключать несколько провайдеров через `AI_AGENTS_JSON`.
+
+Встроенные дефолты: OpenAI, Gemini, Claude, Grok, DeepSeek, Qwen, Copilot.
+
+### Команды в админ-чате
+
+- `/agent list`
+- `/agent set <id>`
+- `/agent on <id>`
+- `/ask <текст>`
+
+История чата сохраняется в БД (`AgentChannel` / `AgentMessage`) и отображается в админке.
+
+## Основные API
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `POST /api/auth/totp/setup`
+- `POST /api/auth/totp/confirm`
+- `GET|POST /api/agent/chat`
+- `GET|POST /api/pages`
+- `PATCH /api/pages/:id`
+- `POST /api/media/upload`
+- `POST /api/webhooks/incoming`
+- `GET /api/health/live`
+- `GET /api/health/ready`
+
+## Чек-лист эксплуатации
+
+1. Скопируйте `.env.example` в `.env` и смените секреты.
+2. Перед первым запуском примените миграции.
+3. Вынесите HTTPS на reverse proxy.
+4. Мониторьте всплески 401/403 и ошибки вебхуков.
+5. Делайте регулярный backup PostgreSQL.

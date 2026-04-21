@@ -1,3 +1,78 @@
+# Hekoti MVP v0.1.0
+
+Hekoti is a lightweight open-source self-hosted wiki for public knowledge pages and admin editing.
+
+> "Ask Hekoti and knowledge will awaken from sleep."
+
+## Attribution
+
+Разработано и создано by @hehestl  
+https://t.me/hehestl  
+https://github.com/hehestl  
+https://t.me/PhiloraBot
+
+## What is included in MVP
+
+- Next.js App Router + TypeScript
+- PostgreSQL + Prisma schema and SQL migrations
+- Optional Redis cache/rate-limit fallback to memory
+- Public read mode and admin write mode
+- Admin login/password + TOTP 2FA
+- Monaco-based markdown editor
+- Built-in admin AI chat with slash commands
+- Donations and AI agents configured from `.env`
+
+## Quick start (Docker)
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+App URL: `http://localhost:3310`
+
+## Quick start (local)
+
+```bash
+cp .env.example .env
+npm install
+npm run db:generate
+npm run db:push
+npm run db:seed
+npm run dev
+```
+
+## Migration status
+
+- `prisma/migrations/0001_init/migration.sql` — base wiki/auth schema
+- `prisma/migrations/0002_agent_chat/migration.sql` — admin AI chat channels/messages
+
+## Admin AI chat commands
+
+- `/agent list`
+- `/agent set <id>` or `/agent on <id>`
+- `/ask <prompt>`
+- Any plain text is treated as an ask request to the active agent
+
+## Security baseline
+
+- HTTP-only session cookies
+- Optional TOTP verification for admin login
+- Login rate-limiting
+- Incoming webhook signature verification
+- Internal-only Postgres/Redis in Docker compose
+
+## Documentation
+
+- English docs: `docs/README.en.md`
+- Russian docs: `docs/README.ru.md`
+- Security and hardening notes: `docs/SECURITY.en.md`
+
+## One-click deployment templates
+
+- `deploy/vercel.json`
+- `deploy/railway.json`
+- `deploy/render.yaml`
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

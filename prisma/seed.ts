@@ -1,0 +1,38 @@
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin@hekoti.local";
+  const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "change-me-now";
+  const hash = await bcrypt.hash(adminPassword, 12);
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash: hash, role: "admin" },
+    create: { email: adminEmail, passwordHash: hash, role: "admin" },
+  });
+
+  await prisma.page.upsert({
+    where: { path: "/en/welcome" },
+    update: {},
+    create: {
+      title: "Welcome to Hekoti",
+      slug: "welcome",
+      lang: "en",
+      path: "/en/welcome",
+      isPublished: true,
+      contentMd:
+        "# Hekoti\n\nAsk Hekoti and knowledge will awaken.\n\nThis is your first public page.",
+    },
+  });
+}
+
+main()
+  .then(async () => prisma.$disconnect())
+  .catch(async (error) => {
+    console.error(error);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
