@@ -13,7 +13,17 @@ if [ ! -f prisma/schema.prisma ]; then
   exit 1
 fi
 
+if [ ! -f prisma.config.ts ]; then
+  echo "ERROR: /app/prisma.config.ts is missing in the image (required for Prisma 7 migrate + datasource URL)."
+  exit 1
+fi
+
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "ERROR: DATABASE_URL is empty. Set it in .env (Compose env_file) before starting the app."
+  exit 1
+fi
+
 echo "Applying database migrations (prisma migrate deploy)..."
-npx --yes prisma migrate deploy --schema prisma/schema.prisma
+npx --yes prisma migrate deploy
 
 exec node server.js
