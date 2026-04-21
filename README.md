@@ -45,7 +45,7 @@ Migrations do **not** create the admin user. After the stack is up, run once (fr
 docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
 ```
 
-The runtime image includes `prisma/`, `bcryptjs`, and the Prisma **pg adapter** packages (`@prisma/adapter-pg` + its small `@prisma/*` deps) so this works under Next **standalone**; `npx` only fetches `tsx` if needed.
+The runtime image overlays the full **`pg`** driver tree (`pg`, `pg-types` with nested `postgres-*`, top-level `postgres-*`) plus **`node_modules/@prisma`** and **`bcryptjs`** from the builder so `tsx prisma/seed.ts` works under Next **standalone**; `npx` only fetches `tsx` if needed.
 
 App URL: `http://localhost:3310`
 

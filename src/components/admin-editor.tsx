@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 
@@ -176,7 +177,7 @@ export function AdminSecurity({ isTotpEnabled }: SecurityProps) {
       </div>
       {qrDataUrl ? (
         <div style={{ marginTop: 10 }}>
-          <img src={qrDataUrl} alt="TOTP QR" width={170} height={170} />
+          <Image src={qrDataUrl} alt="TOTP QR" width={170} height={170} unoptimized />
         </div>
       ) : null}
       <p style={{ color: "var(--muted)", marginTop: 8 }}>{status}</p>

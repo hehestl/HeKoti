@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useTheme } from "next-themes";
@@ -35,7 +36,14 @@ export function TopBar({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <img src={logoSrc} alt="Hekoti mascot" width={28} height={28} onError={() => setLogoSrc("/hekiv.svg")} />
+        <Image
+          key={logoSrc}
+          src={logoSrc}
+          alt="Hekoti mascot"
+          width={28}
+          height={28}
+          onError={() => setLogoSrc("/hekiv.svg")}
+        />
         <strong>Hekoti</strong>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
