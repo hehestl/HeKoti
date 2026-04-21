@@ -17,6 +17,9 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 -G nodejs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# For `docker compose exec … npx tsx prisma/seed.ts` (not traced into Next standalone)
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+COPY --from=builder /app/node_modules/@prisma/adapter-pg ./node_modules/@prisma/adapter-pg
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh

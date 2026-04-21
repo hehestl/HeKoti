@@ -1,44 +1,54 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import pg from "pg";
 
-const prisma = new PrismaClient();
-
-/** Local dev: load `.env` when `dotenv` is installed. Docker/Compose already injects env — no `dotenv` in the runtime image. */
+/** Local dev: load `.env` when `dotenv` is installed. Docker/Compose injects env — no `dotenv` in the runtime image. */
 async function loadDotenvOptional() {
   await import("dotenv/config").catch(() => {});
 }
 
 async function main() {
   await loadDotenvOptional();
-  const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin@hekoti.local";
-  const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "change-me-now";
-  const hash = await bcrypt.hash(adminPassword, 12);
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set.");
+  }
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { passwordHash: hash, role: "admin" },
-    create: { email: adminEmail, passwordHash: hash, role: "admin" },
-  });
+  const pool = new pg.Pool({ connectionString });
+  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-  await prisma.page.upsert({
-    where: { path: "/en/welcome" },
-    update: {},
-    create: {
-      title: "Welcome to Hekoti",
-      slug: "welcome",
-      lang: "en",
-      path: "/en/welcome",
-      isPublished: true,
-      contentMd:
-        "# Hekoti\n\nAsk Hekoti and knowledge will awaken.\n\nThis is your first public page.",
-    },
-  });
+  try {
+    const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin@hekoti.local";
+    const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "change-me-now";
+    const hash = await bcrypt.hash(adminPassword, 12);
+
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: { passwordHash: hash, role: "admin" },
+      create: { email: adminEmail, passwordHash: hash, role: "admin" },
+    });
+
+    await prisma.page.upsert({
+      where: { path: "/en/welcome" },
+      update: {},
+      create: {
+        title: "Welcome to Hekoti",
+        slug: "welcome",
+        lang: "en",
+        path: "/en/welcome",
+        isPublished: true,
+        contentMd:
+          "# Hekoti\n\nAsk Hekoti and knowledge will awaken.\n\nThis is your first public page.",
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
+  }
 }
 
-main()
-  .then(async () => prisma.$disconnect())
-  .catch(async (error) => {
-    console.error(error);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
