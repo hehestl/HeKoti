@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { Globe, Moon, Plus, Search, Sun } from "lucide-react";
 import type { AiLink } from "@/lib/ai-links";
@@ -127,11 +127,12 @@ const iconButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-/** Avoid hydration mismatch: `theme` from next-themes differs between server and first client paint. */
+/**
+ * Theme can differ between SSR and client (next-themes). `suppressHydrationWarning` avoids a
+ * hydration error on this node; do not use setState in an effect (eslint react-hooks/set-state-in-effect).
+ */
 function ThemeToggleButton() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const dark = theme === "dark";
   return (
     <button
@@ -139,9 +140,9 @@ function ThemeToggleButton() {
       onClick={() => setTheme(dark ? "light" : "dark")}
       style={iconButtonStyle}
       aria-label="Toggle theme"
-      disabled={!mounted}
+      suppressHydrationWarning
     >
-      {!mounted ? <Moon size={16} /> : dark ? <Sun size={16} /> : <Moon size={16} />}
+      {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }
