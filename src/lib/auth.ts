@@ -1,53 +1,39 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { authenticator } from "@otplib/preset-default";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { bumpRateLimitKey } from "@/lib/cache";
 
 function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
-export async function loginAdmin(input: {
-  email: string;
-  password: string;
-  totpCode?: string;
-  ipKey: string;
-}) {
-  const attempts = await bumpRateLimitKey(
-    `rate:login:${input.ipKey}`,
-    env.RATE_LIMIT_LOGIN_WINDOW_SECONDS,
-  );
-  if (attempts > env.RATE_LIMIT_LOGIN_ATTEMPTS) {
-    throw new Error("Too many login attempts. Try later.");
+/** Secure cookies only for HTTPS (or when explicitly forced). HTTP / reverse-proxy HTTP→app: allow session. */
+function sessionCookieSecure(): boolean {
+  if (env.SESSION_COOKIE_INSECURE === "1") return false;
+  if (env.NODE_ENV !== "production") return false;
+  try {
+    return new URL(env.APP_URL).protocol === "https:";
+  } catch {
+    return false;
   }
+}
 
-  const user = await prisma.user.findUnique({ where: { email: input.email } });
+export async function loginAdmin(input: { email: string; password: string }) {
+  const user = await prisma.user.findUnique({ where: { email: input.email.trim() } });
   if (!user) throw new Error("Invalid credentials.");
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) throw new Error("Invalid credentials.");
-  if (user.isTotpEnabled) {
-    if (!input.totpCode || !user.totpSecret) {
-      throw new Error("TOTP code required.");
-    }
-    if (!authenticator.check(input.totpCode, user.totpSecret)) {
-      throw new Error("Invalid TOTP code.");
-    }
-  }
 
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 3600 * 1000);
   await prisma.session.create({ data: { tokenHash, userId: user.id, expiresAt } });
   const store = await cookies();
-  const secure =
-    env.NODE_ENV === "production" && env.SESSION_COOKIE_INSECURE !== "1";
   store.set(env.SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure,
+    secure: sessionCookieSecure(),
     expires: expiresAt,
     path: "/",
   });

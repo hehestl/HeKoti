@@ -11,8 +11,6 @@ const envSchema = z.object({
   SESSION_COOKIE_NAME: z.string().default("hekoti_session"),
   REDIS_URL: z.string().optional(),
   REDIS_CACHE_TTL_SECONDS: z.coerce.number().default(300),
-  RATE_LIMIT_LOGIN_WINDOW_SECONDS: z.coerce.number().default(900),
-  RATE_LIMIT_LOGIN_ATTEMPTS: z.coerce.number().default(8),
   PUBLIC_READ_MODE: z.coerce.boolean().default(true),
   ENABLED_LANGUAGES: z.string().default("en,ru"),
   HEKOTI_ADMIN_EMAIL: z.string().default("admin@hekoti.local"),

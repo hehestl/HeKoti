@@ -5,7 +5,6 @@ import { useState } from "react";
 export function LoginForm({ lang }: { lang: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState("");
 
   return (
@@ -17,7 +16,7 @@ export function LoginForm({ lang }: { lang: string }) {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email, password, totpCode: totpCode || undefined }),
+          body: JSON.stringify({ email, password }),
         });
         if (!res.ok) {
           const body = (await res.json()) as { message?: string };
@@ -34,12 +33,6 @@ export function LoginForm({ lang }: { lang: string }) {
         type="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
-      />
-      <input
-        style={inputStyle}
-        placeholder="TOTP code (optional)"
-        value={totpCode}
-        onChange={(event) => setTotpCode(event.target.value)}
       />
       <button style={buttonStyle} type="submit">
         Login

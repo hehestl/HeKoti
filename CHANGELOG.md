@@ -18,6 +18,7 @@
 
 ### Changed
 
+- Вход в админку: только email и пароль (без TOTP и без лимита попыток). Cookie `Secure` в production включается только если `APP_URL` с протоколом `https:` (или задайте `SESSION_COOKIE_INSECURE=1`). В Compose добавлен `APP_URL` по умолчанию `http://localhost:3310`.
 - Docker Compose: для `hekoti-app` по умолчанию задаётся `LANGUAGETOOL_URL=http://hekoti-languagetool:8010` (можно переопределить или отключить в `.env`).
 
 ### Removed
