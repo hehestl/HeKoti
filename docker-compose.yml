@@ -63,6 +63,7 @@ services:
     image: erikvl87/languagetool:latest
     container_name: hekoti-languagetool
     restart: unless-stopped
+    # Optional: expose to host for debugging — "8010:8010"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8010/v2/languages >/dev/null || exit 1"]
       interval: 20s
@@ -87,6 +88,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
       REDIS_URL: ${REDIS_URL:-redis://hekoti-redis:6379}
+      # Spellcheck API (`/api/spellcheck`); override with empty in `.env` to disable. LT has no `ports:` here — only app network.
+      LANGUAGETOOL_URL: ${LANGUAGETOOL_URL:-http://hekoti-languagetool:8010}
     depends_on:
       hekoti-postgres:
         condition: service_healthy

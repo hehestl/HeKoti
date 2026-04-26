@@ -16,6 +16,10 @@
 - Скрипты `release:patch|minor|major`, `preversion` запускает `lint`.
 - Этот файл и правило версионирования в `AGENTS.md`.
 
+### Changed
+
+- Docker Compose: для `hekoti-app` по умолчанию задаётся `LANGUAGETOOL_URL=http://hekoti-languagetool:8010` (можно переопределить или отключить в `.env`).
+
 ### Removed
 
 - Плавающая кнопка Donate в правом нижнем углу (страница `/donate` и ссылка в шапке сохраняются).
