@@ -16,6 +16,10 @@
 - Скрипты `release:patch|minor|major`, `preversion` запускает `lint`.
 - Этот файл и правило версионирования в `AGENTS.md`.
 
+### Added
+
+- `POST /api/auth/login` пишет в stdout строки `[hekoti:auth] …` (хост, `x-forwarded-proto`, результат) — удобно для `docker logs` и проверки прокси.
+
 ### Fixed
 
 - Сессия за HTTPS reverse proxy: флаг `Secure` на cookie учитывает заголовок `X-Forwarded-Proto` (не только `APP_URL`).

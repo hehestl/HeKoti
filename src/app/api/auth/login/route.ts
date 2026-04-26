@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { loginAdmin } from "@/lib/auth";
 
+const LOG = "[hekoti:auth]";
+
 function readLoginBody(body: unknown): { email: string; password: string } | { error: string } {
   if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
     return { error: "Expected a JSON object with email and password." };
@@ -33,24 +35,33 @@ function readLoginBody(body: unknown): { email: string; password: string } | { e
 }
 
 export async function POST(request: Request) {
+  const xfProto = request.headers.get("x-forwarded-proto") ?? "—";
+  const xfHost = request.headers.get("x-forwarded-host") ?? "—";
+  const host = request.headers.get("host") ?? "—";
+  console.info(`${LOG} POST /api/auth/login host=${host} x-forwarded-host=${xfHost} x-forwarded-proto=${xfProto}`);
+
   let json: unknown;
   try {
     json = await request.json();
   } catch {
+    console.warn(`${LOG} bad JSON body`);
     return NextResponse.json({ ok: false, message: "Invalid or empty JSON body." }, { status: 400 });
   }
 
   const parsed = readLoginBody(json);
   if ("error" in parsed) {
+    console.warn(`${LOG} validation: ${parsed.error}`);
     return NextResponse.json({ ok: false, message: parsed.error }, { status: 400 });
   }
 
   try {
     await loginAdmin(parsed);
+    console.info(`${LOG} login ok email=${parsed.email}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed";
     const status = message.includes("Invalid") ? 401 : 500;
+    console.warn(`${LOG} login failed status=${status} message=${message}`);
     return NextResponse.json({ ok: false, message }, { status });
   }
 }
