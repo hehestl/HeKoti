@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Вендорный Snibox (Rails/Vue), не линтовать как Next/React:
+    "snibox-master/**",
   ]),
 ]);
 

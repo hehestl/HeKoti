@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- ESLint: каталог `snibox-master` исключён из проверки (сторонний Rails/Vue, ломал CI).
 - ESLint `react-hooks/set-state-in-effect`: переключатель темы без `setState` в `useEffect`.
 
 ## [0.1.0] — 2026-04-22
