@@ -1,5 +1,4 @@
 import { TopBar } from "@/components/topbar";
-import { FloatingDonate } from "@/components/floating-donate";
 import { aiLinks } from "@/lib/ai-links";
 import { enabledLanguages, safeLang } from "@/lib/i18n";
 
@@ -31,7 +30,6 @@ export default async function LocaleLayout({
       >
         {children}
       </div>
-      <FloatingDonate lang={lang} />
       <footer
         style={{
           padding: "12px clamp(12px, 2vw, 28px)",

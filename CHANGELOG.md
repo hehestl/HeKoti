@@ -16,6 +16,10 @@
 - Скрипты `release:patch|minor|major`, `preversion` запускает `lint`.
 - Этот файл и правило версионирования в `AGENTS.md`.
 
+### Removed
+
+- Плавающая кнопка Donate в правом нижнем углу (страница `/donate` и ссылка в шапке сохраняются).
+
 ### Fixed
 
 - ESLint: каталог `snibox-master` исключён из проверки (сторонний Rails/Vue, ломал CI).
