@@ -1,9 +1,33 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+const panelStyle: CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 12,
+  background: "var(--panel)",
+  padding: 12,
+};
+
+const buttonStyle: CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  background: "transparent",
+  color: "var(--fg)",
+  padding: "8px 10px",
+};
+
+const inputStyle: CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  background: "transparent",
+  color: "var(--fg)",
+  padding: "8px 10px",
+};
 
 type PageRow = {
   id: string;
@@ -58,13 +82,14 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
   return (
     <section style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 12 }}>
       <aside style={panelStyle}>
-        <button onClick={create} style={buttonStyle}>
+        <button onClick={create} style={buttonStyle} type="button">
           + Add
         </button>
         <ul style={{ marginTop: 12, padding: 0, listStyle: "none", display: "grid", gap: 6 }}>
           {pages.map((item) => (
             <li key={item.id}>
               <button
+                type="button"
                 onClick={() => setActiveId(item.id)}
                 style={{ ...buttonStyle, width: "100%", textAlign: "left", opacity: item.id === activeId ? 1 : 0.75 }}
               >
@@ -93,7 +118,7 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
                 />
                 published
               </label>
-              <button style={buttonStyle} onClick={save} disabled={isPending}>
+              <button type="button" style={buttonStyle} onClick={save} disabled={isPending}>
                 Save
               </button>
             </div>
@@ -113,26 +138,3 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
     </section>
   );
 }
-
-const panelStyle: React.CSSProperties = {
-  border: "1px solid var(--line)",
-  borderRadius: 12,
-  background: "var(--panel)",
-  padding: 12,
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: "1px solid var(--line)",
-  borderRadius: 8,
-  background: "transparent",
-  color: "var(--fg)",
-  padding: "8px 10px",
-};
-
-const inputStyle: React.CSSProperties = {
-  border: "1px solid var(--line)",
-  borderRadius: 8,
-  background: "transparent",
-  color: "var(--fg)",
-  padding: "8px 10px",
-};
