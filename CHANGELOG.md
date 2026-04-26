@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- `admin-editor.tsx`: восстановлены `panelStyle` / `buttonStyle` / `inputStyle` после удаления блока 2FA (сборка TypeScript).
 - `POST /api/auth/login`: разбор тела без строгого Zod (меньше ложных 400), явные сообщения; в форме входа — `credentials: "same-origin"` и заголовок `Content-Type`.
 
 ### Changed

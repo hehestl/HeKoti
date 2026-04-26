@@ -113,3 +113,26 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
     </section>
   );
 }
+
+const panelStyle: React.CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 12,
+  background: "var(--panel)",
+  padding: 12,
+};
+
+const buttonStyle: React.CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  background: "transparent",
+  color: "var(--fg)",
+  padding: "8px 10px",
+};
+
+const inputStyle: React.CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  background: "transparent",
+  color: "var(--fg)",
+  padding: "8px 10px",
+};
