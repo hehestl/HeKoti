@@ -42,10 +42,12 @@ export async function loginAdmin(input: {
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 3600 * 1000);
   await prisma.session.create({ data: { tokenHash, userId: user.id, expiresAt } });
   const store = await cookies();
+  const secure =
+    env.NODE_ENV === "production" && env.SESSION_COOKIE_INSECURE !== "1";
   store.set(env.SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: env.NODE_ENV === "production",
+    secure,
     expires: expiresAt,
     path: "/",
   });

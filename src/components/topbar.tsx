@@ -48,6 +48,7 @@ export function TopBar({
       </Link>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <select
+          className="topbar-ai-links-select"
           style={inputStyle}
           defaultValue=""
           onChange={(event) => {

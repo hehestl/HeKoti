@@ -15,9 +15,17 @@ export async function POST(request: Request) {
     await loginAdmin({ ...payload, ipKey: ip });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, message: error instanceof Error ? error.message : "Login failed" },
-      { status: 400 },
-    );
+    const message = error instanceof Error ? error.message : "Login failed";
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ ok: false, message: "Invalid request." }, { status: 400 });
+    }
+    // Invalid credentials / rate limit / TOTP — not a malformed body
+    const status =
+      message.includes("Invalid") ||
+      message.includes("Too many") ||
+      message.includes("TOTP")
+        ? 401
+        : 500;
+    return NextResponse.json({ ok: false, message }, { status });
   }
 }

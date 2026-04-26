@@ -20,6 +20,13 @@
 #
 # Optional `.env`: use `required: false` so `docker compose up` works with zero
 # files; copy `.env.example` when you want to override secrets or app settings.
+#
+# Postgres troubleshooting:
+# - Compose substitutes POSTGRES_* from a project `.env` file. A stray `POSTGRES_USER=postgres`
+#   (from tutorials) initializes the DB with role `postgres` only — `hekoti_user` will NOT exist.
+# - The official image does NOT create the `postgres` DB role when `POSTGRES_USER` is custom;
+#   use `psql -U "$POSTGRES_USER" ...`, not blindly `-U postgres`.
+# - Diagnose: `docker compose exec hekoti-postgres sh -c 'printenv POSTGRES_USER; psql -U "${POSTGRES_USER}" -d postgres -c "\\du"'`
 
 services:
   hekoti-postgres:
@@ -27,6 +34,7 @@ services:
     container_name: hekoti-postgres
     restart: unless-stopped
     environment:
+      # Defaults match hekoti-app / docker-entrypoint. Override only with matching DB volume or after recreate.
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
@@ -72,6 +80,9 @@ services:
       - path: .env
         required: false
     environment:
+      # Must override Docker-injected HOSTNAME (container id) so Next binds 0.0.0.0, not a single NIC IP.
+      HOSTNAME: "0.0.0.0"
+      PORT: "3310"
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
@@ -85,6 +96,7 @@ services:
       - "3310:3310"
     volumes:
       - hekoti_uploads:/app/public/uploads
+    # After HOSTNAME=0.0.0.0, loopback reaches the server; node is always present (no wget/curl in slim images).
     healthcheck:
       test:
         [

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { WikiRepositoryLayout } from "@/components/wiki-repository-layout";
 import { getSessionUser } from "@/lib/auth";
 import { getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
@@ -14,6 +15,8 @@ export default async function WikiPage({
   const { lang, slug } = await params;
   const user = await getSessionUser();
   if (!env.PUBLIC_READ_MODE && !user) return notFound();
+
+  const path = normalizePath(lang, slug);
   const cacheKey = `wiki:${lang}:${slug.join("/")}`;
   const cached = await getCached(cacheKey);
 
@@ -24,7 +27,6 @@ export default async function WikiPage({
     title = parsed.title;
     html = parsed.html;
   } else {
-    const path = normalizePath(lang, slug);
     const page = await prisma.page.findUnique({ where: { path } });
     if (!page || !page.isPublished) return notFound();
     title = page.title;
@@ -33,18 +35,11 @@ export default async function WikiPage({
   }
 
   return (
-    <article
-      style={{
-        margin: "20px auto",
-        maxWidth: 900,
-        border: "1px solid var(--line)",
-        borderRadius: 14,
-        background: "var(--panel)",
-        padding: 20,
-      }}
-    >
-      <h1>{title}</h1>
-      <div style={{ marginTop: 16 }} dangerouslySetInnerHTML={{ __html: html }} />
-    </article>
+    <WikiRepositoryLayout lang={lang} activeWikiPath={path}>
+      <article style={{ maxWidth: 900 }}>
+        <h1 style={{ marginTop: 0 }}>{title}</h1>
+        <div style={{ marginTop: 16 }} dangerouslySetInnerHTML={{ __html: html }} />
+      </article>
+    </WikiRepositoryLayout>
   );
 }

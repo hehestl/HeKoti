@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /** Set to "1" if production is served over HTTP (no TLS) so session cookies are not Secure-only. */
+  SESSION_COOKIE_INSECURE: z.enum(["0", "1"]).optional(),
   DATABASE_URL: z.string().default("postgresql://hekoti:hekoti@localhost:5432/hekoti?schema=public"),
   APP_URL: z.string().default("http://localhost:3310"),
   PORT: z.string().default("3310"),

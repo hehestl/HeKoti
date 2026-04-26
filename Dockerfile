@@ -25,6 +25,8 @@ RUN npm run db:generate && npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Docker sets HOSTNAME to the container id; Next standalone uses it for bind(). Force all interfaces.
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3310
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 -G nodejs nextjs
 

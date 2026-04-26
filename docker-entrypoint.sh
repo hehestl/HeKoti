@@ -2,6 +2,10 @@
 set -e
 cd /app
 
+# Next.js standalone uses process.env.HOSTNAME for bind(). Docker injects a non-empty HOSTNAME (container id),
+# so we must set this here — not only in the image ENV — so it wins over the runtime default.
+export HOSTNAME=0.0.0.0
+
 # If Compose (or .env) did not set DATABASE_URL, build it from POSTGRES_* (same defaults as postgres service).
 if [ -z "${DATABASE_URL:-}" ]; then
   u="${POSTGRES_USER:-hekoti_user}"

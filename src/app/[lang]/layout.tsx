@@ -19,7 +19,16 @@ export default async function LocaleLayout({
         ai={aiLinks}
         langs={enabledLanguages.map((code) => ({ code, label: code.toUpperCase() }))}
       />
-      <div style={{ flex: 1, width: "100%", maxWidth: "min(100%, 1680px)", margin: "0 auto", padding: "0 clamp(12px, 2vw, 28px)" }}>
+      <div
+        style={{
+          flex: 1,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          padding: "0 clamp(12px, 2vw, 28px)",
+        }}
+      >
         {children}
       </div>
       <FloatingDonate lang={lang} />
