@@ -15,8 +15,9 @@ export function LoginForm({ lang }: { lang: string }) {
         setError("");
         const res = await fetch("/api/auth/login", {
           method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ email: email.trim(), password }),
         });
         if (!res.ok) {
           const body = (await res.json()) as { message?: string };

@@ -16,6 +16,10 @@
 - Скрипты `release:patch|minor|major`, `preversion` запускает `lint`.
 - Этот файл и правило версионирования в `AGENTS.md`.
 
+### Fixed
+
+- `POST /api/auth/login`: разбор тела без строгого Zod (меньше ложных 400), явные сообщения; в форме входа — `credentials: "same-origin"` и заголовок `Content-Type`.
+
 ### Changed
 
 - Вход в админку: только email и пароль (без TOTP и без лимита попыток). Cookie `Secure` в production включается только если `APP_URL` с протоколом `https:` (или задайте `SESSION_COOKIE_INSECURE=1`). В Compose добавлен `APP_URL` по умолчанию `http://localhost:3310`.

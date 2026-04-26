@@ -1,22 +1,55 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { loginAdmin } from "@/lib/auth";
 
-const bodySchema = z.object({
-  email: z.string().trim().min(1),
-  password: z.string().min(1),
-});
+function readLoginBody(body: unknown): { email: string; password: string } | { error: string } {
+  if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
+    return { error: "Expected a JSON object with email and password." };
+  }
+  const raw = body as Record<string, unknown>;
+  const emailRaw = raw.email;
+  const passwordRaw = raw.password;
+
+  const email =
+    typeof emailRaw === "string"
+      ? emailRaw.trim()
+      : emailRaw === null || emailRaw === undefined
+        ? ""
+        : String(emailRaw).trim();
+
+  const password =
+    typeof passwordRaw === "string"
+      ? passwordRaw
+      : passwordRaw === null || passwordRaw === undefined
+        ? ""
+        : String(passwordRaw);
+
+  if (!email) {
+    return { error: "Email is required." };
+  }
+  if (!password) {
+    return { error: "Password is required." };
+  }
+  return { email, password };
+}
 
 export async function POST(request: Request) {
+  let json: unknown;
   try {
-    const payload = bodySchema.parse(await request.json());
-    await loginAdmin(payload);
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, message: "Invalid or empty JSON body." }, { status: 400 });
+  }
+
+  const parsed = readLoginBody(json);
+  if ("error" in parsed) {
+    return NextResponse.json({ ok: false, message: parsed.error }, { status: 400 });
+  }
+
+  try {
+    await loginAdmin(parsed);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed";
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ ok: false, message: "Invalid request." }, { status: 400 });
-    }
     const status = message.includes("Invalid") ? 401 : 500;
     return NextResponse.json({ ok: false, message }, { status });
   }
