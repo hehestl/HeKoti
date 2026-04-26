@@ -84,7 +84,7 @@ services:
       # Must override Docker-injected HOSTNAME (container id) so Next binds 0.0.0.0, not a single NIC IP.
       HOSTNAME: "0.0.0.0"
       PORT: "3310"
-      # Для cookie сессии: при http://… флаг Secure выключается (см. `sessionCookieSecure` в auth).
+      # Публичный URL (лучше https://домен за NPM). Cookie Secure также ставится по X-Forwarded-Proto от прокси.
       APP_URL: ${APP_URL:-http://localhost:3310}
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}

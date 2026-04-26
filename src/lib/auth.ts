@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 
@@ -8,10 +8,22 @@ function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
-/** Secure cookies only for HTTPS (or when explicitly forced). HTTP / reverse-proxy HTTP→app: allow session. */
-function sessionCookieSecure(): boolean {
+/**
+ * `Secure` on session cookie. Behind TLS reverse proxy, trust `X-Forwarded-Proto`
+ * (NPM, Traefik, Caddy usually send it) even if `APP_URL` in the container is still http://app:3310.
+ */
+async function sessionCookieSecure(): Promise<boolean> {
   if (env.SESSION_COOKIE_INSECURE === "1") return false;
   if (env.NODE_ENV !== "production") return false;
+
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-proto");
+  if (forwarded) {
+    const proto = forwarded.split(",")[0]?.trim().toLowerCase();
+    if (proto === "https") return true;
+    if (proto === "http") return false;
+  }
+
   try {
     return new URL(env.APP_URL).protocol === "https:";
   } catch {
@@ -30,10 +42,11 @@ export async function loginAdmin(input: { email: string; password: string }) {
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_HOURS * 3600 * 1000);
   await prisma.session.create({ data: { tokenHash, userId: user.id, expiresAt } });
   const store = await cookies();
+  const secure = await sessionCookieSecure();
   store.set(env.SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: sessionCookieSecure(),
+    secure,
     expires: expiresAt,
     path: "/",
   });
