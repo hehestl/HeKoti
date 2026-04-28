@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { enabledLanguages } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n";
 
 export function AdminGlobalSettings({
   lang,
   defaultLanguage,
+  enabledLanguages,
   dict,
 }: {
   lang: string;
   defaultLanguage: string;
+  enabledLanguages: string[];
   dict: Dictionary;
 }) {
   const [defLang, setDefLang] = useState(defaultLanguage);

@@ -4,7 +4,7 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { getSessionUser } from "@/lib/auth";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
 import { prisma } from "@/lib/db";
-import { enabledLanguages, safeLang, getDictionary, getDefaultLanguage } from "@/lib/i18n";
+import { safeLang, getDictionary, getDefaultLanguage } from "@/lib/i18n";
 
 export default async function AdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang: inputLang } = await params;
@@ -50,7 +50,6 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
           initialActiveAgentId={channel.activeAgentId}
           dict={dict}
           defaultLanguage={defaultLanguage}
-          enabledLanguages={enabledLanguages}
         />
       </Suspense>
     </main>
