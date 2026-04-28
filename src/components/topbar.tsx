@@ -13,13 +13,22 @@ export function TopBar({
   lang,
   langs,
   ai,
+  adminUser,
 }: {
   lang: string;
   langs: Option[];
   ai: AiLink[];
+  /** Если админ залогинен — показываем «Админка» и выход вместо «Login». */
+  adminUser?: { login: string } | null;
 }) {
   const [query, setQuery] = useState("");
   const searchHref = useMemo(() => `/${lang}?q=${encodeURIComponent(query)}`, [lang, query]);
+
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+    window.location.href = `/${lang}`;
+  };
+
   return (
     <header
       style={{
@@ -98,9 +107,24 @@ export function TopBar({
           </select>
         </div>
         <ThemeToggleButton />
-        <Link href={`/${lang}/login`} style={iconButtonStyle}>
-          Login
-        </Link>
+        {adminUser ? (
+          <>
+            <Link
+              href={`/${lang}/admin`}
+              style={{ ...iconButtonStyle, borderColor: "var(--accent)", color: "var(--accent)", fontWeight: 600 }}
+              title={adminUser.login}
+            >
+              Админка
+            </Link>
+            <button type="button" onClick={logout} style={iconButtonStyle}>
+              Выйти
+            </button>
+          </>
+        ) : (
+          <Link href={`/${lang}/login`} style={iconButtonStyle}>
+            Login
+          </Link>
+        )}
       </div>
     </header>
   );

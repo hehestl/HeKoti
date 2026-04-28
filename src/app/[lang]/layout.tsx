@@ -1,4 +1,5 @@
 import { TopBar } from "@/components/topbar";
+import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
 import { enabledLanguages, safeLang } from "@/lib/i18n";
 
@@ -11,12 +12,16 @@ export default async function LocaleLayout({
 }) {
   const { lang: inputLang } = await params;
   const lang = safeLang(inputLang);
+  const user = await getSessionUser();
+  const adminUser = user?.role === "admin" ? { login: user.email } : null;
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <TopBar
         lang={lang}
         ai={aiLinks}
         langs={enabledLanguages.map((code) => ({ code, label: code.toUpperCase() }))}
+        adminUser={adminUser}
       />
       <div
         style={{
