@@ -32,10 +32,15 @@ export async function WikiRepositoryLayout({
   /** DB `page.path` for the open wiki page, to highlight in the list */
   activeWikiPath?: string;
 }) {
+  /** Раздел из URL (?section=) или первый сегмент пути текущей страницы (/en/h1/h2 → h1). */
+  const derivedFromOpenPage = activeWikiPath ? sectionKey(activeWikiPath, lang) : null;
+  const filterSection = (section && section.length > 0 ? section : derivedFromOpenPage) || undefined;
+  const allPagesActive = !filterSection;
+
   const sectionWhere =
-    section && section.length > 0
+    filterSection && filterSection.length > 0
       ? {
-          OR: [{ path: `/${lang}/${section}` }, { path: { startsWith: `/${lang}/${section}/` } }],
+          OR: [{ path: `/${lang}/${filterSection}` }, { path: { startsWith: `/${lang}/${filterSection}/` } }],
         }
       : {};
 
@@ -78,12 +83,12 @@ export async function WikiRepositoryLayout({
       <aside className="repo-sidebar repo-sidebar-labels">
         <div className="repo-sidebar-head">Sections</div>
         <nav className="repo-sidebar-nav" aria-label="Wiki sections">
-          <Link href={base} className={`repo-sidebar-link${!section ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
+          <Link href={base} className={`repo-sidebar-link${allPagesActive ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
             All pages
           </Link>
           {sections.map((name) => {
             const href = `${base}?section=${encodeURIComponent(name)}`;
-            const active = section === name;
+            const active = filterSection === name;
             return (
               <Link key={name} href={href} className={`repo-sidebar-link${active ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
                 {name}
@@ -94,7 +99,9 @@ export async function WikiRepositoryLayout({
       </aside>
 
       <aside className="repo-sidebar repo-sidebar-snippets">
-        <div className="repo-sidebar-head">{q ? `Search: ${q}` : section ? `In “${section}”` : "Pages"}</div>
+        <div className="repo-sidebar-head">
+          {q ? `Search: ${q}` : filterSection ? `In “${filterSection}”` : "Pages"}
+        </div>
         <ul className="repo-page-list">
           {listPages.map((item) => {
             const href = wikiHref(lang, item.path);
