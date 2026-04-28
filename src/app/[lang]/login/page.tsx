@@ -20,6 +20,11 @@ export default async function LoginPage({ params }: { params: Promise<{ lang: st
         <p style={{ color: "var(--muted)", marginTop: 6, marginBottom: 12 }}>
           Public users can read pages. Editing requires admin session.
         </p>
+        <p style={{ color: "var(--muted)", marginTop: -6, marginBottom: 12, fontSize: 12, lineHeight: 1.45 }}>
+          Docker: после первого старта логин по умолчанию <strong>admin</strong> / <strong>hehe</strong> (если в БД ещё не было
+          пользователей). Смените в админке → Account. Если уже был другой админ — задайте{" "}
+          <code style={{ fontSize: 11 }}>HEKOTI_FORCE_ADMIN_RESET=1</code> и перезапустите контейнер.
+        </p>
         <LoginForm lang={lang} />
       </section>
     </main>

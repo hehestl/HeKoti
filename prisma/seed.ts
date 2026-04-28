@@ -35,8 +35,8 @@ async function main() {
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   try {
-    const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin@hekoti.local";
-    const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "change-me-now";
+    const adminEmail = process.env.HEKOTI_ADMIN_EMAIL ?? "admin";
+    const adminPassword = process.env.HEKOTI_ADMIN_PASSWORD ?? "hehe";
     const hash = await bcrypt.hash(adminPassword, 12);
 
     const admin = await prisma.user.upsert({

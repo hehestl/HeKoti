@@ -39,4 +39,7 @@ echo "Applying database migrations (prisma migrate deploy)..."
 # Do not use `npx prisma`: standalone images omit `node_modules/.bin`, so npx falls back to PATH (`sh: prisma: not found`).
 node ./node_modules/prisma/build/index.js migrate deploy
 
+echo "Ensuring admin user (scripts/ensure-admin.ts)..."
+node ./node_modules/tsx/dist/cli.mjs ./scripts/ensure-admin.ts
+
 exec node server.js

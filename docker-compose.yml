@@ -12,7 +12,7 @@
 # or align credentials with the existing cluster.
 #
 # Migrations: on each `hekoti-app` start, `docker-entrypoint.sh` runs
-# `npx prisma migrate deploy` before `node server.js`.
+# `prisma migrate deploy`, затем `scripts/ensure-admin.ts` (если User пусто — admin/hehe), потом `node server.js`.
 #
 # Seed DB (tsx is a production dep so it exists in the image; no interactive npx):
 #   docker compose exec hekoti-app npm run db:seed
@@ -27,6 +27,10 @@
 # - The official image does NOT create the `postgres` DB role when `POSTGRES_USER` is custom;
 #   use `psql -U "$POSTGRES_USER" ...`, not blindly `-U postgres`.
 # - Diagnose: `docker compose exec hekoti-postgres sh -c 'printenv POSTGRES_USER; psql -U "${POSTGRES_USER}" -d postgres -c "\\du"'`
+#
+# Reverse proxy (Nginx Proxy Manager и т.д.): создайте сеть один раз
+#   docker network create proxy-network
+# В NPM укажите upstream http://hekoti-app:3310 (имя контейнера резолвится в proxy-network).
 
 services:
   hekoti-postgres:
@@ -45,6 +49,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - default
 
   hekoti-redis:
     image: redis:7-alpine
@@ -58,6 +64,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - default
 
   hekoti-languagetool:
     image: erikvl87/languagetool:latest
@@ -70,8 +78,11 @@ services:
       timeout: 10s
       retries: 15
       start_period: 120s
+    networks:
+      - default
 
   hekoti-app:
+    image: hekoti-hekoti-app
     build:
       context: .
       dockerfile: Dockerfile
@@ -92,6 +103,10 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://hekoti-redis:6379}
       # Spellcheck API (`/api/spellcheck`); override with empty in `.env` to disable. LT has no `ports:` here — only app network.
       LANGUAGETOOL_URL: ${LANGUAGETOOL_URL:-http://hekoti-languagetool:8010}
+      # Bootstrap админа после migrate (см. scripts/ensure-admin.ts). Сброс пароля: HEKOTI_FORCE_ADMIN_RESET=1.
+      HEKOTI_ADMIN_EMAIL: ${HEKOTI_ADMIN_EMAIL:-admin}
+      HEKOTI_ADMIN_PASSWORD: ${HEKOTI_ADMIN_PASSWORD:-hehe}
+      HEKOTI_FORCE_ADMIN_RESET: ${HEKOTI_FORCE_ADMIN_RESET:-0}
     depends_on:
       hekoti-postgres:
         condition: service_healthy
@@ -114,6 +129,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 120s
+    networks:
+      - default
+      - proxy-network
+
+networks:
+  default:
+    driver: bridge
+  proxy-network:
+    external: true
 
 volumes:
   hekoti_pg_data:

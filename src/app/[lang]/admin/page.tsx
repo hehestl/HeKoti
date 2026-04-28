@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AdminAccountSettings } from "@/components/admin-account-settings";
 import { AdminEditor } from "@/components/admin-editor";
 import { AdminAgentChat } from "@/components/admin-agent-chat";
 import { getSessionUser } from "@/lib/auth";
@@ -34,6 +35,7 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
   return (
     <main style={{ padding: 12 }}>
       <h1 style={{ marginBottom: 10 }}>Admin editor</h1>
+      <AdminAccountSettings lang={lang} initialLogin={user.email} />
       <AdminAgentChat initialMessages={initialMessages} initialActiveAgentId={channel.activeAgentId} />
       <div style={{ height: 12 }} />
       <AdminEditor initialPages={pages} lang={lang} />

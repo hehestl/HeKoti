@@ -18,6 +18,8 @@
 
 ### Added
 
+- Дефолтный админ **admin** / **hehe**: `scripts/ensure-admin.ts` после миграций в `docker-entrypoint`; `HEKOTI_FORCE_ADMIN_RESET=1` для принудительного upsert пароля; блок **Account** в админке (`PATCH /api/admin/account`) — смена логина и пароля.
+- Docker Compose: сервис `hekoti-app` в сетях `default` + внешняя `proxy-network` (для NPM и др.), тег образа `hekoti-hekoti-app`; остальные сервисы в `default`.
 - `POST /api/auth/login` пишет в stdout строки `[hekoti:auth] …` (хост, `x-forwarded-proto`, результат) — удобно для `docker logs` и проверки прокси.
 
 ### Fixed

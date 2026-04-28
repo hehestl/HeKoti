@@ -27,7 +27,13 @@ export function LoginForm({ lang }: { lang: string }) {
         window.location.href = `/${lang}/admin`;
       }}
     >
-      <input style={inputStyle} placeholder="Email" value={email} onChange={(event) => setEmail(event.target.value)} />
+      <input
+        style={inputStyle}
+        placeholder="Login (e.g. admin)"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        autoComplete="username"
+      />
       <input
         style={inputStyle}
         placeholder="Password"
