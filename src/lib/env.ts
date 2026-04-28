@@ -25,6 +25,11 @@ const envSchema = z.object({
   LOCAL_UPLOAD_DIR: z.string().default("public/uploads"),
   /** Optional LanguageTool HTTP API (e.g. http://hekoti-languagetool:8010). */
   LANGUAGETOOL_URL: z.string().optional(),
+  /**
+   * 32-byte key for AES-256-GCM encryption of TOTP secrets at rest (hex 64 chars or base64).
+   * If unset, a key is derived from WEBHOOK_SECRET (weaker if the webhook secret is guessable).
+   */
+  HEKOTI_TOTP_ENCRYPTION_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

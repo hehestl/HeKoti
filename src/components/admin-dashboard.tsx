@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AdminAccountSettings } from "@/components/admin-account-settings";
 import { AdminAgentChat } from "@/components/admin-agent-chat";
 import { AdminEditor } from "@/components/admin-editor";
+import { AdminTotpSettings, type TotpStatus } from "@/components/admin-totp-settings";
 
 type AdminTab = "posts" | "ai" | "settings";
 
@@ -14,6 +15,7 @@ type PageRow = {
   path: string;
   contentMd: string;
   isPublished: boolean;
+  navOrder: number;
 };
 
 type Msg = { id: string; role: string; content: string; createdAt: string };
@@ -21,12 +23,14 @@ type Msg = { id: string; role: string; content: string; createdAt: string };
 export function AdminDashboard({
   lang,
   initialLogin,
+  initialTotpStatus,
   initialPages,
   initialMessages,
   initialActiveAgentId,
 }: {
   lang: string;
   initialLogin: string;
+  initialTotpStatus: TotpStatus;
   initialPages: PageRow[];
   initialMessages: Msg[];
   initialActiveAgentId: string | null;
@@ -102,7 +106,10 @@ export function AdminDashboard({
         ) : tab === "ai" ? (
           <AdminAgentChat initialMessages={initialMessages} initialActiveAgentId={initialActiveAgentId} />
         ) : (
-          <AdminAccountSettings lang={lang} initialLogin={initialLogin} />
+          <>
+            <AdminTotpSettings lang={lang} initialStatus={initialTotpStatus} />
+            <AdminAccountSettings lang={lang} initialLogin={initialLogin} />
+          </>
         )}
       </div>
     </div>

@@ -12,11 +12,14 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
   const user = await getSessionUser();
   if (!user) redirect(`/${lang}/login`);
 
+  const initialTotpStatus =
+    user.isTotpEnabled ? "enabled" : user.totpSecret ? "pending" : "off";
+
   const pages = await prisma.page.findMany({
     where: { lang },
     orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
     take: 100,
-    select: { id: true, title: true, path: true, contentMd: true, isPublished: true },
+    select: { id: true, title: true, path: true, contentMd: true, isPublished: true, navOrder: true },
   });
   const channel = await ensureDefaultChannel();
   const agentMessages = await prisma.agentMessage.findMany({
@@ -38,6 +41,7 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
         <AdminDashboard
           lang={lang}
           initialLogin={user.email}
+          initialTotpStatus={initialTotpStatus}
           initialPages={pages}
           initialMessages={initialMessages}
           initialActiveAgentId={channel.activeAgentId}

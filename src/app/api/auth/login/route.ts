@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loginAdmin } from "@/lib/auth";
+import { loginAdminPasswordStep } from "@/lib/auth";
 
 const LOG = "[hekoti:auth]";
 
@@ -55,9 +55,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    await loginAdmin(parsed);
-    console.info(`${LOG} login ok email=${parsed.email}`);
-    return NextResponse.json({ ok: true });
+    const result = await loginAdminPasswordStep(parsed);
+    console.info(`${LOG} login ok email=${parsed.email} totp=${result.needsTotp ? "pending" : "off"}`);
+    if (result.needsTotp) {
+      return NextResponse.json({ ok: true, needsTotp: true, pendingToken: result.pendingToken });
+    }
+    return NextResponse.json({ ok: true, needsTotp: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed";
     const status = message.includes("Invalid") ? 401 : 500;

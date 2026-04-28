@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderWikiHtml } from "@/lib/markdown";
 import { normalizePath } from "@/lib/slug";
 
 export default async function WikiPage({
@@ -30,7 +30,7 @@ export default async function WikiPage({
     const page = await prisma.page.findUnique({ where: { path } });
     if (!page || !page.isPublished) return notFound();
     title = page.title;
-    html = renderMarkdown(page.contentMd);
+    html = await renderWikiHtml(page.contentMd, lang);
     await setCached(cacheKey, JSON.stringify({ title, html }));
   }
 

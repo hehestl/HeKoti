@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { delCached } from "@/lib/cache";
+import { invalidateWikiLangCache } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
-import { wikiCacheKey } from "@/lib/wiki-path";
-
 const updateSchema = z.object({
   title: z.string().min(1),
   contentMd: z.string(),
@@ -36,7 +34,7 @@ export async function PATCH(
         contentMd: payload.contentMd,
       },
     });
-    await delCached(wikiCacheKey(updated.path, updated.lang));
+    await invalidateWikiLangCache(updated.lang);
     await emitOutgoingWebhook("page.updated", { pageId: updated.id, path: updated.path, published: updated.isPublished });
     return NextResponse.json(updated);
   } catch (error) {
@@ -68,7 +66,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     }
 
     await prisma.page.delete({ where: { id } });
-    await delCached(wikiCacheKey(page.path, page.lang));
+    await invalidateWikiLangCache(page.lang);
     await emitOutgoingWebhook("page.deleted", { pageId: id, path: page.path });
     return NextResponse.json({ ok: true, path: page.path });
   } catch (error) {

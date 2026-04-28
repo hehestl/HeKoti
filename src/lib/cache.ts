@@ -41,6 +41,24 @@ export async function delCached(key: string) {
   memoryCache.delete(key);
 }
 
+/** Drop all cached wiki HTML for a language (e.g. after /post targets or titles change). */
+export async function invalidateWikiLangCache(lang: string) {
+  const prefix = `wiki:${lang}:`;
+  const redis = getRedis();
+  if (redis) {
+    const keys = await redis.keys(`${prefix}*`);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+    return;
+  }
+  for (const key of memoryCache.keys()) {
+    if (typeof key === "string" && key.startsWith(prefix)) {
+      memoryCache.delete(key);
+    }
+  }
+}
+
 export async function bumpRateLimitKey(key: string, windowSec: number) {
   const redis = getRedis();
   if (redis) {

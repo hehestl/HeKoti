@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { delCached, getCached, setCached } from "@/lib/cache";
+import { getCached, invalidateWikiLangCache, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { normalizePath, toSlug } from "@/lib/slug";
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         contentMd: payload.contentMd,
       },
     });
-    await delCached(`wiki:${payload.lang}:${slug}`);
+    await invalidateWikiLangCache(payload.lang);
     await emitOutgoingWebhook("page.created", { pageId: page.id, path: page.path, published: page.isPublished });
     return NextResponse.json(page);
   } catch (error) {
