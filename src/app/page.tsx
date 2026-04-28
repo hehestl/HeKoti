@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { getDefaultLanguage } from "@/lib/i18n";
 
-export default function Home() {
-  redirect("/en");
+export default async function Home() {
+  const lang = await getDefaultLanguage();
+  redirect(`/${lang}`);
 }

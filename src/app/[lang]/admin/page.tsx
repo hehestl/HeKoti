@@ -4,11 +4,12 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import { getSessionUser } from "@/lib/auth";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
 import { prisma } from "@/lib/db";
-import { safeLang } from "@/lib/i18n";
+import { safeLang, getDictionary, getDefaultLanguage } from "@/lib/i18n";
 
 export default async function AdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang: inputLang } = await params;
   const lang = safeLang(inputLang);
+  const dict = await getDictionary(lang);
   const user = await getSessionUser();
   if (!user) redirect(`/${lang}/login`);
 
@@ -34,10 +35,12 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
     createdAt: item.createdAt.toISOString(),
   }));
 
+  const defaultLanguage = await getDefaultLanguage();
+
   return (
     <main style={{ padding: 12 }}>
-      <h1 style={{ marginBottom: 10 }}>Админка</h1>
-      <Suspense fallback={<div style={{ color: "var(--muted)" }}>Загрузка…</div>}>
+      <h1 style={{ marginBottom: 10 }}>{dict.common.admin}</h1>
+      <Suspense fallback={<div style={{ color: "var(--muted)" }}>{dict.common.loading}</div>}>
         <AdminDashboard
           lang={lang}
           initialLogin={user.email}
@@ -45,6 +48,8 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
           initialPages={pages}
           initialMessages={initialMessages}
           initialActiveAgentId={channel.activeAgentId}
+          dict={dict}
+          defaultLanguage={defaultLanguage}
         />
       </Suspense>
     </main>

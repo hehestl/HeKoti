@@ -1,15 +1,20 @@
 import { CopyButton } from "@/components/copy-button";
 import { cryptoWallets, donateLinks } from "@/lib/funding";
+import { safeLang, getDictionary } from "@/lib/i18n";
 
-export default function DonatePage() {
+export default async function DonatePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang: inputLang } = await params;
+  const lang = safeLang(inputLang);
+  const dict = await getDictionary(lang);
+
   return (
     <main style={{ padding: 12 }}>
-      <h1>Support Hekoti</h1>
+      <h1>{dict.admin.donate.title}</h1>
       <p style={{ color: "var(--muted)", marginTop: 6 }}>
-        Donation methods are configured from environment variables.
+        {dict.admin.donate.desc}
       </p>
       <section style={panelStyle}>
-        <h2>Platforms</h2>
+        <h2>{dict.admin.donate.platforms}</h2>
         <ul style={listStyle}>
           {donateLinks.map((item) => (
             <li key={item.url}>
@@ -18,11 +23,11 @@ export default function DonatePage() {
               </a>
             </li>
           ))}
-          {donateLinks.length === 0 ? <li style={{ color: "var(--muted)" }}>No platform links configured.</li> : null}
+          {donateLinks.length === 0 ? <li style={{ color: "var(--muted)" }}>{dict.admin.donate.noPlatforms}</li> : null}
         </ul>
       </section>
       <section style={panelStyle}>
-        <h2>Crypto wallets</h2>
+        <h2>{dict.admin.donate.crypto}</h2>
         <ul style={listStyle}>
           {cryptoWallets.map((item) => (
             <li key={`${item.asset}:${item.network}`}>
@@ -32,7 +37,7 @@ export default function DonatePage() {
               <CopyButton text={item.address} />
             </li>
           ))}
-          {cryptoWallets.length === 0 ? <li style={{ color: "var(--muted)" }}>No wallets configured.</li> : null}
+          {cryptoWallets.length === 0 ? <li style={{ color: "var(--muted)" }}>{dict.admin.donate.noCrypto}</li> : null}
         </ul>
       </section>
     </main>

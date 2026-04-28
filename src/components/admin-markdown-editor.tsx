@@ -12,6 +12,7 @@ import {
   wrapSelection,
 } from "@/lib/monaco-md-helpers";
 import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
+import type { Dictionary } from "@/lib/i18n";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -32,10 +33,11 @@ type Props = {
   onChange: (v: string) => void;
   lang: string;
   wikiPages: WikiRef[];
+  dict: Dictionary;
   height?: string;
 };
 
-export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height = "60vh" }: Props) {
+export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, height = "60vh" }: Props) {
   const edRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monRef = useRef<typeof monaco | null>(null);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
@@ -65,49 +67,51 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
   }, []);
 
   const insertWikiPost = useCallback(() => {
-    const raw = window.prompt("Путь статьи для /post: h2 или parent/child", "h2");
+    const raw = window.prompt(dict.admin.editor.postPrompt, "h2");
     if (raw == null || !raw.trim()) return;
     withEd((ed, m) => insertAtCursor(ed, m, `/post ${raw.trim().replace(/^\//, "")} `));
-  }, [withEd]);
+  }, [withEd, dict]);
 
   const insertWikiLink = useCallback(() => {
     withEd((ed) => {
       const model = ed.getModel();
       const sel = ed.getSelection();
       if (!model || !sel) return;
-      const label = model.getValueInRange(sel) || "ссылка";
-      const slug = window.prompt("Slug пути (как в URL wiki), напр. h2 или docs/api", "h2");
+      const label = model.getValueInRange(sel) || dict.admin.editor.linkPlaceholder;
+      const slug = window.prompt(dict.admin.editor.linkPrompt, "h2");
       if (slug == null || !slug.trim()) return;
       const hit = resolvePostWikiTarget(slug.trim(), lang, wikiPages);
       if (!hit) {
-        window.alert(
-          `Не найдена страница «${slug.trim()}» среди загруженных постов. Проверьте путь или сохраните целевую статью.`,
-        );
+        window.alert(dict.admin.editor.linkNotFound.replace("{slug}", slug.trim()));
         return;
       }
       ed.executeEdits("link", [{ range: sel, text: `[${label}](${hit.href})`, forceMoveMarkers: true }]);
       ed.focus();
     });
-  }, [withEd, lang, wikiPages]);
+  }, [withEd, lang, wikiPages, dict]);
 
   const insertExternalLink = useCallback(() => {
     withEd((ed) => {
       const model = ed.getModel();
       const sel = ed.getSelection();
       if (!model || !sel) return;
-      const label = model.getValueInRange(sel) || "ссылка";
-      const url = window.prompt("Полный URL (https://…)", "https://");
+      const label = model.getValueInRange(sel) || dict.admin.editor.externalLinkPlaceholder;
+      const url = window.prompt(dict.admin.editor.externalLinkPrompt, "https://");
       if (url == null || !url.trim()) return;
       ed.executeEdits("elink", [{ range: sel, text: `[${label}](${url.trim()})`, forceMoveMarkers: true }]);
       ed.focus();
     });
-  }, [withEd]);
+  }, [withEd, dict]);
 
   const insertDateTime = useCallback(() => {
     withEd((ed, m) =>
-      insertAtCursor(ed, m, new Date().toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" })),
+      insertAtCursor(
+        ed,
+        m,
+        new Date().toLocaleString(lang === "ru" ? "ru-RU" : "en-US", { dateStyle: "medium", timeStyle: "short" }),
+      ),
     );
-  }, [withEd]);
+  }, [withEd, lang]);
 
   const actions = useMemo(
     () =>
@@ -122,28 +126,21 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
         bullet: () => withEd((ed, m) => toggleLinePrefix(ed, m, "- ")),
         quote: () => withEd((ed, m) => toggleLinePrefix(ed, m, "> ")),
         code: () => withEd((ed, m) => wrapSelection(ed, m, "`", "`")),
-        codeBlock: () =>
-          withEd((ed, m) =>
-            wrapSelection(ed, m, "```\n", "\n```"),
-          ),
+        codeBlock: () => withEd((ed, m) => wrapSelection(ed, m, "```\n", "\n```")),
         hr: () => withEd((ed, m) => insertSnippetBlock(ed, m, "---")),
         table: () =>
           withEd((ed, m) =>
-            insertSnippetBlock(
-              ed,
-              m,
-              "| Заголовок 1 | Заголовок 2 |\n| --- | --- |\n|  |  |\n|  |  |",
-            ),
+            insertSnippetBlock(ed, m, "| Header 1 | Header 2 |\n| --- | --- |\n|  |  |\n|  |  |"),
           ),
         details: () =>
           withEd((ed, m) =>
             insertSnippetBlock(
               ed,
               m,
-              "<details>\n<summary>Свернуть / раскрыть</summary>\n\nТекст внутри блока.\n\n</details>",
+              "<details>\n<summary>Details</summary>\n\nContent goes here.\n\n</details>",
             ),
           ),
-        callout: () => withEd((ed, m) => insertSnippetBlock(ed, m, "> **Важно:** текст выноски.")),
+        callout: () => withEd((ed, m) => insertSnippetBlock(ed, m, "> **Important:** content here.")),
         formula: () => withEd((ed, m) => insertSnippetBlock(ed, m, "$$\nE = mc^2\n$$")),
       }) as Record<string, () => void>,
     [withEd],
@@ -151,39 +148,39 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
 
   const toolbarGroups: { label: string; items: { key: string; t: string; title?: string }[] }[] = [
     {
-      label: "Текст",
+      label: dict.admin.editor.text,
       items: [
-        { key: "bold", t: "Ж", title: "Жирный **" },
-        { key: "italic", t: "К", title: "Курсив *" },
-        { key: "underline", t: "Ч", title: "Подчёркивание <u>" },
-        { key: "strike", t: "З", title: "Зачёркнуто ~~" },
+        { key: "bold", t: dict.admin.editor.bold, title: dict.admin.editor.boldTitle },
+        { key: "italic", t: dict.admin.editor.italic, title: dict.admin.editor.italicTitle },
+        { key: "underline", t: dict.admin.editor.underline, title: dict.admin.editor.underlineTitle },
+        { key: "strike", t: dict.admin.editor.strike, title: dict.admin.editor.strikeTitle },
       ],
     },
     {
-      label: "Заголовки",
+      label: dict.admin.editor.headings,
       items: [
-        { key: "h2", t: "H2", title: "##" },
-        { key: "h3", t: "H3", title: "###" },
-        { key: "h4", t: "H4", title: "####" },
+        { key: "h2", t: "H2", title: dict.admin.editor.h2Title },
+        { key: "h3", t: "H3", title: dict.admin.editor.h3Title },
+        { key: "h4", t: "H4", title: dict.admin.editor.h4Title },
       ],
     },
     {
-      label: "Структура",
+      label: dict.admin.editor.structure,
       items: [
-        { key: "bullet", t: "• Список", title: "Маркированный список" },
-        { key: "quote", t: "« Цит", title: "Цитата / blockquote" },
-        { key: "hr", t: "—", title: "Разделитель ---" },
-        { key: "table", t: "Табл.", title: "Таблица" },
-        { key: "details", t: "<details>", title: "Сворачиваемый блок" },
-        { key: "callout", t: "Выноска", title: "Важно (blockquote)" },
+        { key: "bullet", t: dict.admin.editor.bullet, title: dict.admin.editor.bulletTitle },
+        { key: "quote", t: dict.admin.editor.quote, title: dict.admin.editor.quoteTitle },
+        { key: "hr", t: dict.admin.editor.hr, title: dict.admin.editor.hrTitle },
+        { key: "table", t: dict.admin.editor.table, title: dict.admin.editor.tableTitle },
+        { key: "details", t: dict.admin.editor.details, title: dict.admin.editor.detailsTitle },
+        { key: "callout", t: dict.admin.editor.callout, title: dict.admin.editor.calloutTitle },
       ],
     },
     {
-      label: "Код",
+      label: dict.admin.editor.code,
       items: [
-        { key: "code", t: "`код`", title: "Инлайн код" },
-        { key: "codeBlock", t: "```", title: "Блок кода" },
-        { key: "formula", t: "f(x)", title: "Формула $$…$$ (просмотр LaTeX позже)" },
+        { key: "code", t: dict.admin.editor.inlineCode, title: dict.admin.editor.inlineCodeTitle },
+        { key: "codeBlock", t: dict.admin.editor.codeBlock, title: dict.admin.editor.codeBlockTitle },
+        { key: "formula", t: dict.admin.editor.formula, title: dict.admin.editor.formulaTitle },
       ],
     },
   ];
@@ -213,24 +210,23 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
           </div>
         ))}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-          <span style={{ fontSize: 10, color: "var(--muted)" }}>Ссылки</span>
-          <button type="button" style={tbBtn} title="/post slug — подставится при показе статьи" onClick={insertWikiPost}>
-            /post
+          <span style={{ fontSize: 10, color: "var(--muted)" }}>{dict.admin.editor.links}</span>
+          <button type="button" style={tbBtn} title={dict.admin.editor.postTitle} onClick={insertWikiPost}>
+            {dict.admin.editor.post}
           </button>
-          <button type="button" style={tbBtn} title="Внутренняя ссылка [текст](wiki)" onClick={insertWikiLink}>
-            Вики
+          <button type="button" style={tbBtn} title={dict.admin.editor.wikiTitle} onClick={insertWikiLink}>
+            {dict.admin.editor.wiki}
           </button>
-          <button type="button" style={tbBtn} title="Внешняя URL" onClick={insertExternalLink}>
-            URL
+          <button type="button" style={tbBtn} title={dict.admin.editor.urlTitle} onClick={insertExternalLink}>
+            {dict.admin.editor.url}
           </button>
           <button type="button" style={tbBtn} onClick={insertDateTime}>
-            Дата
+            {dict.admin.editor.date}
           </button>
         </div>
       </div>
       <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.45 }}>
-        <b>/post</b> в тексте (с пробелом или после новой строки): <code>/post h2</code> или <code>/post h1/h2</code> — при
-        показе wiki заменяется на ссылку на опубликованную статью. ПКМ в поле — те же действия.
+        {dict.admin.editor.help}
       </p>
       <div style={{ position: "relative", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
         <MonacoEditor
@@ -279,20 +275,20 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
               {(
                 [
-                  ["bold", "Жирный"],
-                  ["italic", "Курсив"],
-                  ["underline", "Подчёрк"],
-                  ["strike", "Зачёрк."],
+                  ["bold", dict.admin.editor.contextMenu.bold],
+                  ["italic", dict.admin.editor.contextMenu.italic],
+                  ["underline", dict.admin.editor.contextMenu.underline],
+                  ["strike", dict.admin.editor.contextMenu.strike],
                   ["h2", "H2"],
                   ["h3", "H3"],
-                  ["code", "Код"],
-                  ["bullet", "Список"],
-                  ["quote", "Цитата"],
-                  ["hr", "Линия"],
-                  ["table", "Таблица"],
-                  ["details", "Свёртка"],
-                  ["callout", "Выноска"],
-                  ["formula", "Формула"],
+                  ["code", dict.admin.editor.contextMenu.code],
+                  ["bullet", dict.admin.editor.contextMenu.bullet],
+                  ["quote", dict.admin.editor.contextMenu.quote],
+                  ["hr", dict.admin.editor.contextMenu.hr],
+                  ["table", dict.admin.editor.contextMenu.table],
+                  ["details", dict.admin.editor.contextMenu.details],
+                  ["callout", dict.admin.editor.contextMenu.callout],
+                  ["formula", dict.admin.editor.contextMenu.formula],
                 ] as const
               ).map(([k, lab]) => (
                 <button
@@ -317,7 +313,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
                 setCtx(null);
               }}
             >
-              Ссылка вики…
+              {dict.admin.editor.contextMenu.wikiLink}
             </button>
             <button
               type="button"
@@ -327,7 +323,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
                 setCtx(null);
               }}
             >
-              Внешняя ссылка…
+              {dict.admin.editor.contextMenu.externalLink}
             </button>
             <button
               type="button"
@@ -337,7 +333,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
                 setCtx(null);
               }}
             >
-              Вставить /post …
+              {dict.admin.editor.contextMenu.insertPost}
             </button>
             <button
               type="button"
@@ -347,7 +343,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, height =
                 setCtx(null);
               }}
             >
-              Дата и время
+              {dict.admin.editor.contextMenu.insertDateTime}
             </button>
           </div>
         ) : null}

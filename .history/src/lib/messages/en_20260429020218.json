@@ -1,0 +1,37 @@
+{
+  "common": {
+    "login": "Login",
+    "logout": "Logout",
+    "admin": "Admin",
+    "developedBy": "Developed and created by",
+    "support": "Support",
+    "github": "GitHub",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "settings": "Settings",
+    "dashboard": "Dashboard",
+    "aiAgents": "AI Agents",
+    "posts": "Posts"
+  },
+  "home": {
+    "title": "Hekotia",
+    "description": "Hekoti — self-hosted public wiki archive. Ask Hekoti and knowledge awakens.",
+    "privateWiki": "Private wiki",
+    "loginRequired": "Login required.",
+    "goToLogin": "Go to login"
+  },
+  "admin": {
+    "accountSettings": "Account Settings",
+    "globalSettings": "Global Settings",
+    "defaultLanguage": "Default Language",
+    "defaultLanguageDesc": "The language used for guests and as a base for the interface.",
+    "loginUpdated": "Login updated.",
+    "passwordChanged": "Password changed. Sign in again.",
+    "nothingToChange": "Nothing to change.",
+    "invalidLogin": "Invalid login.",
+    "passwordTooShort": "New password must be at least 6 characters.",
+    "enterNewLoginOrPassword": "Enter a new login or new password.",
+    "loginInUse": "This login is already in use."
+  }
+}

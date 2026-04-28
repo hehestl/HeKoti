@@ -1,7 +1,7 @@
 import { TopBar } from "@/components/topbar";
 import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
-import { enabledLanguages, safeLang } from "@/lib/i18n";
+import { enabledLanguages, safeLang, getDictionary } from "@/lib/i18n";
 
 export default async function LocaleLayout({
   params,
@@ -12,6 +12,7 @@ export default async function LocaleLayout({
 }) {
   const { lang: inputLang } = await params;
   const lang = safeLang(inputLang);
+  const dict = await getDictionary(lang);
   const user = await getSessionUser();
   const adminUser = user?.role === "admin" ? { login: user.email } : null;
 
@@ -22,6 +23,7 @@ export default async function LocaleLayout({
         ai={aiLinks}
         langs={enabledLanguages.map((code) => ({ code, label: code.toUpperCase() }))}
         adminUser={adminUser}
+        dict={dict.common}
       />
       <div
         style={{
@@ -53,17 +55,17 @@ export default async function LocaleLayout({
             lineHeight: 1.5,
           }}
         >
-          <span>Разработано и создано</span>
+          <span>{dict.common.developedBy}</span>
           <a href="https://t.me/hehestl" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
             @hehestl
           </a>
           <span aria-hidden>·</span>
           <a href="https://github.com/hehestl" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-            GitHub
+            {dict.common.github}
           </a>
           <span aria-hidden>·</span>
           <a href="https://t.me/PhiloraBot" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-            Поддержка
+            {dict.common.support}
           </a>
         </div>
       </footer>
