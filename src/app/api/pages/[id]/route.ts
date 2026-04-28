@@ -4,6 +4,7 @@ import { delCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+import { wikiCacheKey } from "@/lib/wiki-path";
 
 const updateSchema = z.object({
   title: z.string().min(1),
@@ -35,7 +36,7 @@ export async function PATCH(
         contentMd: payload.contentMd,
       },
     });
-    await delCached(`wiki:${updated.lang}:${updated.path.split("/").slice(2).join("/")}`);
+    await delCached(wikiCacheKey(updated.path, updated.lang));
     await emitOutgoingWebhook("page.updated", { pageId: updated.id, path: updated.path, published: updated.isPublished });
     return NextResponse.json(updated);
   } catch (error) {
@@ -43,5 +44,36 @@ export async function PATCH(
       { ok: false, message: error instanceof Error ? error.message : "Update failed" },
       { status: 400 },
     );
+  }
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireAdminUser();
+    const { id } = await params;
+
+    const page = await prisma.page.findUnique({ where: { id } });
+    if (!page) {
+      return NextResponse.json({ ok: false, message: "Page not found." }, { status: 404 });
+    }
+
+    const childCount = await prisma.page.count({
+      where: { path: { startsWith: `${page.path}/` } },
+    });
+    if (childCount > 0) {
+      return NextResponse.json(
+        { ok: false, message: "Сначала удалите вложенные страницы." },
+        { status: 400 },
+      );
+    }
+
+    await prisma.page.delete({ where: { id } });
+    await delCached(wikiCacheKey(page.path, page.lang));
+    await emitOutgoingWebhook("page.deleted", { pageId: id, path: page.path });
+    return NextResponse.json({ ok: true, path: page.path });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Delete failed";
+    const status = msg === "Unauthorized." ? 401 : 400;
+    return NextResponse.json({ ok: false, message: msg }, { status });
   }
 }

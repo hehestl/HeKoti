@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WikiPageRow } from "@/components/wiki-page-row";
 import { prisma } from "@/lib/db";
 
 /** First path segment after /{lang}/ — like a Snibox “label”. */
@@ -24,6 +25,7 @@ export async function WikiRepositoryLayout({
   q,
   section,
   activeWikiPath,
+  isAdmin = false,
 }: {
   lang: string;
   children: React.ReactNode;
@@ -31,6 +33,8 @@ export async function WikiRepositoryLayout({
   section?: string;
   /** DB `page.path` for the open wiki page, to highlight in the list */
   activeWikiPath?: string;
+  /** ПКМ: удалить / вверх — только для авторизованного админа */
+  isAdmin?: boolean;
 }) {
   /** Раздел из URL (?section=) или первый сегмент пути текущей страницы (/en/h1/h2 → h1). */
   const derivedFromOpenPage = activeWikiPath ? sectionKey(activeWikiPath, lang) : null;
@@ -57,7 +61,7 @@ export async function WikiRepositoryLayout({
       ...searchWhere,
       ...sectionWhere,
     },
-    orderBy: q ? { updatedAt: "desc" } : { title: "asc" },
+    orderBy: q ? { updatedAt: "desc" } : [{ navOrder: "asc" }, { title: "asc" }],
     take: q ? 80 : 400,
     select: { id: true, title: true, path: true },
   });
@@ -107,11 +111,15 @@ export async function WikiRepositoryLayout({
             const href = wikiHref(lang, item.path);
             const active = activeWikiPath === item.path;
             return (
-              <li key={item.id}>
-                <Link href={href} className={active ? "repo-page-link repo-page-link-active" : "repo-page-link"} prefetch={false}>
-                  {item.title}
-                </Link>
-              </li>
+              <WikiPageRow
+                key={item.id}
+                id={item.id}
+                href={href}
+                title={item.title}
+                lang={lang}
+                isAdmin={isAdmin}
+                isActive={active}
+              />
             );
           })}
           {listPages.length === 0 ? <li className="repo-page-empty">No pages match.</li> : null}

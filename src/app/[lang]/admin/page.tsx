@@ -14,7 +14,7 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
 
   const pages = await prisma.page.findMany({
     where: { lang },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
     take: 100,
     select: { id: true, title: true, path: true, contentMd: true, isPublished: true },
   });

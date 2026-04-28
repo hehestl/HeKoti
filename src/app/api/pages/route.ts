@@ -4,6 +4,7 @@ import { delCached, getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { normalizePath, toSlug } from "@/lib/slug";
+import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 
 const createSchema = z.object({
@@ -46,6 +47,14 @@ export async function POST(request: Request) {
     const payload = createSchema.parse(await request.json());
     const slug = toSlug(payload.title);
     const path = normalizePath(payload.lang, [...payload.parentPathParts, slug]);
+
+    const existingSameLang = await prisma.page.findMany({
+      where: { lang: payload.lang },
+      select: { path: true, navOrder: true },
+    });
+    const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, payload.lang));
+    const maxNav = existingSameLang.filter((p) => siblingPaths.has(p.path)).reduce((m, p) => Math.max(m, p.navOrder), 0);
+
     const page = await prisma.page.create({
       data: {
         title: payload.title,
@@ -54,6 +63,7 @@ export async function POST(request: Request) {
         contentMd: payload.contentMd,
         isPublished: payload.isPublished,
         path,
+        navOrder: maxNav + 10,
       },
     });
     await prisma.pageRevision.create({

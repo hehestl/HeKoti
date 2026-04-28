@@ -28,7 +28,7 @@ export default async function LanguageHome({
   }
 
   return (
-    <WikiRepositoryLayout lang={lang} q={q} section={section}>
+    <WikiRepositoryLayout lang={lang} q={q} section={section} isAdmin={!!user && user.role === "admin"}>
       <div>
         <h1 style={{ margin: "0 0 12px", fontSize: "clamp(1.35rem, 2vw, 1.75rem)", fontWeight: 700, letterSpacing: "-0.02em" }}>
           Hekotia

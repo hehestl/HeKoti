@@ -35,6 +35,7 @@ model Page {
   slug         String
   lang         String         @default("en")
   path         String         @unique
+  navOrder     Int            @default(0)
   contentMd    String         @default("")
   excerpt      String?
   isPublished  Boolean        @default(false)

@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -65,13 +66,13 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
     });
   };
 
-  const create = async () => {
-    const title = prompt("Page title");
+  const createWithParent = async (parentPathParts: string[]) => {
+    const title = prompt("Заголовок страницы");
     if (!title) return;
     const response = await fetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ lang, title, contentMd: "", isPublished: false }),
+      body: JSON.stringify({ lang, title, contentMd: "", isPublished: false, parentPathParts }),
     });
     if (!response.ok) return;
     const data = (await response.json()) as PageRow;
@@ -79,12 +80,38 @@ export function AdminEditor({ initialPages, lang }: { initialPages: PageRow[]; l
     setActiveId(data.id);
   };
 
+  const createSibling = async () => {
+    if (!active) {
+      await createWithParent([]);
+      return;
+    }
+    const segs = pathSegmentsAfterLang(active.path, lang);
+    const parentPathParts = segs.length <= 1 ? [] : segs.slice(0, -1);
+    await createWithParent(parentPathParts);
+  };
+
+  const createChild = async () => {
+    if (!active) {
+      await createWithParent([]);
+      return;
+    }
+    await createWithParent(pathSegmentsAfterLang(active.path, lang));
+  };
+
   return (
     <section style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 12 }}>
       <aside style={panelStyle}>
-        <button onClick={create} style={buttonStyle} type="button">
-          + Add
-        </button>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <button onClick={createSibling} style={buttonStyle} type="button" title="Тот же уровень вложенности, что и выбранная страница">
+            + Рядом
+          </button>
+          <button onClick={createChild} style={buttonStyle} type="button" title="Страница внутри выбранной (URL …/текущая/новая)" disabled={!active}>
+            + Внутри
+          </button>
+        </div>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.4 }}>
+          Вложенность задаётся URL: <b>Внутри</b> — под выбранной статьёй; <b>Рядом</b> — сосед с той же «папкой».
+        </p>
         <ul style={{ marginTop: 12, padding: 0, listStyle: "none", display: "grid", gap: 6 }}>
           {pages.map((item) => (
             <li key={item.id}>
