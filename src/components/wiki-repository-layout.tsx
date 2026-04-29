@@ -73,16 +73,50 @@ export async function WikiRepositoryLayout({
     take: 800,
   });
 
-  const sections = Array.from(
+  const sectionSlugs = Array.from(
     new Set(
       pathRows
         .map((row) => sectionKey(row.path, lang))
         .filter((key): key is string => Boolean(key)),
     ),
-  ).sort((a, b) => a.localeCompare(b));
+  );
+
+  const sectionRootPaths = sectionSlugs.map((slug) => `/${lang}/${slug}`);
+  const sectionRoots = await prisma.page.findMany({
+    where: { lang, isPublished: true, path: { in: sectionRootPaths } },
+    select: { path: true, title: true },
+    take: sectionRootPaths.length,
+  });
+  const sectionTitleBySlug = new Map(
+    sectionRoots.map((row) => [sectionKey(row.path, lang) ?? "", row.title] as const).filter(([k]) => Boolean(k)),
+  );
+
+  const sectionSamples = await prisma.page.findMany({
+    where: { lang, isPublished: true, OR: sectionSlugs.map((slug) => ({ path: { startsWith: `/${lang}/${slug}/` } })) },
+    orderBy: [{ navOrder: "asc" }, { title: "asc" }],
+    select: { path: true, title: true },
+    take: 800,
+  });
+  const sectionSampleTitleBySlug = new Map<string, string>();
+  for (const row of sectionSamples) {
+    const slug = sectionKey(row.path, lang);
+    if (!slug) continue;
+    if (sectionSampleTitleBySlug.has(slug)) continue;
+    sectionSampleTitleBySlug.set(slug, row.title);
+  }
+
+  const sectionLabelBySlug = new Map<string, string>();
+  for (const slug of sectionSlugs) {
+    sectionLabelBySlug.set(slug, sectionTitleBySlug.get(slug) ?? sectionSampleTitleBySlug.get(slug) ?? slug);
+  }
+
+  const sections = sectionSlugs
+    .map((slug) => ({ slug, label: sectionLabelBySlug.get(slug) ?? slug }))
+    .sort((a, b) => a.label.localeCompare(b.label, lang, { sensitivity: "base" }));
 
   const base = `/${lang}`;
   const dict = await getDictionary(lang);
+  const filterSectionLabel = filterSection ? sectionLabelBySlug.get(filterSection) ?? filterSection : undefined;
 
   return (
     <div className="repo-layout">
@@ -92,12 +126,12 @@ export async function WikiRepositoryLayout({
           <Link href={base} className={`repo-sidebar-link${allPagesActive ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
             {dict.admin.wiki.allPages}
           </Link>
-          {sections.map((name) => {
-            const href = `${base}?section=${encodeURIComponent(name)}`;
-            const active = filterSection === name;
+          {sections.map(({ slug, label }) => {
+            const href = `${base}?section=${encodeURIComponent(slug)}`;
+            const active = filterSection === slug;
             return (
-              <Link key={name} href={href} className={`repo-sidebar-link${active ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
-                {name}
+              <Link key={slug} href={href} className={`repo-sidebar-link${active ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
+                {label}
               </Link>
             );
           })}
@@ -109,7 +143,7 @@ export async function WikiRepositoryLayout({
           {q
             ? dict.admin.wiki.search.replace("{q}", q)
             : filterSection
-            ? dict.admin.wiki.inSection.replace("{section}", filterSection)
+            ? dict.admin.wiki.inSection.replace("{section}", filterSectionLabel ?? filterSection)
             : dict.admin.wiki.pages}
         </div>
         <ul className="repo-page-list">

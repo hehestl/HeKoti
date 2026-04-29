@@ -1,131 +1,205 @@
-# Hekoti MVP v0.1.0
+# Hekoti
 
-Hekoti is a lightweight open-source self-hosted wiki for public knowledge pages and admin editing.
+<p align="center">
+  <strong>Self‑hosted public wiki archive with an admin cockpit: Monaco editor, AI chat, webhooks, 2FA, multi‑language UI.</strong>
+</p>
 
-> "Ask Hekoti and knowledge will awaken from sleep."
+<p align="center">
+  <a href="#english">English</a> • <a href="#русский">Русский</a>
+</p>
 
-## Attribution
+<p align="center">
+  <img src="public/main.png" alt="Hekoti screenshot" width="1000" />
+</p>
 
-Разработано и создано by @hehestl  
-https://t.me/hehestl  
-https://github.com/hehestl  
-https://t.me/PhiloraBot
+---
 
-## What is included in MVP
+## English
 
-- Next.js App Router + TypeScript
-- PostgreSQL + Prisma schema and SQL migrations
-- Optional Redis cache/rate-limit fallback to memory
-- Public read mode and admin write mode
-- Admin login/password + TOTP 2FA
-- Monaco-based markdown editor
-- Built-in admin AI chat with slash commands
-- Donations and AI agents configured from `.env`
+### What is Hekoti?
 
-## Quick start (Docker)
+Hekoti is a lightweight, self‑hosted wiki engine for publishing knowledge pages and maintaining them through a modern admin UI.
 
-Requires **Docker Compose v2.24+** (for optional `env_file`).
+It’s designed for “public read + private write” deployments: visitors can browse, admins can edit, publish, reorder, and structure pages.
 
-Zero-config (no `.env` file — defaults for Postgres/Redis are in `docker-compose.yml` and `DATABASE_URL` is assembled in `docker-entrypoint.sh`):
+### Killer features
+
+- Public wiki archive + fast sidebar navigation (sections + pages)
+- Admin cockpit: create pages, edit Markdown, publish/unpublish, delete, reorder
+- URL‑based nesting (like folders): `/en/manifest/why` → section `manifest`, page `why`
+- Drag‑and‑drop reordering and quick actions directly in the page tree
+- Built‑in Admin AI chat with slash commands (`/agent …`, `/ask …`)
+- Multi‑language UI with admin‑selectable default language for guests
+- Admin auth with sessions + optional TOTP 2FA
+- Optional Redis for caching + rate limits (fallbacks to in‑memory when not set)
+- Webhooks (incoming verification + outgoing events)
+- Optional LanguageTool spellcheck endpoint
+
+### Core / Engine / Frontend
+
+- **Core engine:** Next.js App Router + server components
+- **Database:** PostgreSQL + Prisma (migrations + seed)
+- **Auth:** HTTP‑only session cookies, login rate limiting, optional TOTP 2FA
+- **Wiki rendering:** Markdown → HTML (`marked`) + sanitization
+- **Admin editor:** Monaco‑based Markdown editor with toolbar and context menu
+- **I18n:** `/[lang]/…` routes + JSON dictionaries, admin‑controlled default language
+
+### Quick start (Docker)
+
+Requires **Docker Compose v2.24+**.
+
+Zero‑config (defaults live in `docker-compose.yml`):
 
 ```bash
 docker compose up -d --build
 ```
 
-With secrets and app tuning, copy the template once:
+Optional tuning:
 
 ```bash
 cp .env.example .env
-# Edit: POSTGRES_*, HEKOTI_ADMIN_*, WEBHOOK_SECRET, etc. (DATABASE_URL is optional in Compose)
+# Edit: POSTGRES_*, HEKOTI_ADMIN_*, WEBHOOK_SECRET, etc.
 docker compose up -d --build
 ```
 
-### Database migrations (automatic)
+**Migrations:** on each `hekoti-app` start, `docker-entrypoint.sh` runs `npx prisma migrate deploy` (unless `HEKOTI_SKIP_MIGRATE=1`).
 
-On every **`hekoti-app` start**, `docker-entrypoint.sh` runs **`npx prisma migrate deploy`** after building `DATABASE_URL` from `POSTGRES_*` (unless `DATABASE_URL` is already set, e.g. external database). An empty Postgres volume is fine: migrations apply before the web server binds.
-
-- To **skip** migrations (debug only): `HEKOTI_SKIP_MIGRATE=1` in `.env`.
-- **`docker compose build --no-cache`** is only for recovery (e.g. files were edited inside a running container, or a broken cached layer). After a normal `git pull`, **`docker compose up -d --build`** is enough.
-
-### First admin user (seed)
-
-Migrations do **not** create the admin user. After the stack is up, run once (from the repo directory on the host):
+**First admin user / demo pages (seed):**
 
 ```bash
 docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
 ```
 
-The runtime image overlays the full **`pg`** driver tree (`pg`, `pg-types` with nested `postgres-*`, top-level `postgres-*`) plus **`node_modules/@prisma`** and **`bcryptjs`** from the builder so `tsx prisma/seed.ts` works under Next **standalone**; `npx` only fetches `tsx` if needed.
-If `DATABASE_URL` is not set, the seed script builds it from `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` (same defaults as `docker-compose.yml`).
+Open: `http://localhost:3310`
 
-App URL: `http://localhost:3310`
-
-## Quick start (local)
+### Quick start (local)
 
 ```bash
 cp .env.example .env
 npm install
 npm run db:generate
 npx prisma migrate dev
-npm run db:seed   # or: npx prisma db seed
+npm run db:seed
 npm run dev
 ```
 
-For a throwaway database without migration history you can still use `npm run db:push` instead of `migrate dev`.
+### Configuration highlights
 
-## Hehestl ecosystem
+See `.env.example`. Most important:
 
-HeKoti is the **identity and knowledge core** of the Hehestl digital ecosystem: a small wiki that can be self-hosted beside your other services, with optional Redis, optional LanguageTool-backed grammar checks, and admin tooling (2FA, webhooks, AI links).
+- `PUBLIC_READ_MODE=true|false` — allow guests to read
+- `ENABLED_LANGUAGES=en,ru,…` — UI languages enabled
+- `APP_URL=…` — affects cookies and absolute links
+- `HEKOTI_ADMIN_EMAIL` / `HEKOTI_ADMIN_PASSWORD` — bootstrap admin for empty DB
+- `WEBHOOK_SECRET` / `OUTGOING_WEBHOOK_URLS`
+- `AI_AGENTS_JSON` / `AI_LINKS_JSON`
+- `DONATE_LINKS_JSON` / `CRYPTO_DONATION_JSON`
 
-## Health checks
+### Health checks
 
-- `GET /api/health` — combined probe (database required for `200`; Redis and LanguageTool are informational).
-- `GET /api/health/live` — process up.
-- `GET /api/health/ready` — database `SELECT 1`.
+- `GET /api/health` — combined probe
+- `GET /api/health/live` — process up
+- `GET /api/health/ready` — database `SELECT 1`
 
-Point your reverse proxy at these for readiness (often `/api/health` or `/api/health/ready`).
+### Credits
 
-## Spellcheck (LanguageTool)
+Developed and created by **@hehestl**  
+https://t.me/hehestl  
+https://github.com/hehestl  
+https://t.me/PhiloraBot
 
-With `LANGUAGETOOL_URL` set (see `docker-compose.yml` service `hekoti-languagetool`), admins can call:
+---
 
-`POST /api/spellcheck` with JSON `{ "text": "...", "language": "en-US" }` (or `"auto"`). Requires an admin session cookie.
+## Русский
 
-## GitHub hygiene
+### Что такое Hekoti?
 
-Enable **Dependabot** (this repo includes `.github/dependabot.yml`). For the default branch (e.g. `hehe`), enable **branch protection** and require the **CI** workflow to pass when you are ready.
+Hekoti — лёгкий self‑hosted движок вики: публикуешь страницы знаний и управляешь ими через современную админку.
 
-## Migration status
+Проект заточен под режим “публичное чтение + приватное редактирование”: гости читают, админ создаёт, редактирует, публикует и наводит порядок.
 
-- `prisma/migrations/0001_init/migration.sql` — base wiki/auth schema
-- `prisma/migrations/0002_agent_chat/migration.sql` — admin AI chat channels/messages
+### Киллер‑фичи
 
-## Admin AI chat commands
+- Публичная вики‑база + удобная навигация в сайдбаре (разделы + страницы)
+- Админка: создание страниц, Markdown‑редактор, публикация/снятие, удаление, сортировка
+- Вложенность через URL (как папки): `/ru/manifest/why` → раздел `manifest`, страница `why`
+- Быстрые действия прямо в дереве страниц + drag‑and‑drop сортировка
+- Встроенный AI‑чат админа со слеш‑командами (`/agent …`, `/ask …`)
+- Полная локализация UI + язык по умолчанию для гостей (настраивается в админке)
+- Авторизация админа + опциональная TOTP‑2FA
+- Опциональный Redis для кеша и rate‑limit (без Redis работает на памяти)
+- Вебхуки (проверка входящих + исходящие события)
+- Опциональный LanguageTool для проверки текста
 
-- `/agent list`
-- `/agent set <id>` or `/agent on <id>`
-- `/ask <prompt>`
-- Any plain text is treated as an ask request to the active agent
+### Ядро / Движок / Фронтенд
 
-## Security baseline
+- **Ядро:** Next.js App Router + server components
+- **База:** PostgreSQL + Prisma (миграции + сид)
+- **Авторизация:** HTTP‑only cookies, ограничение попыток входа, опциональная TOTP‑2FA
+- **Рендер вики:** Markdown → HTML (`marked`) + санитайз
+- **Редактор:** Monaco‑редактор Markdown с тулбаром и контекстным меню
+- **Локализация:** маршруты `/[lang]/…` + JSON‑словарики, дефолтный язык через настройки
 
-- HTTP-only session cookies
-- Optional TOTP verification for admin login
-- Login rate-limiting
-- Incoming webhook signature verification
-- Internal-only Postgres/Redis in Docker compose
+### Быстрый старт (Docker)
 
-## Documentation
+Нужен **Docker Compose v2.24+**.
 
-- English docs: `docs/README.en.md`
-- Russian docs: `docs/README.ru.md`
-- Security and hardening notes: `docs/SECURITY.en.md`
+Запуск без конфигурации (дефолты в `docker-compose.yml`):
 
-## One-click deployment templates
+```bash
+docker compose up -d --build
+```
 
-- `deploy/vercel.json`
-- `deploy/railway.json`
-- `deploy/render.yaml`
-## Tech stack
+С настройками:
 
-Next.js (App Router), TypeScript, Prisma, PostgreSQL, optional Redis (cache + rate limits), Docker multi-stage image, optional LanguageTool in Compose.
+```bash
+cp .env.example .env
+# Настрой POSTGRES_*, HEKOTI_ADMIN_*, WEBHOOK_SECRET и т.д.
+docker compose up -d --build
+```
+
+**Миграции:** на каждом старте `hekoti-app` выполняется `npx prisma migrate deploy` (если не выставлен `HEKOTI_SKIP_MIGRATE=1`).
+
+**Первый админ / демо‑страницы (seed):**
+
+```bash
+docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
+```
+
+Открыть: `http://localhost:3310`
+
+### Быстрый старт (локально)
+
+```bash
+cp .env.example .env
+npm install
+npm run db:generate
+npx prisma migrate dev
+npm run db:seed
+npm run dev
+```
+
+### Важные настройки
+
+Смотри `.env.example`. Главное:
+
+- `PUBLIC_READ_MODE=true|false` — разрешить чтение гостям
+- `ENABLED_LANGUAGES=en,ru,…` — включённые языки UI
+- `APP_URL=…` — влияет на cookies и абсолютные ссылки
+- `HEKOTI_ADMIN_EMAIL` / `HEKOTI_ADMIN_PASSWORD` — bootstrap админ для пустой БД
+- `WEBHOOK_SECRET` / `OUTGOING_WEBHOOK_URLS`
+- `AI_AGENTS_JSON` / `AI_LINKS_JSON`
+- `DONATE_LINKS_JSON` / `CRYPTO_DONATION_JSON`
+
+### Хелсчеки
+
+- `GET /api/health`
+- `GET /api/health/live`
+- `GET /api/health/ready`
+
+### Автор
+
+Разработано и создано **@hehestl**  
+https://t.me/hehestl  
+https://github.com/hehestl  
+https://t.me/PhiloraBot
