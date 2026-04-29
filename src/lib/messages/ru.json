@@ -13,6 +13,7 @@
     "donate": "Донат",
     "cancel": "Отмена",
     "settings": "Настройки",
+    "tech": "Тех. данные",
     "dashboard": "Дашборд",
     "aiAgents": "AI-агенты",
     "posts": "Посты",
@@ -213,6 +214,19 @@
       "newQR": "Новый QR (отменит текущую привязку)",
       "success": "Готово.",
       "error": "Ошибка"
+    },
+    "tech": {
+      "title": "Технические данные",
+      "version": "Версия",
+      "apiRoutes": "Бэкенд: Next.js API routes",
+      "aiAgents": "AI агенты",
+      "noAiAgents": "Нет включённых агентов",
+      "enabledLanguages": "Включённые языки",
+      "versioningTitle": "Правила версионирования",
+      "versioningRule1": "Отображаем текущую версию приложения в Админка → Тех. данные.",
+      "versioningRule2": "Повышаем версию при каждом релизе (SemVer): patch — фиксы, minor — фичи, major — breaking changes.",
+      "versioningRule3": "Перед релизом добавляем изменения в CHANGELOG.md в раздел [Unreleased].",
+      "releaseCommands": "Команды релиза:"
     }
   }
 }

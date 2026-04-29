@@ -3,10 +3,8 @@ import { Suspense } from "react";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { getSessionUser } from "@/lib/auth";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
-import { aiAgents } from "@/lib/ai-links";
 import { prisma } from "@/lib/db";
 import { enabledLanguages, safeLang, getDictionary, getDefaultLanguage } from "@/lib/i18n";
-import pkg from "../../../../package.json";
 
 export default async function AdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang: inputLang } = await params;
@@ -38,14 +36,6 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
   }));
 
   const defaultLanguage = await getDefaultLanguage();
-  const tech = {
-    version: pkg.version,
-    next: (pkg.dependencies as Record<string, string | undefined>)?.next ?? "",
-    react: (pkg.dependencies as Record<string, string | undefined>)?.react ?? "",
-    prisma: (pkg.dependencies as Record<string, string | undefined>)?.prisma ?? "",
-    db: "PostgreSQL",
-    enabledAgents: aiAgents.filter((a) => a.enabled).map((a) => a.title),
-  };
 
   return (
     <main style={{ padding: 12 }}>
@@ -62,7 +52,6 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
             dict={dict}
             defaultLanguage={defaultLanguage}
             enabledLanguages={enabledLanguages}
-            tech={tech}
           />
         </Suspense>
       </div>
