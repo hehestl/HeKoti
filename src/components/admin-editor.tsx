@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { buildPathTree, type PathTreeNode } from "@/lib/page-tree";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
@@ -160,6 +160,42 @@ export function AdminEditor({
 
   const hasChildren = (path: string) => pages.some((p) => p.path !== path && p.path.startsWith(`${path}/`));
 
+  const liftActiveUp = async () => {
+    if (!active) return;
+    if (hasChildren(active.path)) {
+      setStatus(dict.admin.posts.cantMoveWithChildren);
+      return;
+    }
+    const parentParts = getParentParts(active.path);
+    if (parentParts.length === 0) {
+      setStatus(dict.admin.posts.cantMoveRoot);
+      return;
+    }
+    const newParentParts = parentParts.slice(0, -1);
+    const maxNav = pages
+      .filter((p) => getParentParts(p.path).join("/") === newParentParts.join("/"))
+      .reduce((m, p) => Math.max(m, p.navOrder), 0);
+    setStatus(dict.admin.posts.saving);
+    try {
+      await patchPage(active.id, { parentPathParts: newParentParts, navOrder: maxNav + 10 });
+      setStatus(dict.admin.posts.saved);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
+    }
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.altKey && e.shiftKey && e.key === "ArrowUp")) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      e.preventDefault();
+      void liftActiveUp();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [active?.id, active?.path, pages]);
+
   const movePageByDrop = async (fromId: string, targetId: string, mode: "before" | "after" | "inside") => {
     if (fromId === targetId) return;
     const from = pages.find((p) => p.id === fromId);
@@ -264,6 +300,15 @@ export function AdminEditor({
           </button>
           <button onClick={createChild} style={buttonStyle} type="button" title={dict.admin.posts.childTitle} disabled={!active}>
             {dict.admin.posts.addChild}
+          </button>
+          <button
+            onClick={liftActiveUp}
+            style={buttonStyle}
+            type="button"
+            title={dict.admin.posts.upLevelTitle}
+            disabled={!active || getParentParts(active.path).length === 0}
+          >
+            {dict.admin.posts.upLevel}
           </button>
         </div>
         <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.4 }}>
