@@ -61,7 +61,7 @@ export function AdminGlobalSettings({
               border: "1px solid var(--line)",
               borderRadius: 8,
               padding: "8px 10px",
-              background: "transparent",
+              background: "var(--panel)",
               color: "var(--fg)",
             }}
           >

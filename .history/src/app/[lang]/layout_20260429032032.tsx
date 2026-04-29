@@ -32,14 +32,14 @@ export default async function LocaleLayout({
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
-          padding: 0,
+          padding: "0 clamp(12px, 2vw, 28px)",
         }}
       >
         {children}
       </div>
       <footer
         style={{
-          padding: "12px 0",
+          padding: "12px clamp(12px, 2vw, 28px)",
           borderTop: "1px solid var(--line)",
           color: "var(--muted)",
           fontSize: 13,

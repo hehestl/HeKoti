@@ -76,6 +76,22 @@ export function AdminEditor({
     });
   };
 
+  const removeActive = async () => {
+    if (!active) return;
+    if (!confirm(dict.admin.posts.deleteConfirm.replace("{title}", active.title))) return;
+    setStatus(dict.common.loading);
+    const res = await fetch(`/api/pages/${active.id}`, { method: "DELETE", credentials: "same-origin" });
+    const body = (await res.json()) as { ok?: boolean; message?: string };
+    if (!res.ok || !body.ok) {
+      setStatus(body.message ?? dict.admin.posts.deleteFailed);
+      return;
+    }
+    const nextPages = pages.filter((p) => p.id !== active.id);
+    setPages(nextPages);
+    setActiveId(nextPages[0]?.id ?? "");
+    setStatus(dict.admin.posts.deleted);
+  };
+
   const createWithParent = async (parentPathParts: string[]) => {
     const title = prompt(dict.admin.posts.pageTitle);
     if (!title) return;
@@ -158,6 +174,19 @@ export function AdminEditor({
                 />
                 {dict.admin.posts.published}
               </label>
+              <button
+                type="button"
+                style={{
+                  ...buttonStyle,
+                  borderColor: "color-mix(in srgb, #ff5f7d 65%, var(--line))",
+                  color: "#ff5f7d",
+                  fontWeight: 700,
+                }}
+                onClick={removeActive}
+                disabled={isPending}
+              >
+                {dict.admin.posts.delete}
+              </button>
               <button type="button" style={buttonStyle} onClick={save} disabled={isPending}>
                 {dict.common.save}
               </button>

@@ -38,7 +38,7 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: st
   const defaultLanguage = await getDefaultLanguage();
 
   return (
-    <main style={{ padding: 12 }}>
+    <main style={{ padding: "12px 0" }}>
       <h1 style={{ marginBottom: 10 }}>{dict.common.admin}</h1>
       <Suspense fallback={<div style={{ color: "var(--muted)" }}>{dict.common.loading}</div>}>
         <AdminDashboard

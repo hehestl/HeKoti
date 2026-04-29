@@ -70,7 +70,11 @@
       "roleAI": "ИИ",
       "roleYou": "Вы",
       "noArticle": "нет статьи",
-      "hasChildrenNoArticle": "Есть вложенные страницы, но страницы с этим точным URL нет"
+      "hasChildrenNoArticle": "Есть вложенные страницы, но страницы с этим точным URL нет",
+      "delete": "Удалить",
+      "deleteConfirm": "Удалить страницу «{title}»?",
+      "deleteFailed": "Не удалось удалить",
+      "deleted": "Удалено"
     },
     "wiki": {
       "sections": "Разделы",
