@@ -51,12 +51,17 @@ export function AdminEditor({
   const [pages, setPages] = useState(initialPages);
   const [activeId, setActiveId] = useState(initialPages[0]?.id ?? "");
   const [status, setStatus] = useState(dict.admin.posts.idle);
+  const [dragOver, setDragOver] = useState<null | { targetId: string; mode: "before" | "after" | "inside" }>(null);
   const [isPending, startTransition] = useTransition();
   const active = useMemo(() => pages.find((item) => item.id === activeId), [pages, activeId]);
   const pathTree = useMemo(() => buildPathTree(pages, lang), [pages, lang]);
 
   const updateActive = (patch: Partial<PageRow>) => {
     setPages((prev) => prev.map((item) => (item.id === activeId ? { ...item, ...patch } : item)));
+  };
+
+  const updatePage = (id: string, patch: Partial<PageRow>) => {
+    setPages((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
   const save = () => {
@@ -76,20 +81,146 @@ export function AdminEditor({
     });
   };
 
-  const removeActive = async () => {
-    if (!active) return;
-    if (!confirm(dict.admin.posts.deleteConfirm.replace("{title}", active.title))) return;
+  const patchPage = async (id: string, patch: { title?: string; contentMd?: string; isPublished?: boolean; navOrder?: number; parentPathParts?: string[] }) => {
+    const res = await fetch(`/api/pages/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(patch),
+    });
+    const body = (await res.json()) as PageRow & { ok?: boolean; message?: string };
+    if (!res.ok) {
+      throw new Error(body.message || "Update failed");
+    }
+    updatePage(id, body);
+    return body;
+  };
+
+  const removePage = async (id: string) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
+    if (!confirm(dict.admin.posts.deleteConfirm.replace("{title}", page.title))) return;
     setStatus(dict.common.loading);
-    const res = await fetch(`/api/pages/${active.id}`, { method: "DELETE", credentials: "same-origin" });
+    const res = await fetch(`/api/pages/${id}`, { method: "DELETE", credentials: "same-origin" });
     const body = (await res.json()) as { ok?: boolean; message?: string };
     if (!res.ok || !body.ok) {
       setStatus(body.message ?? dict.admin.posts.deleteFailed);
       return;
     }
-    const nextPages = pages.filter((p) => p.id !== active.id);
-    setPages(nextPages);
-    setActiveId(nextPages[0]?.id ?? "");
+    setPages((prev) => prev.filter((p) => p.id !== id));
+    if (activeId === id) {
+      const next = pages.filter((p) => p.id !== id);
+      setActiveId(next[0]?.id ?? "");
+    }
     setStatus(dict.admin.posts.deleted);
+  };
+
+  const removeActive = async () => {
+    if (!active) return;
+    await removePage(active.id);
+  };
+
+  const renamePage = async (id: string) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
+    const nextTitle = prompt(dict.admin.posts.renamePrompt, page.title);
+    if (!nextTitle) return;
+    updatePage(id, { title: nextTitle });
+    try {
+      await patchPage(id, { title: nextTitle });
+      setStatus(dict.admin.posts.saved);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
+    }
+  };
+
+  const togglePublish = async (id: string) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
+    const next = !page.isPublished;
+    updatePage(id, { isPublished: next });
+    try {
+      await patchPage(id, { isPublished: next });
+      setStatus(dict.admin.posts.saved);
+    } catch (e) {
+      updatePage(id, { isPublished: page.isPublished });
+      setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
+    }
+  };
+
+  const getParentParts = (path: string) => {
+    const segs = pathSegmentsAfterLang(path, lang);
+    return segs.length <= 1 ? [] : segs.slice(0, -1);
+  };
+
+  const getSlug = (path: string) => {
+    const segs = pathSegmentsAfterLang(path, lang);
+    return segs[segs.length - 1] ?? "";
+  };
+
+  const hasChildren = (path: string) => pages.some((p) => p.path !== path && p.path.startsWith(`${path}/`));
+
+  const movePageByDrop = async (fromId: string, targetId: string, mode: "before" | "after" | "inside") => {
+    if (fromId === targetId) return;
+    const from = pages.find((p) => p.id === fromId);
+    const target = pages.find((p) => p.id === targetId);
+    if (!from || !target) return;
+    if (hasChildren(from.path)) {
+      setStatus(dict.admin.posts.cantMoveWithChildren);
+      return;
+    }
+
+    const targetParent = getParentParts(target.path);
+    const targetInside = pathSegmentsAfterLang(target.path, lang);
+    const newParentParts = mode === "inside" ? targetInside : targetParent;
+    const fromSlug = getSlug(from.path);
+    const nextPath = `/${lang}${newParentParts.length ? `/${newParentParts.join("/")}` : ""}/${fromSlug}`;
+
+    const nextPages = [...pages];
+    const fromIdx = nextPages.findIndex((p) => p.id === fromId);
+    const moving = nextPages[fromIdx]!;
+    nextPages.splice(fromIdx, 1);
+
+    const siblingIds = nextPages
+      .filter((p) => {
+        const pp = getParentParts(p.path);
+        return pp.join("/") === newParentParts.join("/");
+      })
+      .map((p) => p.id);
+
+    const targetIndexInSiblings = siblingIds.indexOf(targetId);
+    const insertAt =
+      mode === "inside"
+        ? siblingIds.length
+        : targetIndexInSiblings >= 0
+          ? mode === "before"
+            ? targetIndexInSiblings
+            : targetIndexInSiblings + 1
+          : siblingIds.length;
+
+    siblingIds.splice(insertAt, 0, fromId);
+
+    const reorderedGroup = siblingIds
+      .map((id) => (id === fromId ? { ...moving, path: nextPath } : nextPages.find((p) => p.id === id)!))
+      .map((p, i) => ({ ...p, navOrder: i * 10 }));
+
+    const kept = nextPages.filter((p) => !siblingIds.includes(p.id));
+    const merged = [...kept, ...reorderedGroup];
+    setPages(merged);
+    setDragOver(null);
+    setStatus(dict.admin.posts.saving);
+
+    try {
+      const ops = reorderedGroup.map((p) => {
+        const patch: { navOrder: number; parentPathParts?: string[] } = { navOrder: p.navOrder };
+        if (p.id === fromId) patch.parentPathParts = newParentParts;
+        return patchPage(p.id, patch);
+      });
+      await Promise.all(ops);
+      setStatus(dict.admin.posts.saved);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
+    }
   };
 
   const createWithParent = async (parentPathParts: string[]) => {
@@ -139,6 +270,7 @@ export function AdminEditor({
           {dict.admin.posts.desc}
         </p>
         <div
+          className="admin-path-tree-scroll"
           style={{
             marginTop: 12,
             maxHeight: "min(70vh, 720px)",
@@ -151,7 +283,18 @@ export function AdminEditor({
           {pathTree.length === 0 ? (
             <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>{dict.admin.posts.noPages}</p>
           ) : (
-            <AdminPathTree nodes={pathTree} activeId={activeId} onSelect={setActiveId} dict={dict} />
+            <AdminPathTree
+              nodes={pathTree}
+              activeId={activeId}
+              onSelect={setActiveId}
+              onRename={renamePage}
+              onDelete={removePage}
+              onTogglePublish={togglePublish}
+              onMoveByDrop={movePageByDrop}
+              dragOver={dragOver}
+              setDragOver={setDragOver}
+              dict={dict}
+            />
           )}
         </div>
       </aside>
@@ -211,11 +354,23 @@ function AdminPathTree({
   nodes,
   activeId,
   onSelect,
+  onRename,
+  onDelete,
+  onTogglePublish,
+  onMoveByDrop,
+  dragOver,
+  setDragOver,
   dict,
 }: {
   nodes: PathTreeNode<PageRow>[];
   activeId: string;
   onSelect: (id: string) => void;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+  onTogglePublish: (id: string) => void;
+  onMoveByDrop: (fromId: string, targetId: string, mode: "before" | "after" | "inside") => void;
+  dragOver: null | { targetId: string; mode: "before" | "after" | "inside" };
+  setDragOver: (v: null | { targetId: string; mode: "before" | "after" | "inside" }) => void;
   dict: Dictionary;
 }) {
   return (
@@ -228,6 +383,12 @@ function AdminPathTree({
           prefix=""
           activeId={activeId}
           onSelect={onSelect}
+          onRename={onRename}
+          onDelete={onDelete}
+          onTogglePublish={onTogglePublish}
+          onMoveByDrop={onMoveByDrop}
+          dragOver={dragOver}
+          setDragOver={setDragOver}
           dict={dict}
         />
       ))}
@@ -241,6 +402,12 @@ function PathTreeBranch({
   prefix,
   activeId,
   onSelect,
+  onRename,
+  onDelete,
+  onTogglePublish,
+  onMoveByDrop,
+  dragOver,
+  setDragOver,
   dict,
 }: {
   node: PathTreeNode<PageRow>;
@@ -248,37 +415,131 @@ function PathTreeBranch({
   prefix: string;
   activeId: string;
   onSelect: (id: string) => void;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+  onTogglePublish: (id: string) => void;
+  onMoveByDrop: (fromId: string, targetId: string, mode: "before" | "after" | "inside") => void;
+  dragOver: null | { targetId: string; mode: "before" | "after" | "inside" };
+  setDragOver: (v: null | { targetId: string; mode: "before" | "after" | "inside" }) => void;
   dict: Dictionary;
 }) {
   const branch = isLast ? "└── " : "├── ";
   const childPrefix = prefix + (isLast ? "    " : "│   ");
 
+  const actionBtn: CSSProperties = {
+    ...buttonStyle,
+    padding: "0 8px",
+    minHeight: 28,
+    lineHeight: "28px",
+  };
+
   const labelRow: ReactNode = node.page ? (
-    <button
-      type="button"
-      onClick={() => onSelect(node.page!.id)}
-      title={node.page.path}
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        const fromId = e.dataTransfer.getData("text/plain");
+        if (!fromId || fromId === node.page!.id) return;
+        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
+        setDragOver({ targetId: node.page!.id, mode });
+      }}
+      onDragLeave={() => setDragOver(null)}
+      onDrop={(e) => {
+        e.preventDefault();
+        const fromId = e.dataTransfer.getData("text/plain");
+        if (!fromId) return;
+        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
+        onMoveByDrop(fromId, node.page!.id, mode);
+      }}
       style={{
-        ...buttonStyle,
+        display: "flex",
+        alignItems: "stretch",
+        gap: 6,
         flex: 1,
         minWidth: 0,
-        textAlign: "left",
-        fontFamily: "inherit",
-        fontSize: "inherit",
-        border: node.page.id === activeId ? "1px solid var(--accent)" : buttonStyle.border,
+        borderRadius: 8,
+        border:
+          node.page.id === activeId
+            ? "1px solid var(--accent)"
+            : dragOver?.targetId === node.page.id
+              ? `1px solid ${dragOver.mode === "inside" ? "color-mix(in srgb, var(--accent) 70%, var(--line))" : "color-mix(in srgb, var(--accent) 45%, var(--line))"}`
+              : "1px solid var(--line)",
         background:
-          node.page.id === activeId ? "color-mix(in srgb, var(--accent) 12%, var(--panel))" : buttonStyle.background,
-        opacity: node.page.id === activeId ? 1 : 0.92,
+          node.page.id === activeId
+            ? "color-mix(in srgb, var(--accent) 12%, var(--panel))"
+            : dragOver?.targetId === node.page.id
+              ? "color-mix(in srgb, var(--accent) 10%, var(--panel))"
+              : "transparent",
+        padding: "0 6px",
       }}
     >
-      <span
-        style={{ marginRight: 6, opacity: 0.75 }}
-        title={node.page.isPublished ? dict.admin.posts.published : dict.admin.posts.draft}
+      <button
+        type="button"
+        onClick={() => onSelect(node.page!.id)}
+        title={node.page.path}
+        style={{
+          border: "none",
+          background: "transparent",
+          color: "inherit",
+          padding: "0 6px",
+          cursor: "pointer",
+          flex: 1,
+          minWidth: 0,
+          textAlign: "left",
+          fontFamily: "inherit",
+          fontSize: "inherit",
+          lineHeight: "28px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
       >
-        {node.page.isPublished ? "●" : "○"}
+        <span
+          style={{ marginRight: 6, opacity: 0.75 }}
+          title={node.page.isPublished ? dict.admin.posts.published : dict.admin.posts.draft}
+        >
+          {node.page.isPublished ? "●" : "○"}
+        </span>
+        {node.page.title}
+      </button>
+      <button type="button" style={actionBtn} onClick={() => onTogglePublish(node.page!.id)} title={dict.admin.posts.publishToggle}>
+        {node.page.isPublished ? "⦿" : "○"}
+      </button>
+      <button type="button" style={actionBtn} onClick={() => onRename(node.page!.id)} title={dict.admin.posts.rename}>
+        ✎
+      </button>
+      <button
+        type="button"
+        style={{ ...actionBtn, borderColor: "color-mix(in srgb, #ff5f7d 65%, var(--line))", color: "#ff5f7d" }}
+        onClick={() => onDelete(node.page!.id)}
+        title={dict.admin.posts.delete}
+      >
+        ⌫
+      </button>
+      <span
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", node.page!.id);
+        }}
+        onDragEnd={() => setDragOver(null)}
+        title={dict.admin.posts.dragHint}
+        style={{
+          ...actionBtn,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          userSelect: "none",
+          cursor: "grab",
+        }}
+        aria-label={dict.admin.posts.dragHint}
+      >
+        ⋮⋮
       </span>
-      {node.page.title}
-    </button>
+    </div>
   ) : (
     <div
       style={{
@@ -325,6 +586,12 @@ function PathTreeBranch({
               prefix={childPrefix}
               activeId={activeId}
               onSelect={onSelect}
+              onRename={onRename}
+              onDelete={onDelete}
+              onTogglePublish={onTogglePublish}
+              onMoveByDrop={onMoveByDrop}
+              dragOver={dragOver}
+              setDragOver={setDragOver}
               dict={dict}
             />
           ))}
