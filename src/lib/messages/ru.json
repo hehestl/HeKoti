@@ -26,7 +26,11 @@
     "description": "Hekoti — селф-хостед архив публичных вики. Спроси Hekoti, и знание проснется.",
     "privateWiki": "Приватная вики",
     "loginRequired": "Требуется вход.",
-    "goToLogin": "Перейти к логину"
+    "goToLogin": "Перейти к логину",
+    "pagesCreated": "Создано страниц",
+    "newMaterials": "Новые материалы",
+    "updatedAt": "обновлено {date}",
+    "noMaterials": "Материалов пока нет."
   },
   "admin": {
     "accountSettings": "Настройки аккаунта",

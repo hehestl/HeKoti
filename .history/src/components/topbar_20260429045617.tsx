@@ -63,9 +63,7 @@ export function TopBar({
         }}
         aria-label={dict.homeAria}
       >
-        <span className="topbar-logo">
-          <Image src="/hekoti.png" alt="" width={34} height={34} aria-hidden priority />
-        </span>
+        <Image src="/hekiv.svg" alt="" width={28} height={28} aria-hidden />
         <strong>Hekoti</strong>
       </Link>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
