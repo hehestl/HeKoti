@@ -22,15 +22,23 @@ Service graph from [`docker-compose.yml`](./docker-compose.yml) via [docker-comp
 
 <!-- COMPOSE_MERMAID_AUTO_START -->
 ```mermaid
-%%{init: {'theme': 'default', 'flowchart': {'curve': 'linear'}}}%%
+%%{init: {'theme': 'default'}}%%
 flowchart TB
-  hekoti_app["hekoti-app"]
-  hekoti_postgres[("hekoti-postgres")]
-  hekoti_redis[("hekoti-redis")]
-  hekoti_lt["hekoti-languagetool"]
-  hekoti_app --> hekoti_postgres
-  hekoti_app --> hekoti_redis
-  hekoti_app --> hekoti_lt
+  Vhekotipgdata([hekoti_pg_data]) x-. /var/lib/postgresql/data .-x hekotipostgres[hekoti-postgres]
+  Vhekotiredisdata([hekoti_redis_data]) x-. /data .-x hekotiredis[hekoti-redis]
+  Vhekotiuploads([hekoti_uploads]) x-. /app/public/uploads .-x hekotiapp[hekoti-app]
+  hekotiapp --> hekotipostgres
+  hekotiapp --> hekotiredis
+  hekotipostgres -.- default[/default/]
+  hekotiredis -.- default
+  hekotilanguagetool[hekoti-languagetool] -.- default
+  hekotiapp -.- default
+  hekotiapp -.- proxynetwork[/proxy-network/]
+
+  classDef volumes fill:#fdfae4,stroke:#867a22
+  class Vhekotipgdata,Vhekotiredisdata,Vhekotiuploads volumes
+  classDef nets fill:#fbfff7,stroke:#8bc34a
+  class default,proxynetwork nets
 ```
 <!-- COMPOSE_MERMAID_AUTO_END -->
 
