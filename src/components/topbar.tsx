@@ -172,20 +172,16 @@ const iconButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-/**
- * Theme can differ between SSR and client (next-themes). `suppressHydrationWarning` avoids a
- * hydration error on this node; do not use setState in an effect (eslint react-hooks/set-state-in-effect).
- */
 function ThemeToggleButton() {
-  const { theme, setTheme } = useTheme();
-  const dark = theme === "dark";
+  const { resolvedTheme, setTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
   return (
     <button
       type="button"
+      suppressHydrationWarning
       onClick={() => setTheme(dark ? "light" : "dark")}
       style={iconButtonStyle}
       aria-label="Toggle theme"
-      suppressHydrationWarning
     >
       {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>

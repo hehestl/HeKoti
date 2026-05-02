@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { invalidateWikiLangCache } from "@/lib/cache";
+import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
@@ -69,6 +69,7 @@ export async function PATCH(
       });
     }
     await invalidateWikiLangCache(updated.lang);
+    await invalidateSearchLangCache(updated.lang);
     await emitOutgoingWebhook("page.updated", { pageId: updated.id, path: updated.path, published: updated.isPublished });
     return NextResponse.json(updated);
   } catch (error) {
@@ -101,6 +102,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     await prisma.page.delete({ where: { id } });
     await invalidateWikiLangCache(page.lang);
+    await invalidateSearchLangCache(page.lang);
     await emitOutgoingWebhook("page.deleted", { pageId: id, path: page.path });
     return NextResponse.json({ ok: true, path: page.path });
   } catch (error) {

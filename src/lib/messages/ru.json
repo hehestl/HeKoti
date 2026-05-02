@@ -20,7 +20,7 @@
     "sectionsAria": "Разделы админки",
     "homeAria": "Hekoti — на главную",
     "addPageAria": "Добавить страницу",
-    "aiLinks": "AI ссылки"
+    "aiLinks": "Ссылки"
   },
   "home": {
     "title": "Hekotia",
@@ -38,6 +38,17 @@
     "globalSettings": "Глобальные настройки",
     "defaultLanguage": "Язык по умолчанию",
     "defaultLanguageDesc": "Язык, используемый для гостей и как базовый для интерфейса.",
+    "telemetry": {
+      "title": "HTML-терминал / телеметрия (без SSH)",
+      "desc": "Вставляйте фрагменты, как если бы правили на сервере: Яндекс.Метрика, Google Analytics, пиксели. В разметку сайта попадают только теги <script>, <meta>, <link> и <noscript> (см. корневой layout). Замените плейсхолдеры (COUNTER_ID, G-…) и нажмите Сохранить.",
+      "headLabel": "Внутри <head>",
+      "bodyLabel": "Перед </body>",
+      "headPlaceholder": "<script>...</script>\n<link rel=\"preconnect\" href=\"https://www.googletagmanager.com\" />",
+      "bodyPlaceholder": "<script>...</script>",
+      "insertYandex": "Шаблон Яндекс.Метрики",
+      "insertGA": "Шаблон Google Analytics (gtag)",
+      "appendHint": "Добавляет в конец поля; отредактируйте ID и сохраните."
+    },
     "loginUpdated": "Логин обновлен.",
     "passwordChanged": "Пароль изменен. Войдите снова.",
     "nothingToChange": "Нечего менять.",
@@ -83,7 +94,9 @@
       "cantMoveWithChildren": "Перемещение запрещено: у страницы есть вложенные страницы.",
       "upLevel": "↑ Вверх",
       "upLevelTitle": "Поднять на уровень выше (Shift+Alt+↑)",
-      "cantMoveRoot": "Уже верхний уровень."
+      "cantMoveRoot": "Уже верхний уровень.",
+      "cloneToTitle": "Создать/открыть такую же страницу на {lang}",
+      "cloneHereTitle": "Текущий язык"
     },
     "wiki": {
       "sections": "Разделы",
@@ -96,7 +109,13 @@
       "search": "Поиск: {q}",
       "inSection": "В «{section}»",
       "pages": "Страницы",
-      "noPagesMatch": "Нет совпадений."
+      "noPagesMatch": "Нет совпадений.",
+      "missingTitle": "На этом языке страницы нет",
+      "missingDesc": "Запрошен адрес {path}, но на этом языке страницы нет. Можно создать копию из другого языка.",
+      "availableIn": "Есть в языках",
+      "createFrom": "Создать из {lang}",
+      "createNote": "Страница создастся как черновик. Отредактируйте и опубликуйте в админке.",
+      "noSource": "В других языках исходной страницы не найдено."
     },
     "editor": {
       "postPrompt": "Путь статьи для /post: h2 или parent/child",

@@ -40,8 +40,12 @@ export function AdminDashboard({
   initialActiveAgentId,
   dict,
   defaultLanguage,
+  headHtml,
+  bodyHtml,
   enabledLanguages,
   tech,
+  initialTab,
+  initialActivePath,
 }: {
   lang: string;
   initialLogin: string;
@@ -51,17 +55,23 @@ export function AdminDashboard({
   initialActiveAgentId: string | null;
   dict: Dictionary;
   defaultLanguage: string;
+  headHtml: string;
+  bodyHtml: string;
   enabledLanguages: string[];
   tech: TechInfo;
+  initialTab: AdminTab;
+  initialActivePath?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const tab = useMemo((): AdminTab => {
     const raw = searchParams.get("tab");
-    if (raw === "ai" || raw === "settings" || raw === "posts" || raw === "tech") return raw;
-    return "posts";
-  }, [searchParams]);
+    if (raw === "ai" || raw === "settings" || raw === "posts" || raw === "tech") {
+      return raw;
+    }
+    return initialTab;
+  }, [searchParams, initialTab]);
 
   const setTab = useCallback(
     (next: AdminTab) => {
@@ -122,7 +132,14 @@ export function AdminDashboard({
 
       <div role="tabpanel" aria-labelledby={`admin-tab-${tab}`} style={{ minHeight: 320 }}>
         {tab === "posts" ? (
-          <AdminEditor initialPages={initialPages} lang={lang} dict={dict} />
+          <AdminEditor
+            key={`${lang}:${initialActivePath ?? ""}`}
+            initialPages={initialPages}
+            lang={lang}
+            enabledLanguages={enabledLanguages}
+            dict={dict}
+            initialActivePath={initialActivePath}
+          />
         ) : tab === "ai" ? (
           <AdminAgentChat
             initialMessages={initialMessages}
@@ -131,7 +148,13 @@ export function AdminDashboard({
           />
         ) : tab === "settings" ? (
           <>
-            <AdminGlobalSettings lang={lang} defaultLanguage={defaultLanguage} enabledLanguages={enabledLanguages} dict={dict} />
+            <AdminGlobalSettings
+              defaultLanguage={defaultLanguage}
+              enabledLanguages={enabledLanguages}
+              headHtml={headHtml}
+              bodyHtml={bodyHtml}
+              dict={dict}
+            />
             <AdminTotpSettings lang={lang} initialStatus={initialTotpStatus} dict={dict} />
             <AdminAccountSettings lang={lang} initialLogin={initialLogin} dict={dict} />
           </>
@@ -214,21 +237,6 @@ function AdminTechInfo({
                 {l.toUpperCase()}
               </span>
             ))}
-          </div>
-        </div>
-
-        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>{dict.admin.tech.versioningTitle}</div>
-          <ol style={{ margin: 0, paddingLeft: 18, color: "var(--muted)", fontSize: 13, lineHeight: 1.55 }}>
-            <li>{dict.admin.tech.versioningRule1}</li>
-            <li>{dict.admin.tech.versioningRule2}</li>
-            <li>{dict.admin.tech.versioningRule3}</li>
-          </ol>
-          <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-            <div>{dict.admin.tech.releaseCommands}</div>
-            <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }}>
-              npm run release:patch / release:minor / release:major
-            </div>
           </div>
         </div>
       </div>

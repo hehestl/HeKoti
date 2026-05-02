@@ -18,6 +18,9 @@ function encryptionKey(): Buffer {
     }
     throw new Error("HEKOTI_TOTP_ENCRYPTION_KEY must be 32 bytes (64 hex chars or base64).");
   }
+  if (env.NODE_ENV === "production") {
+    throw new Error("HEKOTI_TOTP_ENCRYPTION_KEY must be set in production.");
+  }
   return crypto.createHash("sha256").update(`hekoti:totp:${env.WEBHOOK_SECRET}`).digest();
 }
 

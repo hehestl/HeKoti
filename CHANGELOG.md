@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Вики: колонки **Разделы** и **Страницы** — видимая область ~20 строк, дальше внутренний скролл с тонким скроллбаром (`globals.css`).
 - Админка: три вкладки (**Посты**, **AI-агенты**, **Настройки**); активная вкладка в URL `?tab=posts|ai|settings`.
 - Шапка: для залогиненного админа — **Админка** + **Выйти** вместо **Login** (сессия по-прежнему из cookie на сервере).
 - Вики: колонка **Sections** подсвечивает раздел текущей страницы (первый сегмент пути), а не «All pages», когда открыта статья без `?section=`.
@@ -14,6 +15,11 @@
 - На узких экранах (≤899px) в шапке скрыт выпадающий список «AI links».
 
 ### Added
+
+- README: схема стека Docker Compose в Mermaid; автообновление маркеров `COMPOSE_MERMAID_AUTO_*` через `scripts/update_compose_mermaid_readme.py` и workflow `.github/workflows/compose-mermaid.yml` (образ `derlin/docker-compose-viz-mermaid`).
+- Миграция `0004_global_settings`: таблица `GlobalSettings` (если ещё не создавалась через `db push`).
+- Перед `prisma migrate deploy` в Docker: `scripts/check-prisma-migrations-destructive.cjs` — стоп при `DROP DATABASE/SCHEMA/TABLE/TYPE` или `TRUNCATE` без `HEKOTI_MIGRATE_ALLOW_DESTRUCTIVE=1`; `HEKOTI_SKIP_DESTRUCTIVE_MIGRATION_CHECK=1` отключает проверку.
+- Админка → **Настройки**: блок телеметрии (HTML «терминал») — крупные поля + шаблоны Яндекс.Метрики и Google Analytics (gtag).
 
 - Админка → Посты: список страниц слева в виде **дерева путей** (`├──` / `└──`), порядок веток по `navOrder`; черновик ○ / опубликовано ●; промежуточный сегмент без своей статьи помечается «— нет статьи».
 - В тексте статей: **`/post путь`** (после пробела, начала строки или `>` в цитате) → при показе wiki подставляется ссылка на **опубликованную** страницу; при изменении страниц сбрасывается кэш `wiki:{lang}:*`.

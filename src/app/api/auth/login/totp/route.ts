@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loginAdminTotpStep } from "@/lib/auth";
+import { limitTotpLogin, requestIp } from "@/lib/auth-rate-limit";
 
 function readTotpBody(body: unknown): { pendingToken: string; code: string } | { error: string } {
   if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
@@ -40,13 +41,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: parsed.error }, { status: 400 });
   }
 
+  const ip = requestIp(request);
+  const limit = await limitTotpLogin(ip);
+  if (limit.blocked) {
+    return NextResponse.json(
+      { ok: false, message: "Too many verification attempts. Try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
+  }
+
   try {
     await loginAdminTotpStep(parsed);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Login failed";
-    const status =
-      message.includes("Invalid") || message.includes("Expired") || message.includes("code") ? 401 : 500;
+    const raw = error instanceof Error ? error.message : "Login failed";
+    const status = raw.includes("Invalid") || raw.includes("Expired") || raw.includes("code") ? 401 : 500;
+    const message = status === 401 ? "Invalid verification code." : "Login failed";
     return NextResponse.json({ ok: false, message }, { status });
   }
 }

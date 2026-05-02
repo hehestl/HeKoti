@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { delCached } from "@/lib/cache";
+import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache";
 import { requireAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getSiblingGroupPaths, wikiCacheKey } from "@/lib/wiki-path";
+import { getSiblingGroupPaths } from "@/lib/wiki-path";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,9 +35,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       reordered.map((row, i) => prisma.page.update({ where: { id: row.id }, data: { navOrder: i * 10 } })),
     );
 
-    for (const s of reordered) {
-      await delCached(wikiCacheKey(s.path, lang));
-    }
+    await invalidateWikiLangCache(lang);
+    await invalidateSearchLangCache(lang);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

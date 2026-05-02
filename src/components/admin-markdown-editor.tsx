@@ -37,10 +37,16 @@ type Props = {
   height?: string;
 };
 
+type LinkModalState =
+  | { mode: "post"; slug: string; error: string }
+  | { mode: "wiki"; slug: string; label: string; error: string }
+  | { mode: "url"; url: string; label: string; error: string };
+
 export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, height = "60vh" }: Props) {
   const edRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monRef = useRef<typeof monaco | null>(null);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
+  const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -67,10 +73,8 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   }, []);
 
   const insertWikiPost = useCallback(() => {
-    const raw = window.prompt(dict.admin.editor.postPrompt, "h2");
-    if (raw == null || !raw.trim()) return;
-    withEd((ed, m) => insertAtCursor(ed, m, `/post ${raw.trim().replace(/^\//, "")} `));
-  }, [withEd, dict]);
+    setLinkModal({ mode: "post", slug: "h2", error: "" });
+  }, []);
 
   const insertWikiLink = useCallback(() => {
     withEd((ed) => {
@@ -78,17 +82,9 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       const sel = ed.getSelection();
       if (!model || !sel) return;
       const label = model.getValueInRange(sel) || dict.admin.editor.linkPlaceholder;
-      const slug = window.prompt(dict.admin.editor.linkPrompt, "h2");
-      if (slug == null || !slug.trim()) return;
-      const hit = resolvePostWikiTarget(slug.trim(), lang, wikiPages);
-      if (!hit) {
-        window.alert(dict.admin.editor.linkNotFound.replace("{slug}", slug.trim()));
-        return;
-      }
-      ed.executeEdits("link", [{ range: sel, text: `[${label}](${hit.href})`, forceMoveMarkers: true }]);
-      ed.focus();
+      setLinkModal({ mode: "wiki", slug: "h2", label, error: "" });
     });
-  }, [withEd, lang, wikiPages, dict]);
+  }, [withEd, dict.admin.editor.linkPlaceholder]);
 
   const insertExternalLink = useCallback(() => {
     withEd((ed) => {
@@ -96,12 +92,57 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       const sel = ed.getSelection();
       if (!model || !sel) return;
       const label = model.getValueInRange(sel) || dict.admin.editor.externalLinkPlaceholder;
-      const url = window.prompt(dict.admin.editor.externalLinkPrompt, "https://");
-      if (url == null || !url.trim()) return;
-      ed.executeEdits("elink", [{ range: sel, text: `[${label}](${url.trim()})`, forceMoveMarkers: true }]);
-      ed.focus();
+      setLinkModal({ mode: "url", url: "https://", label, error: "" });
     });
   }, [withEd, dict]);
+
+  const submitLinkModal = useCallback(() => {
+    if (!linkModal) return;
+    if (linkModal.mode === "post") {
+      const slug = linkModal.slug.trim().replace(/^\//, "");
+      if (!slug) {
+        setLinkModal({ ...linkModal, error: dict.admin.editor.linkPrompt });
+        return;
+      }
+      withEd((ed, m) => insertAtCursor(ed, m, `/post ${slug} `));
+      setLinkModal(null);
+      return;
+    }
+    if (linkModal.mode === "wiki") {
+      const slug = linkModal.slug.trim();
+      if (!slug) {
+        setLinkModal({ ...linkModal, error: dict.admin.editor.linkPrompt });
+        return;
+      }
+      const hit = resolvePostWikiTarget(slug, lang, wikiPages);
+      if (!hit) {
+        setLinkModal({ ...linkModal, error: dict.admin.editor.linkNotFound.replace("{slug}", slug) });
+        return;
+      }
+      withEd((ed) => {
+        const model = ed.getModel();
+        const sel = ed.getSelection();
+        if (!model || !sel) return;
+        ed.executeEdits("link", [{ range: sel, text: `[${linkModal.label}](${hit.href})`, forceMoveMarkers: true }]);
+        ed.focus();
+      });
+      setLinkModal(null);
+      return;
+    }
+    const url = linkModal.url.trim();
+    if (!url) {
+      setLinkModal({ ...linkModal, error: dict.admin.editor.externalLinkPrompt });
+      return;
+    }
+    withEd((ed) => {
+      const model = ed.getModel();
+      const sel = ed.getSelection();
+      if (!model || !sel) return;
+      ed.executeEdits("elink", [{ range: sel, text: `[${linkModal.label}](${url})`, forceMoveMarkers: true }]);
+      ed.focus();
+    });
+    setLinkModal(null);
+  }, [dict.admin.editor, lang, linkModal, wikiPages, withEd]);
 
   const insertDateTime = useCallback(() => {
     withEd((ed, m) =>
@@ -348,6 +389,96 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
           </div>
         ) : null}
       </div>
+      {linkModal ? (
+        <div
+          role="dialog"
+          aria-modal
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 11000,
+            padding: 12,
+          }}
+          onClick={() => setLinkModal(null)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 560,
+              background: "var(--panel)",
+              border: "1px solid var(--line)",
+              borderRadius: 12,
+              padding: 12,
+              display: "grid",
+              gap: 10,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, fontSize: 16 }}>
+              {linkModal.mode === "post"
+                ? dict.admin.editor.postTitle
+                : linkModal.mode === "wiki"
+                  ? dict.admin.editor.wikiTitle
+                  : dict.admin.editor.urlTitle}
+            </h3>
+            {linkModal.mode === "post" ? (
+              <input
+                style={inputStyle}
+                autoFocus
+                value={linkModal.slug}
+                onChange={(e) => setLinkModal({ ...linkModal, slug: e.target.value, error: "" })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitLinkModal();
+                }}
+              />
+            ) : (
+              <>
+                <input
+                  style={inputStyle}
+                  autoFocus
+                  value={linkModal.mode === "wiki" ? linkModal.slug : linkModal.url}
+                  onChange={(e) =>
+                    setLinkModal(
+                      linkModal.mode === "wiki"
+                        ? { ...linkModal, slug: e.target.value, error: "" }
+                        : { ...linkModal, url: e.target.value, error: "" },
+                    )
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitLinkModal();
+                  }}
+                />
+                <input
+                  style={inputStyle}
+                  value={linkModal.label}
+                  onChange={(e) => setLinkModal({ ...linkModal, label: e.target.value, error: "" })}
+                />
+              </>
+            )}
+            {linkModal.error ? <p style={{ margin: 0, color: "#ff5f7d", fontSize: 13 }}>{linkModal.error}</p> : null}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" style={tbBtn} onClick={() => setLinkModal(null)}>
+                {dict.common.cancel}
+              </button>
+              <button type="button" style={{ ...tbBtn, background: "var(--accent)", color: "#fff" }} onClick={submitLinkModal}>
+                {dict.common.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
+
+const inputStyle: CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  background: "transparent",
+  color: "var(--fg)",
+  padding: "8px 10px",
+  width: "100%",
+};

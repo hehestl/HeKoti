@@ -9,6 +9,9 @@
   /* Wiki repo: ширина левых колонок (секции | список страниц). Любые единицы CSS: px, rem, %, min(…), … */
   --repo-sidebar-labels-width: 200px;
   --repo-sidebar-pages-width: 200px;
+  /* Wiki sidebars: ~20 строк видимой области, дальше — внутренний скролл */
+  --repo-sidebar-visible-rows: 20;
+  --repo-sidebar-row-est: 2.375rem;
 }
 
 .dark {
@@ -81,7 +84,6 @@ select {
   filter: drop-shadow(0 1px 2px color-mix(in srgb, black 25%, transparent));
 }
 
-.repo-sidebar,
 .repo-main,
 .admin-path-tree-scroll {
   scrollbar-gutter: stable;
@@ -89,26 +91,52 @@ select {
   scrollbar-color: color-mix(in srgb, var(--fg) 22%, transparent) color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
-.repo-sidebar::-webkit-scrollbar,
 .repo-main::-webkit-scrollbar,
 .admin-path-tree-scroll::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.repo-sidebar::-webkit-scrollbar-track,
 .repo-main::-webkit-scrollbar-track,
 .admin-path-tree-scroll::-webkit-scrollbar-track {
   background: color-mix(in srgb, var(--fg) 6%, transparent);
   border-radius: 999px;
 }
 
-.repo-sidebar::-webkit-scrollbar-thumb,
 .repo-main::-webkit-scrollbar-thumb,
 .admin-path-tree-scroll::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--fg) 22%, transparent);
   border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+/* Wiki колонки «Разделы» / «Страницы»: тонкий, почти невидимый скролл */
+.repo-sidebar-scroll-subtle {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fg) 10%, transparent) transparent;
+}
+
+.repo-sidebar-scroll-subtle:hover {
+  scrollbar-color: color-mix(in srgb, var(--fg) 18%, transparent) color-mix(in srgb, var(--fg) 4%, transparent);
+}
+
+.repo-sidebar-scroll-subtle::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.repo-sidebar-scroll-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.repo-sidebar-scroll-subtle::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  border-radius: 999px;
+}
+
+.repo-sidebar-scroll-subtle:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--fg) 22%, transparent);
 }
 
 .home-hero {
@@ -217,10 +245,23 @@ select {
 
 .repo-sidebar {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
   min-width: 0;
+}
+
+.repo-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(
+    72vh,
+    calc(var(--repo-sidebar-visible-rows) * var(--repo-sidebar-row-est) + 1.25rem)
+  );
 }
 
 .repo-sidebar-labels {

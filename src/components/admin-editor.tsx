@@ -1,7 +1,8 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { buildPathTree, type PathTreeNode } from "@/lib/page-tree";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
@@ -42,27 +43,56 @@ type PageRow = {
 export function AdminEditor({
   initialPages,
   lang,
+  enabledLanguages,
   dict,
+  initialActivePath,
 }: {
   initialPages: PageRow[];
   lang: string;
+  enabledLanguages: string[];
   dict: Dictionary;
+  initialActivePath?: string;
 }) {
+  const router = useRouter();
   const [pages, setPages] = useState(initialPages);
-  const [activeId, setActiveId] = useState(initialPages[0]?.id ?? "");
+  const [activeId, setActiveId] = useState(() => {
+    if (initialActivePath) {
+      const hit = initialPages.find((p) => p.path === initialActivePath);
+      if (hit) return hit.id;
+    }
+    return initialPages[0]?.id ?? "";
+  });
   const [status, setStatus] = useState(dict.admin.posts.idle);
+  const [statusTone, setStatusTone] = useState<"neutral" | "error">("neutral");
   const [dragOver, setDragOver] = useState<null | { targetId: string; mode: "before" | "after" | "inside" }>(null);
+  const [createParentParts, setCreateParentParts] = useState<string[] | null>(null);
+  const [createTitle, setCreateTitle] = useState("");
+  const [renameModal, setRenameModal] = useState<{ id: string; title: string } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const active = useMemo(() => pages.find((item) => item.id === activeId), [pages, activeId]);
   const pathTree = useMemo(() => buildPathTree(pages, lang), [pages, lang]);
+
+  const getParentParts = useCallback(
+    (path: string) => {
+      const segs = pathSegmentsAfterLang(path, lang);
+      return segs.length <= 1 ? [] : segs.slice(0, -1);
+    },
+    [lang],
+  );
+
+  const hasChildren = useCallback(
+    (path: string) => pages.some((p) => p.path !== path && p.path.startsWith(`${path}/`)),
+    [pages],
+  );
 
   const updateActive = (patch: Partial<PageRow>) => {
     setPages((prev) => prev.map((item) => (item.id === activeId ? { ...item, ...patch } : item)));
   };
 
-  const updatePage = (id: string, patch: Partial<PageRow>) => {
+  const updatePage = useCallback((id: string, patch: Partial<PageRow>) => {
     setPages((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  };
+  }, []);
 
   const save = () => {
     if (!active) return;
@@ -81,29 +111,54 @@ export function AdminEditor({
     });
   };
 
-  const patchPage = async (id: string, patch: { title?: string; contentMd?: string; isPublished?: boolean; navOrder?: number; parentPathParts?: string[] }) => {
-    const res = await fetch(`/api/pages/${id}`, {
-      method: "PATCH",
+  const patchPage = useCallback(
+    async (id: string, patch: { title?: string; contentMd?: string; isPublished?: boolean; navOrder?: number; parentPathParts?: string[] }) => {
+      const res = await fetch(`/api/pages/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(patch),
+      });
+      const body = (await res.json()) as PageRow & { ok?: boolean; message?: string };
+      if (!res.ok) {
+        throw new Error(body.message || "Update failed");
+      }
+      updatePage(id, body);
+      return body;
+    },
+    [updatePage],
+  );
+
+  const cloneToLanguage = async (targetLang: string) => {
+    if (!active) return;
+    if (targetLang === lang) return;
+    setStatus(dict.admin.posts.saving);
+    const res = await fetch("/api/pages", {
+      method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify(patch),
+      body: JSON.stringify({ sourcePath: active.path, targetLang }),
     });
-    const body = (await res.json()) as PageRow & { ok?: boolean; message?: string };
-    if (!res.ok) {
-      throw new Error(body.message || "Update failed");
+    const body = (await res.json()) as { id?: string; path?: string; ok?: boolean; code?: string; existingPath?: string; message?: string };
+    if (res.status === 409 && body.code === "exists" && body.existingPath) {
+      router.push(`/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(body.existingPath)}`);
+      return;
     }
-    updatePage(id, body);
-    return body;
+    if (!res.ok || !body.path) {
+      setStatus(body.message ?? dict.admin.posts.failed);
+      return;
+    }
+    router.push(`/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(body.path)}`);
   };
 
   const removePage = async (id: string) => {
     const page = pages.find((p) => p.id === id);
     if (!page) return;
-    if (!confirm(dict.admin.posts.deleteConfirm.replace("{title}", page.title))) return;
     setStatus(dict.common.loading);
     const res = await fetch(`/api/pages/${id}`, { method: "DELETE", credentials: "same-origin" });
     const body = (await res.json()) as { ok?: boolean; message?: string };
     if (!res.ok || !body.ok) {
+      setStatusTone("error");
       setStatus(body.message ?? dict.admin.posts.deleteFailed);
       return;
     }
@@ -112,24 +167,39 @@ export function AdminEditor({
       const next = pages.filter((p) => p.id !== id);
       setActiveId(next[0]?.id ?? "");
     }
+    setStatusTone("neutral");
     setStatus(dict.admin.posts.deleted);
   };
 
   const removeActive = async () => {
     if (!active) return;
-    await removePage(active.id);
+    setDeleteModal({ id: active.id, title: active.title });
+  };
+
+  const requestDelete = (id: string) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
+    setDeleteModal({ id: page.id, title: page.title });
+  };
+
+  const requestRename = (id: string) => {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
+    setRenameModal({ id: page.id, title: page.title });
   };
 
   const renamePage = async (id: string) => {
     const page = pages.find((p) => p.id === id);
     if (!page) return;
-    const nextTitle = prompt(dict.admin.posts.renamePrompt, page.title);
+    const nextTitle = renameModal?.id === id ? renameModal.title.trim() : page.title;
     if (!nextTitle) return;
     updatePage(id, { title: nextTitle });
     try {
       await patchPage(id, { title: nextTitle });
+      setStatusTone("neutral");
       setStatus(dict.admin.posts.saved);
     } catch (e) {
+      setStatusTone("error");
       setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
     }
   };
@@ -148,19 +218,12 @@ export function AdminEditor({
     }
   };
 
-  const getParentParts = (path: string) => {
-    const segs = pathSegmentsAfterLang(path, lang);
-    return segs.length <= 1 ? [] : segs.slice(0, -1);
-  };
-
   const getSlug = (path: string) => {
     const segs = pathSegmentsAfterLang(path, lang);
     return segs[segs.length - 1] ?? "";
   };
 
-  const hasChildren = (path: string) => pages.some((p) => p.path !== path && p.path.startsWith(`${path}/`));
-
-  const liftActiveUp = async () => {
+  const liftActiveUp = useCallback(async () => {
     if (!active) return;
     if (hasChildren(active.path)) {
       setStatus(dict.admin.posts.cantMoveWithChildren);
@@ -182,7 +245,7 @@ export function AdminEditor({
     } catch (e) {
       setStatus(e instanceof Error ? e.message : dict.admin.posts.failed);
     }
-  };
+  }, [active, pages, dict.admin.posts, patchPage, getParentParts, hasChildren]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -194,7 +257,7 @@ export function AdminEditor({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [active?.id, active?.path, pages]);
+  }, [liftActiveUp]);
 
   const movePageByDrop = async (fromId: string, targetId: string, mode: "before" | "after" | "inside") => {
     if (fromId === targetId) return;
@@ -259,36 +322,67 @@ export function AdminEditor({
     }
   };
 
-  const createWithParent = async (parentPathParts: string[]) => {
-    const title = prompt(dict.admin.posts.pageTitle);
-    if (!title) return;
+  const createWithParent = async (parentPathParts: string[], title: string) => {
     const response = await fetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ lang, title, contentMd: "", isPublished: false, parentPathParts }),
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as { message?: string };
+      setStatusTone("error");
+      setStatus(body.message ?? dict.admin.posts.failed);
+      return;
+    }
     const data = (await response.json()) as PageRow;
     setPages((prev) => [data, ...prev]);
     setActiveId(data.id);
+    setStatusTone("neutral");
+    setStatus(dict.admin.posts.saved);
   };
 
-  const createSibling = async () => {
+  const openCreateModal = (parentPathParts: string[]) => {
+    setCreateParentParts(parentPathParts);
+    setCreateTitle("");
+  };
+
+  const createSibling = () => {
     if (!active) {
-      await createWithParent([]);
+      openCreateModal([]);
       return;
     }
     const segs = pathSegmentsAfterLang(active.path, lang);
     const parentPathParts = segs.length <= 1 ? [] : segs.slice(0, -1);
-    await createWithParent(parentPathParts);
+    openCreateModal(parentPathParts);
   };
 
-  const createChild = async () => {
+  const createChild = () => {
     if (!active) {
-      await createWithParent([]);
+      openCreateModal([]);
       return;
     }
-    await createWithParent(pathSegmentsAfterLang(active.path, lang));
+    openCreateModal(pathSegmentsAfterLang(active.path, lang));
+  };
+
+  const submitCreate = async () => {
+    if (!createParentParts) return;
+    const title = createTitle.trim();
+    if (!title) return;
+    await createWithParent(createParentParts, title);
+    setCreateParentParts(null);
+    setCreateTitle("");
+  };
+
+  const submitRename = async () => {
+    if (!renameModal) return;
+    await renamePage(renameModal.id);
+    setRenameModal(null);
+  };
+
+  const submitDelete = async () => {
+    if (!deleteModal) return;
+    await removePage(deleteModal.id);
+    setDeleteModal(null);
   };
 
   return (
@@ -332,8 +426,8 @@ export function AdminEditor({
               nodes={pathTree}
               activeId={activeId}
               onSelect={setActiveId}
-              onRename={renamePage}
-              onDelete={removePage}
+              onRename={requestRename}
+              onDelete={requestDelete}
               onTogglePublish={togglePublish}
               onMoveByDrop={movePageByDrop}
               dragOver={dragOver}
@@ -345,7 +439,12 @@ export function AdminEditor({
       </aside>
       <div style={panelStyle}>
         {!active ? (
-          <p>{dict.admin.posts.noPages}</p>
+          <div style={{ display: "grid", gap: 8 }}>
+            <p style={{ margin: 0 }}>{dict.admin.posts.noPages}</p>
+            <button type="button" style={{ ...buttonStyle, justifySelf: "start" }} onClick={createSibling}>
+              {dict.admin.posts.addSibling}
+            </button>
+          </div>
         ) : (
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -354,6 +453,29 @@ export function AdminEditor({
                 value={active.title}
                 onChange={(event) => updateActive({ title: event.target.value })}
               />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                {enabledLanguages.map((l) => {
+                  const isCurrent = l === lang;
+                  return (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => cloneToLanguage(l)}
+                      disabled={isCurrent || isPending}
+                      title={isCurrent ? dict.admin.posts.cloneHereTitle : dict.admin.posts.cloneToTitle.replace("{lang}", l.toUpperCase())}
+                      style={{
+                        ...buttonStyle,
+                        padding: "6px 10px",
+                        minHeight: 30,
+                        opacity: isCurrent ? 0.55 : 1,
+                        cursor: isCurrent ? "default" : "pointer",
+                      }}
+                    >
+                      {l.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
               <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <input
                   type="checkbox"
@@ -379,7 +501,22 @@ export function AdminEditor({
                 {dict.common.save}
               </button>
             </div>
-            <div style={{ marginTop: 10, color: "var(--muted)" }}>{status}</div>
+            <div
+              style={{
+                marginTop: 10,
+                color: statusTone === "error" ? "#ff5f7d" : "var(--muted)",
+                border: `1px solid ${statusTone === "error" ? "color-mix(in srgb, #ff5f7d 65%, var(--line))" : "var(--line)"}`,
+                background:
+                  statusTone === "error"
+                    ? "color-mix(in srgb, #ff5f7d 8%, transparent)"
+                    : "color-mix(in srgb, var(--fg) 3%, transparent)",
+                borderRadius: 8,
+                padding: "8px 10px",
+                fontSize: 13,
+              }}
+            >
+              {status}
+            </div>
             <AdminMarkdownEditor
               value={active.contentMd}
               onChange={(v) => updateActive({ contentMd: v })}
@@ -391,7 +528,126 @@ export function AdminEditor({
           </>
         )}
       </div>
+      {createParentParts ? (
+        <ModalCard
+          title={dict.admin.posts.pageTitle}
+          cancelLabel={dict.common.cancel}
+          onCancel={() => {
+            setCreateParentParts(null);
+            setCreateTitle("");
+          }}
+          onSubmit={() => void submitCreate()}
+          submitLabel={dict.common.save}
+          submitDisabled={!createTitle.trim()}
+        >
+          <input
+            style={{ ...inputStyle, width: "100%" }}
+            value={createTitle}
+            autoFocus
+            onChange={(e) => setCreateTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void submitCreate();
+            }}
+          />
+        </ModalCard>
+      ) : null}
+      {renameModal ? (
+        <ModalCard
+          title={dict.admin.posts.renamePrompt}
+          cancelLabel={dict.common.cancel}
+          onCancel={() => setRenameModal(null)}
+          onSubmit={() => void submitRename()}
+          submitLabel={dict.common.save}
+          submitDisabled={!renameModal.title.trim()}
+        >
+          <input
+            style={{ ...inputStyle, width: "100%" }}
+            value={renameModal.title}
+            autoFocus
+            onChange={(e) => setRenameModal((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void submitRename();
+            }}
+          />
+        </ModalCard>
+      ) : null}
+      {deleteModal ? (
+        <ModalCard
+          title={dict.admin.posts.delete}
+          cancelLabel={dict.common.cancel}
+          onCancel={() => setDeleteModal(null)}
+          onSubmit={() => void submitDelete()}
+          submitLabel={dict.admin.posts.delete}
+        >
+          <p style={{ margin: 0 }}>{dict.admin.posts.deleteConfirm.replace("{title}", deleteModal.title)}</p>
+        </ModalCard>
+      ) : null}
     </section>
+  );
+}
+
+function ModalCard({
+  title,
+  children,
+  onCancel,
+  onSubmit,
+  submitLabel,
+  cancelLabel,
+  submitDisabled = false,
+}: {
+  title: string;
+  children: ReactNode;
+  onCancel: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+  cancelLabel: string;
+  submitDisabled?: boolean;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.35)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 2000,
+        padding: 12,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          background: "var(--panel)",
+          border: "1px solid var(--line)",
+          borderRadius: 12,
+          padding: 12,
+          display: "grid",
+          gap: 10,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3>
+        {children}
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button type="button" style={buttonStyle} onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            style={{ ...buttonStyle, background: "var(--accent)", color: "#fff" }}
+            onClick={onSubmit}
+            disabled={submitDisabled}
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

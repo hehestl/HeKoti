@@ -49,11 +49,19 @@ export async function WikiRepositoryLayout({
         }
       : {};
 
-  const searchWhere = q
-    ? {
-        OR: [{ title: { contains: q, mode: "insensitive" as const } }, { contentMd: { contains: q, mode: "insensitive" as const } }],
-      }
-    : {};
+  const qTrim = q?.trim() ?? "";
+  const terms = qTrim.split(/\s+/).filter(Boolean).slice(0, 6);
+  const searchWhere =
+    terms.length > 0
+      ? {
+          AND: terms.map((t) => ({
+            OR: [
+              { title: { contains: t, mode: "insensitive" as const } },
+              { contentMd: { contains: t, mode: "insensitive" as const } },
+            ],
+          })),
+        }
+      : {};
 
   const listPages = await prisma.page.findMany({
     where: {
@@ -62,8 +70,8 @@ export async function WikiRepositoryLayout({
       ...searchWhere,
       ...sectionWhere,
     },
-    orderBy: q ? { updatedAt: "desc" } : [{ navOrder: "asc" }, { title: "asc" }],
-    take: q ? 80 : 400,
+    orderBy: terms.length > 0 ? { updatedAt: "desc" } : [{ navOrder: "asc" }, { title: "asc" }],
+    take: terms.length > 0 ? 80 : 400,
     select: { id: true, title: true, path: true },
   });
 
@@ -122,20 +130,22 @@ export async function WikiRepositoryLayout({
     <div className="repo-layout">
       <aside className="repo-sidebar repo-sidebar-labels">
         <div className="repo-sidebar-head">{dict.admin.wiki.sections}</div>
-        <nav className="repo-sidebar-nav" aria-label={dict.common.sectionsAria}>
-          <Link href={base} className={`repo-sidebar-link${allPagesActive ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
-            {dict.admin.wiki.allPages}
-          </Link>
-          {sections.map(({ slug, label }) => {
-            const href = `${base}?section=${encodeURIComponent(slug)}`;
-            const active = filterSection === slug;
-            return (
-              <Link key={slug} href={href} className={`repo-sidebar-link${active ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="repo-sidebar-scroll repo-sidebar-scroll-subtle">
+          <nav className="repo-sidebar-nav" aria-label={dict.common.sectionsAria}>
+            <Link href={base} className={`repo-sidebar-link${allPagesActive ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
+              {dict.admin.wiki.allPages}
+            </Link>
+            {sections.map(({ slug, label }) => {
+              const href = `${base}?section=${encodeURIComponent(slug)}`;
+              const active = filterSection === slug;
+              return (
+                <Link key={slug} href={href} className={`repo-sidebar-link${active ? " repo-sidebar-link-active" : ""}`} prefetch={false}>
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
       </aside>
 
       <aside className="repo-sidebar repo-sidebar-snippets">
@@ -146,25 +156,27 @@ export async function WikiRepositoryLayout({
             ? dict.admin.wiki.inSection.replace("{section}", filterSectionLabel ?? filterSection)
             : dict.admin.wiki.pages}
         </div>
-        <ul className="repo-page-list">
-          {listPages.map((item) => {
-            const href = wikiHref(lang, item.path);
-            const active = activeWikiPath === item.path;
-            return (
-              <WikiPageRow
-                key={item.id}
-                id={item.id}
-                href={href}
-                title={item.title}
-                lang={lang}
-                isAdmin={isAdmin}
-                isActive={active}
-                dict={dict}
-              />
-            );
-          })}
-          {listPages.length === 0 ? <li className="repo-page-empty">{dict.admin.wiki.noPagesMatch}</li> : null}
-        </ul>
+        <div className="repo-sidebar-scroll repo-sidebar-scroll-subtle">
+          <ul className="repo-page-list">
+            {listPages.map((item) => {
+              const href = wikiHref(lang, item.path);
+              const active = activeWikiPath === item.path;
+              return (
+                <WikiPageRow
+                  key={item.id}
+                  id={item.id}
+                  href={href}
+                  title={item.title}
+                  lang={lang}
+                  isAdmin={isAdmin}
+                  isActive={active}
+                  dict={dict}
+                />
+              );
+            })}
+            {listPages.length === 0 ? <li className="repo-page-empty">{dict.admin.wiki.noPagesMatch}</li> : null}
+          </ul>
+        </div>
       </aside>
 
       <main className="repo-main">{children}</main>

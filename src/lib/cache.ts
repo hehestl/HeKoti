@@ -46,10 +46,35 @@ export async function invalidateWikiLangCache(lang: string) {
   const prefix = `wiki:${lang}:`;
   const redis = getRedis();
   if (redis) {
-    const keys = await redis.keys(`${prefix}*`);
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    let cursor = "0";
+    do {
+      const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
+      cursor = next;
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } while (cursor !== "0");
+    return;
+  }
+  for (const key of memoryCache.keys()) {
+    if (typeof key === "string" && key.startsWith(prefix)) {
+      memoryCache.delete(key);
     }
+  }
+}
+
+export async function invalidateSearchLangCache(lang: string) {
+  const prefix = `search:${lang}:`;
+  const redis = getRedis();
+  if (redis) {
+    let cursor = "0";
+    do {
+      const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
+      cursor = next;
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } while (cursor !== "0");
     return;
   }
   for (const key of memoryCache.keys()) {

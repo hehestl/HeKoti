@@ -7,7 +7,7 @@ export function signPendingLogin(userId: string, ttlMs = 5 * 60 * 1000): string 
   const exp = Date.now() + ttlMs;
   const payload = Buffer.from(JSON.stringify({ sub: userId, exp }), "utf8").toString("base64url");
   const sig = crypto
-    .createHmac("sha256", env.WEBHOOK_SECRET)
+    .createHmac("sha256", env.AUTH_PENDING_SECRET ?? env.WEBHOOK_SECRET)
     .update(PREFIX + payload)
     .digest("base64url");
   return `${payload}.${sig}`;
@@ -21,7 +21,7 @@ export function verifyPendingLogin(token: string): { userId: string } {
   const payload = token.slice(0, i);
   const sig = token.slice(i + 1);
   const expected = crypto
-    .createHmac("sha256", env.WEBHOOK_SECRET)
+    .createHmac("sha256", env.AUTH_PENDING_SECRET ?? env.WEBHOOK_SECRET)
     .update(PREFIX + payload)
     .digest("base64url");
   const sigBuf = Buffer.from(sig, "utf8");

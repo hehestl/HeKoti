@@ -9,8 +9,30 @@
 </p>
 
 <p align="center">
-  <img src="public/main.png" alt="Hekoti screenshot" width="1000" />
+  <img src="https://raw.githubusercontent.com/hehestl/HeKoti/hehe/public/main.png" alt="Hekoti screenshot" width="1000" />
 </p>
+
+---
+
+## Docker Compose topology
+
+Схема из [`docker-compose.yml`](./docker-compose.yml) ([docker-compose-viz-mermaid](https://github.com/derlin/docker-compose-viz-mermaid)): обновить локально — `python scripts/update_compose_mermaid_readme.py` (нужен Docker); на push CI сам подставит актуальный граф.
+
+Service graph from [`docker-compose.yml`](./docker-compose.yml) via [docker-compose-viz-mermaid](https://github.com/derlin/docker-compose-viz-mermaid). Refresh locally with `python scripts/update_compose_mermaid_readme.py` (Docker required); CI updates this block when compose or the script changes.
+
+<!-- COMPOSE_MERMAID_AUTO_START -->
+```mermaid
+%%{init: {'theme': 'default', 'flowchart': {'curve': 'linear'}}}%%
+flowchart TB
+  hekoti_app["hekoti-app"]
+  hekoti_postgres[("hekoti-postgres")]
+  hekoti_redis[("hekoti-redis")]
+  hekoti_lt["hekoti-languagetool"]
+  hekoti_app --> hekoti_postgres
+  hekoti_app --> hekoti_redis
+  hekoti_app --> hekoti_lt
+```
+<!-- COMPOSE_MERMAID_AUTO_END -->
 
 ---
 
@@ -62,7 +84,11 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-**Migrations:** on each `hekoti-app` start, `docker-entrypoint.sh` runs `npx prisma migrate deploy` (unless `HEKOTI_SKIP_MIGRATE=1`).
+**Migrations:** on each `hekoti-app` start, `docker-entrypoint.sh` runs `scripts/check-prisma-migrations-destructive.cjs`, then `prisma migrate deploy` (unless `HEKOTI_SKIP_MIGRATE=1`).
+
+**Migration safety (git pull / deploy):** the check script scans `prisma/migrations/*/migration.sql` for destructive patterns (`DROP DATABASE`, `DROP SCHEMA`, `DROP TABLE`, `DROP TYPE`, `TRUNCATE`). If any match, the container **exits before** `migrate deploy` so you can read the diff and back up PostgreSQL. To apply an intentional destructive migration once, set `HEKOTI_MIGRATE_ALLOW_DESTRUCTIVE=1` for that deploy only. To disable the guard entirely (not recommended), set `HEKOTI_SKIP_DESTRUCTIVE_MIGRATION_CHECK=1`. Never run `prisma migrate reset` against production data.
+
+**Telemetry / counters (no SSH):** Admin → **Settings** → *HTML / telemetry* — paste Yandex.Metrica, Google Analytics (`<script>`, `<meta>`, `<link>`, `<noscript>`). Use the template buttons, replace IDs, Save.
 
 **First admin user / demo pages (seed):**
 
@@ -158,7 +184,11 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-**Миграции:** на каждом старте `hekoti-app` выполняется `npx prisma migrate deploy` (если не выставлен `HEKOTI_SKIP_MIGRATE=1`).
+**Миграции:** перед деплоем запускается проверка `scripts/check-prisma-migrations-destructive.cjs`, затем `prisma migrate deploy` (если не выставлен `HEKOTI_SKIP_MIGRATE=1`).
+
+**Безопасность миграций:** скрипт ищет в SQL опасные конструкции (`DROP DATABASE/SCHEMA/TABLE/TYPE`, `TRUNCATE`). При совпадении контейнер **не применяет** миграции — сделайте бэкап БД, разберите diff. Одноразово для осознанного патча: `HEKOTI_MIGRATE_ALLOW_DESTRUCTIVE=1`. Полностью отключить проверку: `HEKOTI_SKIP_DESTRUCTIVE_MIGRATION_CHECK=1` (нежелательно). Не используйте `prisma migrate reset` на продакшене.
+
+**Счётчики без SSH:** Админка → **Настройки** — блок HTML/телеметрия: вставка Яндекс.Метрики, Google Analytics и шаблоны кнопками.
 
 **Первый админ / демо‑страницы (seed):**
 

@@ -17,6 +17,13 @@ async function main() {
   const email = (process.env.HEKOTI_ADMIN_EMAIL ?? "admin").trim();
   const password = process.env.HEKOTI_ADMIN_PASSWORD ?? "hehe";
   const force = process.env.HEKOTI_FORCE_ADMIN_RESET === "1";
+  const isProd = (process.env.NODE_ENV ?? "development") === "production";
+
+  if (isProd && (email === "admin" || password === "hehe")) {
+    throw new Error(
+      "Refusing default admin credentials in production. Set HEKOTI_ADMIN_EMAIL and HEKOTI_ADMIN_PASSWORD.",
+    );
+  }
 
   const pool = new pg.Pool({ connectionString: url });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });

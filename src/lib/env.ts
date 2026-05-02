@@ -15,6 +15,7 @@ const envSchema = z.object({
   ENABLED_LANGUAGES: z.string().default("en,ru"),
   HEKOTI_ADMIN_EMAIL: z.string().default("admin"),
   HEKOTI_ADMIN_PASSWORD: z.string().default("hehe"),
+  AUTH_PENDING_SECRET: z.string().optional(),
   WEBHOOK_SECRET: z.string().default("change-me"),
   OUTGOING_WEBHOOK_URLS: z.string().default(""),
   DONATE_LINKS_JSON: z.string().default("[]"),
@@ -32,4 +33,19 @@ const envSchema = z.object({
   HEKOTI_TOTP_ENCRYPTION_KEY: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const parsed = envSchema.parse(process.env);
+
+function requireStrongSecret(name: string, value?: string, minLength = 32) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed.length < minLength) {
+    throw new Error(`${name} must be set and at least ${minLength} chars in production.`);
+  }
+}
+
+if (parsed.NODE_ENV === "production" && process.env.HEKOTI_ENFORCE_PROD_SECRETS === "1") {
+  requireStrongSecret("WEBHOOK_SECRET", parsed.WEBHOOK_SECRET);
+  requireStrongSecret("AUTH_PENDING_SECRET", parsed.AUTH_PENDING_SECRET);
+  requireStrongSecret("HEKOTI_TOTP_ENCRYPTION_KEY", parsed.HEKOTI_TOTP_ENCRYPTION_KEY);
+}
+
+export const env = parsed;

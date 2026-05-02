@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loginAdminPasswordStep } from "@/lib/auth";
+import { limitPasswordLogin, requestIp } from "@/lib/auth-rate-limit";
 
 const LOG = "[hekoti:auth]";
 
@@ -54,6 +55,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: parsed.error }, { status: 400 });
   }
 
+  const ip = requestIp(request);
+  const limit = await limitPasswordLogin(ip, parsed.email);
+  if (limit.blocked) {
+    return NextResponse.json(
+      { ok: false, message: "Too many login attempts. Try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
+  }
+
   try {
     const result = await loginAdminPasswordStep(parsed);
     console.info(`${LOG} login ok email=${parsed.email} totp=${result.needsTotp ? "pending" : "off"}`);
@@ -62,8 +72,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ok: true, needsTotp: false });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Login failed";
-    const status = message.includes("Invalid") ? 401 : 500;
+    const raw = error instanceof Error ? error.message : "Login failed";
+    const status = raw.includes("Invalid") ? 401 : 500;
+    const message = status === 401 ? "Invalid credentials." : "Login failed";
     console.warn(`${LOG} login failed status=${status} message=${message}`);
     return NextResponse.json({ ok: false, message }, { status });
   }

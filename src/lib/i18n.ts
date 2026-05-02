@@ -18,10 +18,32 @@ export async function getDefaultLanguage() {
     if (settings?.defaultLanguage && enabledLanguages.includes(settings.defaultLanguage)) {
       return settings.defaultLanguage;
     }
-  } catch (e) {
+  } catch {
     // Database might not be ready or table might not exist yet
   }
   return enabledLanguages[0] ?? "en";
+}
+
+export async function getGlobalSettings() {
+  const fallback = {
+    defaultLanguage: enabledLanguages[0] ?? "en",
+    headHtml: "",
+    bodyHtml: "",
+  };
+  try {
+    const settings = await prisma.globalSettings.findUnique({ where: { id: "default" } });
+    if (!settings) return fallback;
+    return {
+      defaultLanguage:
+        settings.defaultLanguage && enabledLanguages.includes(settings.defaultLanguage)
+          ? settings.defaultLanguage
+          : fallback.defaultLanguage,
+      headHtml: (settings as { headHtml?: string }).headHtml ?? "",
+      bodyHtml: (settings as { bodyHtml?: string }).bodyHtml ?? "",
+    };
+  } catch {
+    return fallback;
+  }
 }
 
 export async function getDictionary(lang: string) {
@@ -29,7 +51,7 @@ export async function getDictionary(lang: string) {
   try {
     if (l === "ru") return (await import("./messages/ru.json")).default;
     return (await import("./messages/en.json")).default;
-  } catch (e) {
+  } catch {
     return (await import("./messages/en.json")).default;
   }
 }

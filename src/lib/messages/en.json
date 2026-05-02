@@ -38,6 +38,17 @@
     "globalSettings": "Global Settings",
     "defaultLanguage": "Default Language",
     "defaultLanguageDesc": "The language used for guests and as a base for the interface.",
+    "telemetry": {
+      "title": "HTML / telemetry (no SSH)",
+      "desc": "Paste snippets like on the server: Yandex.Metrica, Google Analytics, pixels. Only <script>, <meta>, <link>, and <noscript> tags are injected into the site (see root layout). Replace placeholders (COUNTER_ID, G-…) before saving.",
+      "headLabel": "Inside <head>",
+      "bodyLabel": "Before </body>",
+      "headPlaceholder": "<script>...</script>\n<link rel=\"preconnect\" href=\"https://www.googletagmanager.com\" />",
+      "bodyPlaceholder": "<script>...</script>",
+      "insertYandex": "Yandex.Metrica template",
+      "insertGA": "Google Analytics (gtag) template",
+      "appendHint": "Appends to the field; edit IDs, then Save."
+    },
     "loginUpdated": "Login updated.",
     "passwordChanged": "Password changed. Sign in again.",
     "nothingToChange": "Nothing to change.",
@@ -83,7 +94,9 @@
       "cantMoveWithChildren": "Move is blocked: the page has nested pages.",
       "upLevel": "↑ Up",
       "upLevelTitle": "Move page one level up (Shift+Alt+↑)",
-      "cantMoveRoot": "Already at top level."
+      "cantMoveRoot": "Already at top level.",
+      "cloneToTitle": "Create/open the same page in {lang}",
+      "cloneHereTitle": "Current language"
     },
     "wiki": {
       "sections": "Sections",
@@ -96,7 +109,13 @@
       "search": "Search: {q}",
       "inSection": "In \"{section}\"",
       "pages": "Pages",
-      "noPagesMatch": "No pages match."
+      "noPagesMatch": "No pages match.",
+      "missingTitle": "This page is missing in this language",
+      "missingDesc": "The page was requested at {path}, but there is no page here for this language. You can create a copy from another language.",
+      "availableIn": "Available in",
+      "createFrom": "Create from {lang}",
+      "createNote": "It will be created as a draft. Edit and publish it in Admin.",
+      "noSource": "No source page found in other languages."
     },
     "editor": {
       "postPrompt": "Post path for /post: e.g. h2 or parent/child",
