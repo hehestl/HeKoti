@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TopBar } from "@/components/topbar";
 import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
@@ -67,6 +68,10 @@ export default async function LocaleLayout({
           <a href="https://t.me/PhiloraBot" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
             {dict.common.support}
           </a>
+          <span aria-hidden>·</span>
+          <Link href={`/${lang}/donate`} style={{ color: "var(--accent)" }}>
+            {dict.common.donate}
+          </Link>
         </div>
       </footer>
     </div>

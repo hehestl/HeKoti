@@ -26,7 +26,6 @@ export function TopBar({
     logout: string;
     admin: string;
     search: string;
-    donate: string;
     homeAria: string;
     addPageAria: string;
     aiLinks: string;
@@ -109,9 +108,6 @@ export function TopBar({
         </form>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <Link href={`/${lang}/donate`} style={iconButtonStyle}>
-          {dict.donate}
-        </Link>
         <div style={{ position: "relative" }}>
           <Globe size={14} style={{ position: "absolute", left: 8, top: 9 }} />
           <select

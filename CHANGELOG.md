@@ -13,9 +13,11 @@
 - Трёхколоночный макет вики без рамок и разделительных линий между колонками (единый плоский фон).
 - Ширина двух левых колонок вики задаётся CSS-переменными `--repo-sidebar-labels-width` и `--repo-sidebar-pages-width` в `:root` (`globals.css`).
 - На узких экранах (≤899px) в шапке скрыт выпадающий список «AI links».
+- Ссылка **Donate** вынесена из шапки в подвал (рядом с GitHub, поддержкой и т.д.).
 
 ### Added
 
+- Текстовый баннер HeKoti при установке зависимостей (`npm` `postinstall`: `scripts/install-banner.cjs`, без шума в CI / при `SKIP_HEKOTI_BANNER=1`) и при старте контейнера (`docker-entrypoint.sh`: `--startup`).
 - README: схема стека Docker Compose в Mermaid; автообновление маркеров `COMPOSE_MERMAID_AUTO_*` через `scripts/update_compose_mermaid_readme.py` и workflow `.github/workflows/compose-mermaid.yml` (образ `derlin/docker-compose-viz-mermaid`).
 - Миграция `0004_global_settings`: таблица `GlobalSettings` (если ещё не создавалась через `db push`).
 - Перед `prisma migrate deploy` в Docker: `scripts/check-prisma-migrations-destructive.cjs` — стоп при `DROP DATABASE/SCHEMA/TABLE/TYPE` или `TRUNCATE` без `HEKOTI_MIGRATE_ALLOW_DESTRUCTIVE=1`; `HEKOTI_SKIP_DESTRUCTIVE_MIGRATION_CHECK=1` отключает проверку.
@@ -38,6 +40,7 @@
 ### Fixed
 
 - Сессия за HTTPS reverse proxy: флаг `Secure` на cookie учитывает заголовок `X-Forwarded-Proto` (не только `APP_URL`).
+- Docker: `package-lock.json` синхронизирован с npm 10 (как в образе `node:22-alpine`): в lock добавлены `@emnapi/core` и `@emnapi/runtime@1.10.0`, без чего `npm ci --omit=dev` завершался ошибкой «Missing from lock file».
 - `admin-editor.tsx`: стили `panelStyle` / `buttonStyle` / `inputStyle` в начале файла + `CSSProperties` из `react` (сборка Docker/TS).
 - `POST /api/auth/login`: разбор тела без строгого Zod (меньше ложных 400), явные сообщения; в форме входа — `credentials: "same-origin"` и заголовок `Content-Type`.
 
@@ -48,7 +51,7 @@
 
 ### Removed
 
-- Плавающая кнопка Donate в правом нижнем углу (страница `/donate` и ссылка в шапке сохраняются).
+- Плавающая кнопка Donate в правом нижнем углу (страница `/donate` сохраняется).
 
 ### Fixed
 

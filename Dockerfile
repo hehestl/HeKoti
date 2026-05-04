@@ -6,14 +6,14 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+    SKIP_HEKOTI_BANNER=1 npm ci --prefer-offline --no-audit
 
 # Production node_modules for the runner (Prisma CLI + full transitive tree).
 FROM node:22-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --prefer-offline --no-audit
+    SKIP_HEKOTI_BANNER=1 npm ci --omit=dev --prefer-offline --no-audit
 
 FROM node:22-alpine AS builder
 WORKDIR /app

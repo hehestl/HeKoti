@@ -2,6 +2,8 @@
 set -e
 cd /app
 
+node ./scripts/install-banner.cjs --startup
+
 # Next.js standalone uses process.env.HOSTNAME for bind(). Docker injects a non-empty HOSTNAME (container id),
 # so we must set this here — not only in the image ENV — so it wins over the runtime default.
 export HOSTNAME=0.0.0.0
