@@ -55,15 +55,19 @@ export function generateTotpSecret(): string {
 
 export function verifyTotpToken(secretPlain: string, token: string): boolean {
   const cleaned = token.replace(/\s/g, "");
-  if (!/^\d{6,8}$/.test(cleaned)) {
+  if (!/^\d{6}$/.test(cleaned)) {
     return false;
   }
-  const result = verifySync({
-    secret: secretPlain,
-    token: cleaned,
-    epochTolerance: TOTP_EPOCH_TOLERANCE_SEC,
-  });
-  return result.valid;
+  try {
+    const result = verifySync({
+      secret: secretPlain,
+      token: cleaned,
+      epochTolerance: TOTP_EPOCH_TOLERANCE_SEC,
+    });
+    return result.valid;
+  } catch {
+    return false;
+  }
 }
 
 export async function qrDataUrlForTotp(opts: {

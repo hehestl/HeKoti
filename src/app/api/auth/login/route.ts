@@ -64,9 +64,20 @@ export async function POST(request: Request) {
     );
   }
 
+  // Constant-time response to prevent timing attacks
+  const startTime = Date.now();
+  const MIN_RESPONSE_TIME_MS = 200; // Minimum response time
+  
   try {
     const result = await loginAdminPasswordStep(parsed);
     console.info(`${LOG} login ok email=${parsed.email} totp=${result.needsTotp ? "pending" : "off"}`);
+    
+    // Ensure minimum response time to prevent timing attacks
+    const elapsed = Date.now() - startTime;
+    if (elapsed < MIN_RESPONSE_TIME_MS) {
+      await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_TIME_MS - elapsed));
+    }
+    
     if (result.needsTotp) {
       return NextResponse.json({ ok: true, needsTotp: true, pendingToken: result.pendingToken });
     }
@@ -76,6 +87,13 @@ export async function POST(request: Request) {
     const status = raw.includes("Invalid") ? 401 : 500;
     const message = status === 401 ? "Invalid credentials." : "Login failed";
     console.warn(`${LOG} login failed status=${status} message=${message}`);
+    
+    // Ensure minimum response time even on failure
+    const elapsed = Date.now() - startTime;
+    if (elapsed < MIN_RESPONSE_TIME_MS) {
+      await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_TIME_MS - elapsed));
+    }
+    
     return NextResponse.json({ ok: false, message }, { status });
   }
 }

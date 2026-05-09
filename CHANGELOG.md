@@ -4,19 +4,44 @@
 
 ## [Unreleased]
 
+### Security
+
+- **CSRF защита**: добавлен middleware с HMAC-based double-submit cookie pattern для всех state-changing запросов (POST/PUT/PATCH/DELETE)
+- **Безопасность заголовков**: добавлены заголовки X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, Referrer-Policy, Permissions-Policy
+- **Валидация email**: строгая валидация формата email (RFC 5322) при входе и смене логина
+- **Безопасность загрузки файлов**: проверка MIME типов, ограничение размера 10MB, валидация расширений, защита от path traversal
+- **Rate limiting**: добавлено ограничение на TOTP попытки (25 за 5 минут по IP)
+- **Валидация webhook**: добавлена проверка размера payload (1MB) и строгая валидация схемы Zod
+- **Улучшена валидация паролей**: минимальная длина 8 символов, требование букв и цифр
+- **CSP ужесточен**: удалено 'unsafe-eval', добавлены object-src 'none', form-action 'self', upgrade-insecure-requests
+- **Минимизация ошибок**: в production не раскрываются детали ошибок БД в health check
+- **Защита от timing attacks**: добавлена задержка ответа при входе (200ms минимум)
+- **Audit логирование**: добавлена система логирования всех важных событий (вход, смена пароля, загрузка файлов, создание страниц)
+- **Улучшена обработка ошибок**: централизованный error handler с категоризацией и логированием
+- **Валидация Content-Type**: проверка заголовков Content-Type для всех API endpoints
+- **DoS защита**: ограничение размера запросов (1MB JSON, 10MB файлы), ограничение глубины JSON (100 уровней)
+- **Безопасность сессий**: добавлено абсолютное время жизни сессии (30 дней), автоматическое продление при активности
+- **Улучшена валидация HTML**: блокировка javascript:, data:, vbscript: URI, проверка на опасные паттерны
+- **Автоматическое сканирование**: добавлен GitHub workflow для npm audit и проверки зависимостей
+- **Тесты безопасности**: добавлены тесты для email валидации, webhook подписей, TOTP, CSRF токенов
+- **Документация безопасности**: добавлен docs/SECURITY.ru.md с описанием мер безопасности и рекомендациями
+
 ### Changed
 
+- Вики: одна колонка навигации — **сворачиваемое дерево** опубликованных страниц (режим поиска `q` по-прежнему даёт плоский список); колонка «Разделы» убрана.
+- Админ (посты): левое дерево в стиле Docmost — chevron, меню действий по строке, иконки **Eye/EyeOff** для черновика/публикации, шапка **Pages** с кнопкой «Новая страница».
 - Вики: колонки **Разделы** и **Страницы** — видимая область ~20 строк, дальше внутренний скролл с тонким скроллбаром (`globals.css`).
 - Админка: три вкладки (**Посты**, **AI-агенты**, **Настройки**); активная вкладка в URL `?tab=posts|ai|settings`.
 - Шапка: для залогиненного админа — **Админка** + **Выйти** вместо **Login** (сессия по-прежнему из cookie на сервере).
-- Вики: колонка **Sections** подсвечивает раздел текущей страницы (первый сегмент пути), а не «All pages», когда открыта статья без `?section=`.
-- Трёхколоночный макет вики без рамок и разделительных линий между колонками (единый плоский фон).
-- Ширина двух левых колонок вики задаётся CSS-переменными `--repo-sidebar-labels-width` и `--repo-sidebar-pages-width` в `:root` (`globals.css`).
+- Двухколоночный макет вики (сайдбар + контент) без рамок между колонками (единый плоский фон).
+- Ширина сайдбара вики задаётся `--repo-sidebar-width` в `:root` (`globals.css`).
 - На узких экранах (≤899px) в шапке скрыт выпадающий список «AI links».
 - Ссылка **Donate** вынесена из шапки в подвал (рядом с GitHub, поддержкой и т.д.).
 
 ### Added
 
+- Favicon / Apple touch: SVG в `public/` (`fav-wiki16`–`512`, `fav-wiki180`) подключены через `metadata.icons` в корневом layout.
+- Шапка: **поиск-пилюля** по центру (как в Docmost), глобально **Ctrl+K / ⌘K** открывает палитру поиска и переход на главную с `?q=`; переключатель темы **светлая / тёмная / как в системе** (вместо одной кнопки).
 - Текстовый баннер HeKoti при установке зависимостей (`npm` `postinstall`: `scripts/install-banner.cjs`, без шума в CI / при `SKIP_HEKOTI_BANNER=1`) и при старте контейнера (`docker-entrypoint.sh`: `--startup`).
 - README: схема стека Docker Compose в Mermaid; автообновление маркеров `COMPOSE_MERMAID_AUTO_*` через `scripts/update_compose_mermaid_readme.py` и workflow `.github/workflows/compose-mermaid.yml` (образ `derlin/docker-compose-viz-mermaid`).
 - Миграция `0004_global_settings`: таблица `GlobalSettings` (если ещё не создавалась через `db push`).
@@ -39,6 +64,10 @@
 
 ### Fixed
 
+- Сборка production: `AuditLog.metadata` сериализуется в JSON-строку под текущую Prisma-схему.
+- Security tests: email validation отвергает домены без TLD/двойные точки, TOTP verification возвращает `false` вместо исключения для нестандартной длины кода.
+- Middleware: CSRF HMAC переведён на Web Crypto API, чтобы не импортировать Node `crypto` в Edge Runtime.
+- `npm start`: production-запуск теперь включает `HEKOTI_ENFORCE_PROD_SECRETS=1`, как Docker entrypoint, чтобы не стартовать с дефолтными секретами.
 - Сессия за HTTPS reverse proxy: флаг `Secure` на cookie учитывает заголовок `X-Forwarded-Proto` (не только `APP_URL`).
 - Docker: `package-lock.json` синхронизирован с npm 10 (как в образе `node:22-alpine`): в lock добавлены `@emnapi/core` и `@emnapi/runtime@1.10.0`, без чего `npm ci --omit=dev` завершался ошибкой «Missing from lock file».
 - `admin-editor.tsx`: стили `panelStyle` / `buttonStyle` / `inputStyle` в начале файла + `CSSProperties` из `react` (сборка Docker/TS).

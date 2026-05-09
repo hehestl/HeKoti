@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Вендорный Snibox (Rails/Vue), не линтовать как Next/React:
     "snibox-master/**",
+    // Локальный референс Docmost (эталон UX), не часть сборки:
+    "docmost-main/**",
     ".history/**",
     "scripts/**/*.cjs",
   ]),

@@ -20,7 +20,13 @@
     "dashboard": "Dashboard",
     "aiAgents": "AI Agents",
     "posts": "Posts",
-    "sectionsAria": "Admin sections"
+    "sectionsAria": "Admin sections",
+    "searchPaletteTitle": "Search wiki",
+    "searchGo": "Go",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "themeModeAria": "Theme: light, dark, or match system"
   },
   "home": {
     "title": "Hekotia",
@@ -96,7 +102,11 @@
       "upLevelTitle": "Move page one level up (Shift+Alt+↑)",
       "cantMoveRoot": "Already at top level.",
       "cloneToTitle": "Create/open the same page in {lang}",
-      "cloneHereTitle": "Current language"
+      "cloneHereTitle": "Current language",
+      "sidebarTitle": "Pages",
+      "newPage": "New page",
+      "newPageTitle": "Add a root-level page (same as + Sibling with nothing selected)",
+      "rowMenuTitle": "Page actions"
     },
     "wiki": {
       "sections": "Sections",
@@ -115,7 +125,10 @@
       "availableIn": "Available in",
       "createFrom": "Create from {lang}",
       "createNote": "It will be created as a draft. Edit and publish it in Admin.",
-      "noSource": "No source page found in other languages."
+      "noSource": "No source page found in other languages.",
+      "treeExpandBranch": "Expand",
+      "treeCollapseBranch": "Collapse",
+      "pagesTreeAria": "Published pages tree"
     },
     "editor": {
       "postPrompt": "Post path for /post: e.g. h2 or parent/child",

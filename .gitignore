@@ -31,6 +31,10 @@
 .DS_Store
 *.pem
 
+# editor / local AI session noise (do not commit)
+.cursor/
+.history/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

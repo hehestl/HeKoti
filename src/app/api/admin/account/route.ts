@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isValidEmail } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function PATCH(request: Request) {
@@ -46,12 +46,20 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, message: "Enter a new login or new password." }, { status: 400 });
   }
 
-  if (newPassword && newPassword.length < 6) {
-    return NextResponse.json({ ok: false, message: "New password must be at least 6 characters." }, { status: 400 });
+  // Validate new email format if provided
+  if (newEmail && !isValidEmail(newEmail)) {
+    return NextResponse.json({ ok: false, message: "Invalid email format." }, { status: 400 });
   }
 
-  if (newEmail && newEmail.length < 1) {
-    return NextResponse.json({ ok: false, message: "Invalid login." }, { status: 400 });
+  // Validate password length and complexity
+  if (newPassword) {
+    if (newPassword.length < 8) {
+      return NextResponse.json({ ok: false, message: "New password must be at least 8 characters." }, { status: 400 });
+    }
+    // Check for minimum complexity (at least one letter and one number)
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return NextResponse.json({ ok: false, message: "New password must contain at least one letter and one number." }, { status: 400 });
+    }
   }
 
   if (newEmail && newEmail !== full.email) {

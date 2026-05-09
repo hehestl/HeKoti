@@ -62,3 +62,45 @@ export function buildPathTree<T extends { path: string; title: string; navOrder?
   sortChildren(root);
   return root.children;
 }
+
+/** Keys along the branch (including leaf `pathKey`) so `targetDbPath` becomes visible when those nodes are expanded. */
+export function pathKeysBranchingToTarget<T extends { path: string }>(
+  nodes: PathTreeNode<T>[],
+  targetDbPath: string | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+  if (!targetDbPath) return keys;
+
+  const dfs = (arr: PathTreeNode<T>[], ancestors: string[]): boolean => {
+    for (const n of arr) {
+      const chain = [...ancestors, n.pathKey];
+      if (n.page?.path === targetDbPath) {
+        chain.forEach((k) => keys.add(k));
+        return true;
+      }
+      if (n.children.length > 0 && dfs(n.children, chain)) {
+        chain.forEach((k) => keys.add(k));
+        return true;
+      }
+    }
+    return false;
+  };
+
+  dfs(nodes, []);
+  return keys;
+}
+
+/** Every node `pathKey` that has children (for default-expanded admin tree). */
+export function pathKeysWithChildren<T extends { path: string }>(nodes: PathTreeNode<T>[]): Set<string> {
+  const keys = new Set<string>();
+  const walk = (arr: PathTreeNode<T>[]) => {
+    for (const n of arr) {
+      if (n.children.length > 0) {
+        keys.add(n.pathKey);
+        walk(n.children);
+      }
+    }
+  };
+  walk(nodes);
+  return keys;
+}

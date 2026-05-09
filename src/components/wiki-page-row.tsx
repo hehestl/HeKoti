@@ -20,7 +20,8 @@ const menuBtn: CSSProperties = {
   borderRadius: 6,
 };
 
-export function WikiPageRow({
+/** Link + admin context menu — use inside a list item or tree row. */
+export function WikiPageCell({
   id,
   href,
   title,
@@ -95,7 +96,7 @@ export function WikiPageRow({
 
   return (
     <>
-      <li onContextMenu={onContextMenu}>
+      <div className="wiki-page-cell" onContextMenu={onContextMenu}>
         <Link
           href={href}
           className={isActive ? "repo-page-link repo-page-link-active" : "repo-page-link"}
@@ -104,7 +105,7 @@ export function WikiPageRow({
         >
           {title}
         </Link>
-      </li>
+      </div>
       {menu && isAdmin ? (
         <div
           role="menu"
@@ -135,5 +136,13 @@ export function WikiPageRow({
         </div>
       ) : null}
     </>
+  );
+}
+
+export function WikiPageRow(props: Parameters<typeof WikiPageCell>[0]) {
+  return (
+    <li className="repo-page-list-li">
+      <WikiPageCell {...props} />
+    </li>
   );
 }

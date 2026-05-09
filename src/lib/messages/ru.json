@@ -20,7 +20,13 @@
     "sectionsAria": "Разделы админки",
     "homeAria": "Hekoti — на главную",
     "addPageAria": "Добавить страницу",
-    "aiLinks": "Ссылки"
+    "aiLinks": "Ссылки",
+    "searchPaletteTitle": "Поиск по вики",
+    "searchGo": "Найти",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная",
+    "themeSystem": "Как в системе",
+    "themeModeAria": "Тема: светлая, тёмная или как в системе"
   },
   "home": {
     "title": "Hekotia",
@@ -96,7 +102,11 @@
       "upLevelTitle": "Поднять на уровень выше (Shift+Alt+↑)",
       "cantMoveRoot": "Уже верхний уровень.",
       "cloneToTitle": "Создать/открыть такую же страницу на {lang}",
-      "cloneHereTitle": "Текущий язык"
+      "cloneHereTitle": "Текущий язык",
+      "sidebarTitle": "Страницы",
+      "newPage": "Новая страница",
+      "newPageTitle": "Страница в корень (то же, что родственник без выбранной страницы)",
+      "rowMenuTitle": "Действия со страницей"
     },
     "wiki": {
       "sections": "Разделы",
@@ -115,7 +125,10 @@
       "availableIn": "Есть в языках",
       "createFrom": "Создать из {lang}",
       "createNote": "Страница создастся как черновик. Отредактируйте и опубликуйте в админке.",
-      "noSource": "В других языках исходной страницы не найдено."
+      "noSource": "В других языках исходной страницы не найдено.",
+      "treeExpandBranch": "Развернуть",
+      "treeCollapseBranch": "Свернуть",
+      "pagesTreeAria": "Дерево опубликованных страниц"
     },
     "editor": {
       "postPrompt": "Путь статьи для /post: h2 или parent/child",

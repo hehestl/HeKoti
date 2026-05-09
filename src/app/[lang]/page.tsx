@@ -18,10 +18,10 @@ export default async function LanguageHome({
   searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ q?: string; section?: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
   const { lang: inputLang } = await params;
-  const { q, section } = await searchParams;
+  const { q } = await searchParams;
   const lang = safeLang(inputLang);
   const dict = await getDictionary(lang);
   const user = await getSessionUser();
@@ -48,7 +48,7 @@ export default async function LanguageHome({
   ]);
 
   return (
-    <WikiRepositoryLayout lang={lang} q={q} section={section} isAdmin={!!user && user.role === "admin"}>
+    <WikiRepositoryLayout lang={lang} q={q} isAdmin={!!user && user.role === "admin"}>
       <div>
         <div className="home-hero">
           <div className="home-mascot" aria-hidden>

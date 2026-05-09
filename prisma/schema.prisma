@@ -91,3 +91,24 @@ model GlobalSettings {
   bodyHtml        String   @default("")
   updatedAt       DateTime @updatedAt
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  eventType    String
+  userId       String?
+  userEmail    String?
+  action       String?
+  resourceType String?
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     String?  // JSON stringified
+  success      Boolean  @default(true)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([ipAddress])
+}

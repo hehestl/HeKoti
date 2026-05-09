@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { limitTotpLogin, requestIp } from "@/lib/auth-rate-limit";
 import { prisma } from "@/lib/db";
 import { decryptTotpSecret, verifyTotpToken } from "@/lib/totp";
 
@@ -24,6 +25,16 @@ export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
   if (!sessionUser || sessionUser.role !== "admin") {
     return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
+  // Rate limit TOTP verification attempts
+  const ip = requestIp(request);
+  const limit = await limitTotpLogin(ip);
+  if (limit.blocked) {
+    return NextResponse.json(
+      { ok: false, message: "Too many TOTP attempts. Try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+    );
   }
 
   let json: unknown;

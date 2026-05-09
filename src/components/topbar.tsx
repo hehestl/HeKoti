@@ -2,12 +2,28 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useTheme } from "next-themes";
-import { Globe, Moon, Plus, Search, Sun } from "lucide-react";
+import { Globe, Plus } from "lucide-react";
+import { ThemeModeToggle } from "@/components/theme-mode-toggle";
+import { WikiSearchPalette } from "@/components/wiki-search-palette";
 import type { AiLink } from "@/lib/ai-links";
 
 type Option = { code: string; label: string };
+
+type TopBarDict = {
+  login: string;
+  logout: string;
+  admin: string;
+  search: string;
+  homeAria: string;
+  addPageAria: string;
+  aiLinks: string;
+  searchPaletteTitle: string;
+  searchGo: string;
+  themeLight: string;
+  themeDark: string;
+  themeSystem: string;
+  themeModeAria: string;
+};
 
 export function TopBar({
   lang,
@@ -21,19 +37,8 @@ export function TopBar({
   ai: AiLink[];
   /** If admin is logged in — show "Admin" and logout instead of "Login". */
   adminUser?: { login: string } | null;
-  dict: {
-    login: string;
-    logout: string;
-    admin: string;
-    search: string;
-    homeAria: string;
-    addPageAria: string;
-    aiLinks: string;
-  };
+  dict: TopBarDict;
 }) {
-  const [query, setQuery] = useState("");
-  const searchHref = useMemo(() => `/${lang}?q=${encodeURIComponent(query)}`, [lang, query]);
-
   const onSwitchLang = (nextLang: string) => {
     const { pathname, search, hash } = window.location;
     const rest = pathname.startsWith(`/${lang}`) ? pathname.slice(`/${lang}`.length) : "";
@@ -47,34 +52,26 @@ export function TopBar({
   };
 
   return (
-    <header
-      style={{
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto",
-        gap: 12,
-        alignItems: "center",
-        borderBottom: "1px solid var(--line)",
-        padding: "10px 14px",
-        background: "var(--panel)",
-      }}
-    >
-      <Link
-        href={`/${lang}`}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          color: "inherit",
-          minWidth: 0,
-        }}
-        aria-label={dict.homeAria}
-      >
-        <span className="topbar-logo">
-          <Image src="/hekoti.png" alt="" width={50} height={50} aria-hidden priority />
-        </span>
-        <strong>Hekoti</strong>
-      </Link>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+    <header className="topbar-shell">
+      <div className="topbar-left">
+        <Link href={`/${lang}`} className="topbar-brand" aria-label={dict.homeAria}>
+          <span className="topbar-logo">
+            <Image src="/hekoti.png" alt="" width={50} height={50} aria-hidden priority />
+          </span>
+          <strong className="topbar-title">Hekoti</strong>
+        </Link>
+      </div>
+
+      <div className="topbar-center">
+        <WikiSearchPalette
+          lang={lang}
+          searchLabel={dict.search}
+          paletteTitle={dict.searchPaletteTitle}
+          goLabel={dict.searchGo}
+        />
+      </div>
+
+      <div className="topbar-right">
         <select
           className="topbar-ai-links-select"
           style={inputStyle}
@@ -92,28 +89,16 @@ export function TopBar({
             </option>
           ))}
         </select>
-        <Link href={`/${lang}/admin`} className="topbar-add-page-link" style={iconButtonStyle} aria-label={dict.addPageAria}>
+        <Link href={`/${lang}/admin`} className="topbar-add-page-link topbar-icon-link" aria-label={dict.addPageAria}>
           <Plus size={16} />
         </Link>
-        <form action={searchHref} style={{ display: "flex", flex: 1, gap: 8 }}>
-          <input
-            style={{ ...inputStyle, width: "100%" }}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={dict.search}
-          />
-          <button style={iconButtonStyle} type="submit">
-            <Search size={16} />
-          </button>
-        </form>
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={{ position: "relative" }}>
-          <Globe size={14} style={{ position: "absolute", left: 8, top: 9 }} />
+        <div className="topbar-lang-wrap">
+          <Globe size={14} className="topbar-globe" aria-hidden />
           <select
             defaultValue={lang}
             onChange={(event) => onSwitchLang(event.target.value)}
             style={{ ...inputStyle, paddingLeft: 28 }}
+            aria-label="Language"
           >
             {langs.map((entry) => (
               <option key={entry.code} value={entry.code}>
@@ -122,22 +107,29 @@ export function TopBar({
             ))}
           </select>
         </div>
-        <ThemeToggleButton />
+        <ThemeModeToggle
+          labels={{
+            light: dict.themeLight,
+            dark: dict.themeDark,
+            system: dict.themeSystem,
+            groupAria: dict.themeModeAria,
+          }}
+        />
         {adminUser ? (
           <>
             <Link
               href={`/${lang}/admin`}
-              style={{ ...iconButtonStyle, borderColor: "var(--accent)", color: "var(--accent)", fontWeight: 600 }}
+              className="topbar-icon-link topbar-admin-link"
               title={adminUser.login}
             >
               {dict.admin}
             </Link>
-            <button type="button" onClick={logout} style={iconButtonStyle}>
+            <button type="button" onClick={logout} className="topbar-icon-link">
               {dict.logout}
             </button>
           </>
         ) : (
-          <Link href={`/${lang}/login`} style={iconButtonStyle}>
+          <Link href={`/${lang}/login`} className="topbar-icon-link">
             {dict.login}
           </Link>
         )}
@@ -154,32 +146,3 @@ const inputStyle: React.CSSProperties = {
   height: 34,
   padding: "0 10px",
 };
-
-const iconButtonStyle: React.CSSProperties = {
-  border: "1px solid var(--line)",
-  borderRadius: 10,
-  minHeight: 34,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "0 10px",
-  background: "transparent",
-  color: "var(--fg)",
-  cursor: "pointer",
-};
-
-function ThemeToggleButton() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const dark = resolvedTheme === "dark";
-  return (
-    <button
-      type="button"
-      suppressHydrationWarning
-      onClick={() => setTheme(dark ? "light" : "dark")}
-      style={iconButtonStyle}
-      aria-label="Toggle theme"
-    >
-      {dark ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
-  );
-}

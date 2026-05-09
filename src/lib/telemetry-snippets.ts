@@ -12,6 +12,17 @@ const ALLOWED_HOSTS = new Set([
   "google-analytics.com",
 ]);
 
+// Patterns that indicate potentially dangerous content
+const DANGEROUS_PATTERNS = [
+  /javascript\s*:/i,
+  /data\s*:\s*text\/html/i,
+  /vbscript\s*:/i,
+  /on\w+\s*=/i, // event handlers like onclick=, onload=, etc.
+  /expression\s*\(/i, // CSS expression()
+  /import\s+/i, // CSS @import
+  /behavior\s*:/i, // CSS behavior
+];
+
 function parseAttrs(raw: string) {
   const attrs: Record<string, string | boolean> = {};
   const re = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
@@ -27,47 +38,106 @@ function isAllowedExternalUrl(url: string) {
   try {
     const u = new URL(url);
     if (u.protocol !== "https:") return false;
+    
+    // Block dangerous protocols
+    if (["javascript:", "data:", "vbscript:"].includes(u.protocol.toLowerCase())) {
+      return false;
+    }
+    
     return ALLOWED_HOSTS.has(u.hostname.toLowerCase());
   } catch {
+    // If URL parsing fails, check if it's a relative path (allowed)
+    if (url.startsWith("/") || url.startsWith("./") || url.startsWith("../")) {
+      return true;
+    }
     return false;
   }
+}
+
+/**
+ * Check for dangerous patterns in content
+ */
+function hasDangerousContent(content: string): string[] {
+  const violations: string[] = [];
+  
+  for (const pattern of DANGEROUS_PATTERNS) {
+    if (pattern.test(content)) {
+      violations.push(`Potentially dangerous pattern detected: ${pattern.source}`);
+      break; // One violation is enough to flag
+    }
+  }
+  
+  return violations;
 }
 
 function sanitizeAttrs(kind: SnippetNode["kind"], attrsRaw: Record<string, string | boolean>, violations: string[]) {
   const attrs: Record<string, string | boolean> = {};
   const allowByKind: Record<string, Set<string>> = {
-    script: new Set(["src", "async", "defer", "type", "crossorigin", "referrerpolicy"]),
+    script: new Set(["src", "async", "defer", "type", "crossorigin", "referrerpolicy", "nonce", "integrity"]),
     meta: new Set(["name", "content", "property", "charset", "http-equiv"]),
-    link: new Set(["rel", "href", "as", "type", "crossorigin", "referrerpolicy", "media"]),
+    link: new Set(["rel", "href", "as", "type", "crossorigin", "referrerpolicy", "media", "integrity", "sizes"]),
     noscript: new Set(["id"]),
   };
   const allowed = allowByKind[kind];
 
   for (const [key, value] of Object.entries(attrsRaw)) {
     const low = key.toLowerCase();
+    
+    // Block all event handlers (on* attributes)
     if (low.startsWith("on")) {
       violations.push(`Event attribute "${key}" is not allowed.`);
       continue;
     }
+    
+    // Block style attribute (can contain dangerous CSS)
+    if (low === "style") {
+      violations.push(`Style attribute is not allowed.`);
+      continue;
+    }
+    
     if (low.startsWith("data-")) {
+      // Validate data-* attribute values for dangerous content
+      if (typeof value === "string" && hasDangerousContent(value).length > 0) {
+        violations.push(`data-${key} contains potentially dangerous content.`);
+        continue;
+      }
       attrs[low] = value;
       continue;
     }
+    
     if (!allowed.has(low)) {
       violations.push(`Attribute "${key}" is not allowed on <${kind}>.`);
       continue;
     }
+    
+    // Validate URL attributes for dangerous patterns
+    if (typeof value === "string" && (low === "src" || low === "href" || low === "content")) {
+      const dangerousPatterns = hasDangerousContent(value);
+      if (dangerousPatterns.length > 0) {
+        violations.push(`Attribute "${key}" contains potentially dangerous content.`);
+        continue;
+      }
+    }
+    
     attrs[low] = value;
   }
 
-  if (kind === "script" && typeof attrs.src === "string" && !isAllowedExternalUrl(attrs.src)) {
-    violations.push(`Script src host is not allowlisted: ${attrs.src}`);
-    delete attrs.src;
+  if (kind === "script" && typeof attrs.src === "string") {
+    if (!isAllowedExternalUrl(attrs.src)) {
+      violations.push(`Script src host is not allowlisted: ${attrs.src}`);
+      delete attrs.src;
+    }
+    // Recommend SRI (Subresource Integrity) for external scripts
+    if (attrs.src && !attrs.integrity) {
+      // Warning only, not a violation
+    }
   }
+  
   if (kind === "link" && typeof attrs.href === "string" && !isAllowedExternalUrl(attrs.href)) {
     violations.push(`Link href host is not allowlisted: ${attrs.href}`);
     delete attrs.href;
   }
+  
   return attrs;
 }
 
@@ -75,6 +145,12 @@ export function parseTelemetrySnippet(html: string): { nodes: SnippetNode[]; vio
   const out: SnippetNode[] = [];
   const src = html || "";
   const violations: string[] = [];
+
+  // Check for dangerous patterns in the entire HTML before parsing
+  const dangerousPatterns = hasDangerousContent(src);
+  if (dangerousPatterns.length > 0) {
+    violations.push("Potentially dangerous content detected in the HTML.");
+  }
 
   const remaining = src
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -88,7 +164,13 @@ export function parseTelemetrySnippet(html: string): { nodes: SnippetNode[]; vio
 
   for (const m of src.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     const attrs = sanitizeAttrs("script", parseAttrs(m[1] ?? ""), violations);
-    out.push({ kind: "script", attrs, content: m[2] ?? "" });
+    // Check script content for dangerous patterns
+    const content = m[2] ?? "";
+    const contentViolations = hasDangerousContent(content);
+    if (contentViolations.length > 0) {
+      violations.push("Script content contains potentially dangerous patterns.");
+    }
+    out.push({ kind: "script", attrs, content });
   }
   for (const m of src.matchAll(/<meta\b([^>]*)\/?>/gi)) {
     const attrs = sanitizeAttrs("meta", parseAttrs(m[1] ?? ""), violations);

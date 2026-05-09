@@ -3,10 +3,17 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { buildPathTree, type PathTreeNode } from "@/lib/page-tree";
+import { buildPathTree, pathKeysWithChildren, type PathTreeNode } from "@/lib/page-tree";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
+import {
+  TREE_CHEVRON_BTN_SIZE,
+  TreeChevronButton,
+  TreeChevronSpacer,
+  TreeDepthSpacer,
+} from "@/components/page-tree-shared";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import type { Dictionary } from "@/lib/i18n";
+import { Eye, EyeOff, GripVertical, MoreVertical } from "lucide-react";
 
 const panelStyle: CSSProperties = {
   border: "1px solid var(--line)",
@@ -346,6 +353,21 @@ export function AdminEditor({
     setCreateTitle("");
   };
 
+  const queueCreateChild = useCallback((id: string) => {
+    const p = pages.find((x) => x.id === id);
+    if (!p) return;
+    setCreateParentParts(pathSegmentsAfterLang(p.path, lang));
+    setCreateTitle("");
+  }, [pages, lang]);
+
+  const queueCreateSibling = useCallback((id: string) => {
+    const p = pages.find((x) => x.id === id);
+    if (!p) return;
+    const segs = pathSegmentsAfterLang(p.path, lang);
+    setCreateParentParts(segs.length <= 1 ? [] : segs.slice(0, -1));
+    setCreateTitle("");
+  }, [pages, lang]);
+
   const createSibling = () => {
     if (!active) {
       openCreateModal([]);
@@ -388,7 +410,32 @@ export function AdminEditor({
   return (
     <section style={{ display: "grid", gridTemplateColumns: "minmax(300px, min(40vw, 420px)) 1fr", gap: 12 }}>
       <aside style={{ ...panelStyle, minWidth: 0 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            flexWrap: "wrap",
+            marginBottom: 10,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--muted)",
+            }}
+          >
+            {dict.admin.posts.sidebarTitle}
+          </span>
+          <button onClick={() => createSibling()} style={buttonStyle} type="button" title={dict.admin.posts.newPageTitle}>
+            {dict.admin.posts.newPage}
+          </button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
           <button onClick={createSibling} style={buttonStyle} type="button" title={dict.admin.posts.siblingTitle}>
             {dict.admin.posts.addSibling}
           </button>
@@ -430,6 +477,8 @@ export function AdminEditor({
               onDelete={requestDelete}
               onTogglePublish={togglePublish}
               onMoveByDrop={movePageByDrop}
+              onAddChild={queueCreateChild}
+              onAddSibling={queueCreateSibling}
               dragOver={dragOver}
               setDragOver={setDragOver}
               dict={dict}
@@ -651,6 +700,33 @@ function ModalCard({
   );
 }
 
+const adminIconBtn: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: TREE_CHEVRON_BTN_SIZE,
+  minWidth: TREE_CHEVRON_BTN_SIZE,
+  padding: 4,
+  border: "1px solid var(--line)",
+  borderRadius: 6,
+  background: "transparent",
+  color: "var(--fg)",
+  cursor: "pointer",
+};
+
+const adminMenuBtn: CSSProperties = {
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  padding: "8px 12px",
+  border: "none",
+  background: "transparent",
+  color: "var(--fg)",
+  cursor: "pointer",
+  fontSize: 13,
+  borderRadius: 6,
+};
+
 function AdminPathTree({
   nodes,
   activeId,
@@ -659,6 +735,8 @@ function AdminPathTree({
   onDelete,
   onTogglePublish,
   onMoveByDrop,
+  onAddChild,
+  onAddSibling,
   dragOver,
   setDragOver,
   dict,
@@ -670,230 +748,375 @@ function AdminPathTree({
   onDelete: (id: string) => void;
   onTogglePublish: (id: string) => void;
   onMoveByDrop: (fromId: string, targetId: string, mode: "before" | "after" | "inside") => void;
+  onAddChild: (id: string) => void;
+  onAddSibling: (id: string) => void;
   dragOver: null | { targetId: string; mode: "before" | "after" | "inside" };
   setDragOver: (v: null | { targetId: string; mode: "before" | "after" | "inside" }) => void;
   dict: Dictionary;
 }) {
+  const [openBranches, setOpenBranches] = useState(() => pathKeysWithChildren(nodes));
+  const [rowMenu, setRowMenu] = useState<null | { id: string; x: number; y: number }>(null);
+
+  useEffect(() => {
+    if (!rowMenu) return;
+    const close = () => setRowMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [rowMenu]);
+
+  const toggleBranch = useCallback((pathKey: string) => {
+    setOpenBranches((prev) => {
+      const n = new Set(prev);
+      if (n.has(pathKey)) n.delete(pathKey);
+      else n.add(pathKey);
+      return n;
+    });
+  }, []);
+
   return (
-    <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 12 }}>
-      {nodes.map((node, index) => (
-        <PathTreeBranch
+    <div style={{ fontSize: 13, fontFamily: "inherit" }}>
+      {nodes.map((node) => (
+        <AdminTreeBranch
           key={node.pathKey}
           node={node}
-          isLast={index === nodes.length - 1}
-          prefix=""
+          depth={0}
           activeId={activeId}
           onSelect={onSelect}
           onRename={onRename}
           onDelete={onDelete}
           onTogglePublish={onTogglePublish}
           onMoveByDrop={onMoveByDrop}
+          onAddChild={onAddChild}
+          onAddSibling={onAddSibling}
           dragOver={dragOver}
           setDragOver={setDragOver}
           dict={dict}
+          openBranches={openBranches}
+          toggleBranch={toggleBranch}
+          setRowMenu={setRowMenu}
+          adminIconBtnStyle={adminIconBtn}
         />
       ))}
+      {rowMenu ? (
+        <RowActionsMenu
+          menu={rowMenu}
+          dict={dict}
+          adminMenuBtnStyle={adminMenuBtn}
+          onRename={onRename}
+          onDelete={onDelete}
+          onAddChild={onAddChild}
+          onAddSibling={onAddSibling}
+          close={() => setRowMenu(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function PathTreeBranch({
+function RowActionsMenu({
+  menu,
+  dict,
+  adminMenuBtnStyle,
+  onRename,
+  onDelete,
+  onAddChild,
+  onAddSibling,
+  close,
+}: {
+  menu: { id: string; x: number; y: number };
+  dict: Dictionary;
+  adminMenuBtnStyle: CSSProperties;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+  onAddChild: (id: string) => void;
+  onAddSibling: (id: string) => void;
+  close: () => void;
+}) {
+  return (
+    <div
+      role="menu"
+      style={{
+        position: "fixed",
+        left: menu.x,
+        top: menu.y,
+        zIndex: 2100,
+        background: "var(--panel)",
+        border: "1px solid var(--line)",
+        borderRadius: 8,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+        minWidth: 188,
+        padding: 4,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        style={adminMenuBtnStyle}
+        onClick={() => {
+          onAddSibling(menu.id);
+          close();
+        }}
+      >
+        {dict.admin.posts.addSibling}
+      </button>
+      <button
+        type="button"
+        style={adminMenuBtnStyle}
+        onClick={() => {
+          onAddChild(menu.id);
+          close();
+        }}
+      >
+        {dict.admin.posts.addChild}
+      </button>
+      <button
+        type="button"
+        style={adminMenuBtnStyle}
+        onClick={() => {
+          onRename(menu.id);
+          close();
+        }}
+      >
+        {dict.admin.posts.rename}
+      </button>
+      <button
+        type="button"
+        style={{ ...adminMenuBtnStyle, color: "#ff5f7d" }}
+        onClick={() => {
+          onDelete(menu.id);
+          close();
+        }}
+      >
+        {dict.admin.posts.delete}
+      </button>
+    </div>
+  );
+}
+
+function AdminTreeBranch({
   node,
-  isLast,
-  prefix,
+  depth,
   activeId,
   onSelect,
   onRename,
   onDelete,
   onTogglePublish,
   onMoveByDrop,
+  onAddChild,
+  onAddSibling,
   dragOver,
   setDragOver,
   dict,
+  openBranches,
+  toggleBranch,
+  setRowMenu,
+  adminIconBtnStyle,
 }: {
   node: PathTreeNode<PageRow>;
-  isLast: boolean;
-  prefix: string;
+  depth: number;
   activeId: string;
   onSelect: (id: string) => void;
   onRename: (id: string) => void;
   onDelete: (id: string) => void;
   onTogglePublish: (id: string) => void;
   onMoveByDrop: (fromId: string, targetId: string, mode: "before" | "after" | "inside") => void;
+  onAddChild: (id: string) => void;
+  onAddSibling: (id: string) => void;
   dragOver: null | { targetId: string; mode: "before" | "after" | "inside" };
   setDragOver: (v: null | { targetId: string; mode: "before" | "after" | "inside" }) => void;
   dict: Dictionary;
+  openBranches: Set<string>;
+  toggleBranch: (pathKey: string) => void;
+  setRowMenu: (v: null | { id: string; x: number; y: number }) => void;
+  adminIconBtnStyle: CSSProperties;
 }) {
-  const branch = isLast ? "└── " : "├── ";
-  const childPrefix = prefix + (isLast ? "    " : "│   ");
+  const hasChildren = node.children.length > 0;
+  const expanded = !hasChildren || openBranches.has(node.pathKey);
 
-  const actionBtn: CSSProperties = {
-    ...buttonStyle,
-    padding: "0 8px",
-    minHeight: 28,
-    lineHeight: "28px",
-  };
+  const dragTargetId = node.page?.id ?? null;
 
-  const labelRow: ReactNode = node.page ? (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        const fromId = e.dataTransfer.getData("text/plain");
-        if (!fromId || fromId === node.page!.id) return;
-        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-        const y = e.clientY - rect.top;
-        const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
-        setDragOver({ targetId: node.page!.id, mode });
-      }}
-      onDragLeave={() => setDragOver(null)}
-      onDrop={(e) => {
-        e.preventDefault();
-        const fromId = e.dataTransfer.getData("text/plain");
-        if (!fromId) return;
-        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-        const y = e.clientY - rect.top;
-        const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
-        onMoveByDrop(fromId, node.page!.id, mode);
-      }}
-      style={{
-        display: "flex",
-        alignItems: "stretch",
-        gap: 6,
-        flex: 1,
-        minWidth: 0,
-        borderRadius: 8,
-        border:
-          node.page.id === activeId
-            ? "1px solid var(--accent)"
-            : dragOver?.targetId === node.page.id
-              ? `1px solid ${dragOver.mode === "inside" ? "color-mix(in srgb, var(--accent) 70%, var(--line))" : "color-mix(in srgb, var(--accent) 45%, var(--line))"}`
-              : "1px solid var(--line)",
-        background:
-          node.page.id === activeId
-            ? "color-mix(in srgb, var(--accent) 12%, var(--panel))"
-            : dragOver?.targetId === node.page.id
-              ? "color-mix(in srgb, var(--accent) 10%, var(--panel))"
-              : "transparent",
-        padding: "0 6px",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => onSelect(node.page!.id)}
-        title={node.page.path}
+  const labelRow: ReactNode =
+    dragTargetId && node.page ? (
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          const fromId = e.dataTransfer.getData("text/plain");
+          if (!fromId || fromId === node.page!.id) return;
+          const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
+          setDragOver({ targetId: node.page!.id, mode });
+        }}
+        onDragLeave={() => setDragOver(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          const fromId = e.dataTransfer.getData("text/plain");
+          if (!fromId) return;
+          const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const mode = e.shiftKey ? "inside" : y < rect.height / 2 ? "before" : "after";
+          onMoveByDrop(fromId, node.page!.id, mode);
+        }}
         style={{
-          border: "none",
-          background: "transparent",
-          color: "inherit",
-          padding: "0 6px",
-          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          flex: 1,
+          minWidth: 0,
+          borderRadius: 8,
+          border:
+            node.page.id === activeId
+              ? "1px solid var(--accent)"
+              : dragOver?.targetId === node.page.id
+                ? `1px solid ${dragOver.mode === "inside" ? "color-mix(in srgb, var(--accent) 70%, var(--line))" : "color-mix(in srgb, var(--accent) 45%, var(--line))"}`
+                : "1px solid var(--line)",
+          background:
+            node.page.id === activeId
+              ? "color-mix(in srgb, var(--accent) 12%, var(--panel))"
+              : dragOver?.targetId === node.page.id
+                ? "color-mix(in srgb, var(--accent) 10%, var(--panel))"
+                : "transparent",
+          padding: "2px 4px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => onSelect(node.page!.id)}
+          title={node.page.path}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "inherit",
+            padding: "2px 4px",
+            cursor: "pointer",
+            flex: 1,
+            minWidth: 0,
+            textAlign: "left",
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            lineHeight: 1.35,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {node.page.isPublished ? (
+            <Eye size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.8, flexShrink: 0 }} />
+          ) : (
+            <EyeOff size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.55, flexShrink: 0 }} />
+          )}
+          <span title={node.page.isPublished ? dict.admin.posts.published : dict.admin.posts.draft}>{node.page.title}</span>
+        </button>
+        <button
+          type="button"
+          style={adminIconBtnStyle}
+          onClick={() => onTogglePublish(node.page!.id)}
+          title={dict.admin.posts.publishToggle}
+          aria-label={dict.admin.posts.publishToggle}
+        >
+          {node.page.isPublished ? <Eye size={16} strokeWidth={2} /> : <EyeOff size={16} strokeWidth={2} />}
+        </button>
+        <button
+          type="button"
+          style={adminIconBtnStyle}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+            const id = node.page!.id;
+            queueMicrotask(() => setRowMenu({ id, x: r.left, y: r.bottom + 4 }));
+          }}
+          title={dict.admin.posts.rowMenuTitle}
+          aria-label={dict.admin.posts.rowMenuTitle}
+        >
+          <MoreVertical size={16} strokeWidth={2} />
+        </button>
+        <span
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", node.page!.id);
+          }}
+          onDragEnd={() => setDragOver(null)}
+          title={dict.admin.posts.dragHint}
+          style={{
+            ...adminIconBtnStyle,
+            cursor: "grab",
+            userSelect: "none",
+          }}
+          aria-label={dict.admin.posts.dragHint}
+        >
+          <GripVertical size={16} strokeWidth={2} />
+        </span>
+      </div>
+    ) : (
+      <div
+        style={{
+          ...buttonStyle,
           flex: 1,
           minWidth: 0,
           textAlign: "left",
           fontFamily: "inherit",
           fontSize: "inherit",
-          lineHeight: "28px",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <span
-          style={{ marginRight: 6, opacity: 0.75 }}
-          title={node.page.isPublished ? dict.admin.posts.published : dict.admin.posts.draft}
-        >
-          {node.page.isPublished ? "●" : "○"}
-        </span>
-        {node.page.title}
-      </button>
-      <button type="button" style={actionBtn} onClick={() => onTogglePublish(node.page!.id)} title={dict.admin.posts.publishToggle}>
-        {node.page.isPublished ? "⦿" : "○"}
-      </button>
-      <button type="button" style={actionBtn} onClick={() => onRename(node.page!.id)} title={dict.admin.posts.rename}>
-        ✎
-      </button>
-      <button
-        type="button"
-        style={{ ...actionBtn, borderColor: "color-mix(in srgb, #ff5f7d 65%, var(--line))", color: "#ff5f7d" }}
-        onClick={() => onDelete(node.page!.id)}
-        title={dict.admin.posts.delete}
-      >
-        ⌫
-      </button>
-      <span
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", node.page!.id);
-        }}
-        onDragEnd={() => setDragOver(null)}
-        title={dict.admin.posts.dragHint}
-        style={{
-          ...actionBtn,
-          display: "inline-flex",
+          background: "transparent",
+          opacity: 0.75,
+          cursor: "default",
+          display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          userSelect: "none",
-          cursor: "grab",
+          gap: 8,
+          padding: "4px 6px",
         }}
-        aria-label={dict.admin.posts.dragHint}
+        title={dict.admin.posts.hasChildrenNoArticle}
       >
-        ⋮⋮
-      </span>
-    </div>
-  ) : (
-    <div
-      style={{
-        ...buttonStyle,
-        flex: 1,
-        minWidth: 0,
-        textAlign: "left",
-        fontFamily: "inherit",
-        fontSize: "inherit",
-        background: "transparent",
-        opacity: 0.65,
-        cursor: "default",
-      }}
-      title={dict.admin.posts.hasChildrenNoArticle}
-    >
-      <span style={{ marginRight: 6, opacity: 0.75 }}>○</span>
-      {node.segment}/ <small style={{ opacity: 0.85 }}>— {dict.admin.posts.noArticle}</small>
-    </div>
-  );
+        <span style={{ opacity: 0.75, fontSize: 12 }}>{node.segment}/</span>
+        <small style={{ opacity: 0.85 }}>{dict.admin.posts.noArticle}</small>
+      </div>
+    );
 
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "stretch", gap: 4, marginBottom: 3 }}>
-        <span
-          style={{
-            color: "color-mix(in srgb, var(--muted) 85%, transparent)",
-            whiteSpace: "pre",
-            userSelect: "none",
-            lineHeight: "28px",
-          }}
-        >
-          {prefix}
-          {branch}
-        </span>
+    <div style={{ marginBottom: 2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 2, minHeight: TREE_CHEVRON_BTN_SIZE }}>
+        <TreeDepthSpacer depth={depth} />
+        {hasChildren ? (
+          <TreeChevronButton
+            expanded={expanded}
+            onToggle={() => toggleBranch(node.pathKey)}
+            ariaLabel={expanded ? dict.admin.wiki.treeCollapseBranch : dict.admin.wiki.treeExpandBranch}
+          />
+        ) : (
+          <TreeChevronSpacer />
+        )}
         {labelRow}
       </div>
-      {node.children.length > 0 ? (
+      {hasChildren && expanded ? (
         <div>
-          {node.children.map((child, ci) => (
-            <PathTreeBranch
+          {node.children.map((child) => (
+            <AdminTreeBranch
               key={child.pathKey}
               node={child}
-              isLast={ci === node.children.length - 1}
-              prefix={childPrefix}
+              depth={depth + 1}
               activeId={activeId}
               onSelect={onSelect}
               onRename={onRename}
               onDelete={onDelete}
               onTogglePublish={onTogglePublish}
               onMoveByDrop={onMoveByDrop}
+              onAddChild={onAddChild}
+              onAddSibling={onAddSibling}
               dragOver={dragOver}
               setDragOver={setDragOver}
               dict={dict}
+              openBranches={openBranches}
+              toggleBranch={toggleBranch}
+              setRowMenu={setRowMenu}
+              adminIconBtnStyle={adminIconBtnStyle}
             />
           ))}
         </div>

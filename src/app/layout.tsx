@@ -8,6 +8,16 @@ import { parseTelemetrySnippet } from "@/lib/telemetry-snippets";
 export const metadata: Metadata = {
   title: "Hekoti",
   description: "Hekoti — self-hosted wiki knowledge archive",
+  icons: {
+    icon: [
+      { url: "/fav-wiki16.svg", sizes: "16x16", type: "image/svg+xml" },
+      { url: "/fav-wiki32.svg", sizes: "32x32", type: "image/svg+xml" },
+      { url: "/fav-wiki48.svg", sizes: "48x48", type: "image/svg+xml" },
+      { url: "/fav-wiki192.svg", sizes: "192x192", type: "image/svg+xml" },
+      { url: "/fav-wiki512.svg", sizes: "512x512", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/fav-wiki180.svg", sizes: "180x180", type: "image/svg+xml" }],
+  },
   openGraph: {
     title: "Hekoti",
     description: "Self-hosted wiki knowledge archive",
@@ -43,13 +53,16 @@ export default async function RootLayout({
   const nonce = crypto.randomBytes(16).toString("base64");
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' https://mc.yandex.ru https://www.googletagmanager.com https://www.google-analytics.com`,
+    `script-src 'self' 'nonce-${nonce}' https://mc.yandex.ru https://www.googletagmanager.com https://www.google-analytics.com`,
     "img-src 'self' data: https:",
     "connect-src 'self' https://mc.yandex.ru https://www.google-analytics.com https://region1.google-analytics.com",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
+    "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
   ].join("; ");
   return (
     <html lang="en" suppressHydrationWarning>

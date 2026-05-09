@@ -48,6 +48,10 @@ export async function GET() {
 
   const ok = dbOk;
   const status = ok ? 200 : 503;
+  
+  // In production, don't expose detailed error information
+  const isProd = process.env.NODE_ENV === "production";
+  
   return NextResponse.json(
     {
       ok,
@@ -57,7 +61,8 @@ export async function GET() {
         redis: redisOk,
         languagetool: languagetoolOk,
       },
-      ...(dbError ? { dbError } : {}),
+      // Only include detailed error in development
+      ...(isProd ? {} : { dbError }),
     },
     { status },
   );
