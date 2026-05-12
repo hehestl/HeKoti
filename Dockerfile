@@ -5,6 +5,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# postinstall runs install-banner.cjs; copy before npm ci (full tree comes later).
+COPY scripts/install-banner.cjs scripts/install-banner.cjs
 RUN --mount=type=cache,target=/root/.npm \
     SKIP_HEKOTI_BANNER=1 npm ci --prefer-offline --no-audit
 
@@ -12,6 +14,7 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM node:22-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY scripts/install-banner.cjs scripts/install-banner.cjs
 RUN --mount=type=cache,target=/root/.npm \
     SKIP_HEKOTI_BANNER=1 npm ci --omit=dev --prefer-offline --no-audit
 
