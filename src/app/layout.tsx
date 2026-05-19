@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { connection } from "next/server";
 import "./globals.css";
-import { CSP_NONCE_HEADER } from "@/lib/csp";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { getGlobalSettings } from "@/lib/i18n";
 import { parseTelemetrySnippet } from "@/lib/telemetry-snippets";
@@ -47,8 +44,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await connection();
-  const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
   const { headHtml, bodyHtml } = await getGlobalSettings();
   const head = parseTelemetrySnippet(headHtml);
   const body = parseTelemetrySnippet(bodyHtml);
@@ -59,7 +54,7 @@ export default async function RootLayout({
       <head>
         {headNodes.map((n, i) =>
           n.kind === "script" ? (
-            <script key={`h-s-${i}`} {...(nonce ? { nonce } : {})} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
+            <script key={`h-s-${i}`} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
           ) : n.kind === "meta" ? (
             <meta key={`h-m-${i}`} {...toReactAttrs(n.attrs)} />
           ) : n.kind === "link" ? (
@@ -73,7 +68,7 @@ export default async function RootLayout({
         <AppThemeProvider>{children}</AppThemeProvider>
         {bodyNodes.map((n, i) =>
           n.kind === "script" ? (
-            <script key={`b-s-${i}`} {...(nonce ? { nonce } : {})} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
+            <script key={`b-s-${i}`} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
           ) : n.kind === "meta" ? (
             <meta key={`b-m-${i}`} {...toReactAttrs(n.attrs)} />
           ) : n.kind === "link" ? (

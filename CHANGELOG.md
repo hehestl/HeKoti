@@ -30,7 +30,8 @@
 
 - **CI typecheck**: `prisma generate` перед `tsc` в Security workflow (`npm ci --ignore-scripts` не генерировал клиент).
 - **Зависимости (npm audit)**: `next` 16.2.6, `sanitize-html` 2.17.4, overrides для `hono`, `@hono/node-server`, `fast-uri`, `dompurify`, `postcss`; CI `npm audit fix --dry-run` снова проходит.
-- **CSP / inline scripts**: один nonce на запрос в middleware (CSP на request + response), убран дублирующий `<meta>` CSP; Next.js снова проставляет nonce на свои inline-скрипты.
+- **CSP / клиентский JS**: `script-src` с `'unsafe-inline'` вместо nonce (совместимость с Next.js); блокировка `<meta http-equiv="Content-Security-Policy">` в телеметрии; prefetch исключён из middleware matcher.
+- **Языки**: переключатель на `<Link>` — работает даже при частичной загрузке JS.
 - **Шапка**: кнопки языков и переключатель темы всегда видны (вторая строка на узком экране, горизонтальный скролл при многих языках).
 
 ### Changed

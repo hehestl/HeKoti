@@ -246,6 +246,10 @@ select {
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .topbar-lang-btn:last-child {
@@ -257,7 +261,7 @@ select {
   color: var(--fg);
 }
 
-.topbar-lang-btn[aria-pressed="true"] {
+.topbar-lang-btn[aria-current="page"] {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
 }

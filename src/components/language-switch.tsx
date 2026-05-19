@@ -1,37 +1,40 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 type LangOption = { code: string; label: string };
 
 export function LanguageSwitch({
   lang,
   langs,
   groupAria,
-  onSwitch,
 }: {
   lang: string;
   langs: LangOption[];
   groupAria: string;
-  onSwitch: (code: string) => void;
 }) {
+  const pathname = usePathname() ?? `/${lang}`;
+  const rest = pathname.startsWith(`/${lang}`) ? pathname.slice(`/${lang}`.length) : "";
+
   if (langs.length === 0) return null;
 
   return (
     <div className="topbar-lang-group" role="group" aria-label={groupAria}>
       {langs.map((entry) => {
         const active = entry.code === lang;
+        const href = `/${entry.code}${rest}`;
         return (
-          <button
+          <Link
             key={entry.code}
-            type="button"
+            href={href}
             className="topbar-lang-btn"
-            aria-pressed={active}
+            aria-current={active ? "page" : undefined}
             title={entry.label}
-            onClick={() => {
-              if (!active) onSwitch(entry.code);
-            }}
+            prefetch={false}
           >
             {entry.label}
-          </button>
+          </Link>
         );
       })}
     </div>

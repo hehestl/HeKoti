@@ -1,25 +1,16 @@
 /**
  * Content-Security-Policy for HTML pages.
- * Nonce must be generated once per request in middleware and passed on the request
- * (see Next.js CSP guide) so framework inline scripts receive the same nonce.
+ *
+ * Next.js App Router emits many inline scripts for hydration; nonce-based CSP
+ * requires perfect middleware↔render coupling and breaks easily behind proxies.
+ * We use 'unsafe-inline' for script-src (see Next.js CSP guide — without nonces).
  */
 
-export const CSP_NONCE_HEADER = "x-nonce";
-
-export function generateCspNonce(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(bytes).toString("base64");
-  }
-  return btoa(String.fromCharCode(...bytes));
-}
-
-export function buildContentSecurityPolicy(nonce: string): string {
+export function buildContentSecurityPolicy(): string {
   const isDev = process.env.NODE_ENV === "development";
   const scriptSrc = [
     "'self'",
-    `'nonce-${nonce}'`,
-    "'strict-dynamic'",
+    "'unsafe-inline'",
     "https://mc.yandex.ru",
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
@@ -41,7 +32,6 @@ export function buildContentSecurityPolicy(nonce: string): string {
   ].join("; ");
 }
 
-export function createCspRequestContext(): { nonce: string; csp: string } {
-  const nonce = generateCspNonce();
-  return { nonce, csp: buildContentSecurityPolicy(nonce) };
+export function createCspContext(): { csp: string } {
+  return { csp: buildContentSecurityPolicy() };
 }

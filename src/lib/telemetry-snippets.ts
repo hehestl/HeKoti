@@ -173,7 +173,13 @@ export function parseTelemetrySnippet(html: string): { nodes: SnippetNode[]; vio
     out.push({ kind: "script", attrs, content });
   }
   for (const m of src.matchAll(/<meta\b([^>]*)\/?>/gi)) {
-    const attrs = sanitizeAttrs("meta", parseAttrs(m[1] ?? ""), violations);
+    const attrsRaw = parseAttrs(m[1] ?? "");
+    const httpEquiv = String(attrsRaw["http-equiv"] ?? "").toLowerCase();
+    if (httpEquiv === "content-security-policy") {
+      violations.push("Meta Content-Security-Policy is not allowed; CSP is set via HTTP headers.");
+      continue;
+    }
+    const attrs = sanitizeAttrs("meta", attrsRaw, violations);
     out.push({ kind: "meta", attrs });
   }
   for (const m of src.matchAll(/<link\b([^>]*)\/?>/gi)) {

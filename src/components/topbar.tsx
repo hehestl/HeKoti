@@ -41,13 +41,6 @@ export function TopBar({
   adminUser?: { login: string } | null;
   dict: TopBarDict;
 }) {
-  const onSwitchLang = (nextLang: string) => {
-    const { pathname, search, hash } = window.location;
-    const rest = pathname.startsWith(`/${lang}`) ? pathname.slice(`/${lang}`.length) : "";
-    const nextPath = `/${nextLang}${rest || ""}`;
-    window.location.href = `${nextPath}${search}${hash}`;
-  };
-
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     window.location.href = `/${lang}`;
@@ -94,12 +87,7 @@ export function TopBar({
         <Link href={`/${lang}/admin`} className="topbar-add-page-link topbar-icon-link" aria-label={dict.addPageAria}>
           <Plus size={16} />
         </Link>
-        <LanguageSwitch
-          lang={lang}
-          langs={langs}
-          groupAria={dict.languageAria}
-          onSwitch={onSwitchLang}
-        />
+        <LanguageSwitch lang={lang} langs={langs} groupAria={dict.languageAria} />
         <ThemeModeToggle
           labels={{
             light: dict.themeLight,

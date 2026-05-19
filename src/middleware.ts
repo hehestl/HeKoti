@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { CSP_NONCE_HEADER, createCspRequestContext } from "@/lib/csp";
+import { createCspContext } from "@/lib/csp";
 import { applySecurityHeaders } from "@/lib/security-headers";
 import { validateContentType } from "@/lib/content-type-validator";
 
@@ -98,15 +98,10 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const method = request.method;
 
-  const { nonce, csp } = createCspRequestContext();
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set(CSP_NONCE_HEADER, nonce);
-  requestHeaders.set("Content-Security-Policy", csp);
+  const { csp } = createCspContext();
 
   // Set CSRF cookie for all responses (used by frontend)
-  let response = NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  let response = NextResponse.next();
 
   response = applySecurityHeaders(request, response, csp);
 
@@ -160,13 +155,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public/)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+    {
+      source: "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 };

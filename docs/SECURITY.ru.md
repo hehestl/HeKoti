@@ -30,8 +30,8 @@
 
 ### Безопасность контента
 - **Content Security Policy (CSP)**:
-  - Один nonce на запрос в middleware; CSP только в HTTP-заголовке (не в `<meta>`)
-  - Next.js автоматически ставит nonce на свои inline-скрипты (`strict-dynamic`)
+  - CSP только в HTTP-заголовке (middleware); `<meta http-equiv="Content-Security-Policy">` в телеметрии запрещён
+  - `script-src` включает `'unsafe-inline'` для inline-скриптов Next.js (гидратация, вход, тема)
   - В development допускается `'unsafe-eval'` для React DevTools
   - Ограничение источников скриптов (аналитика — отдельные домены)
 - **Валидация HTML**: Санитизация пользовательского HTML в настройках
