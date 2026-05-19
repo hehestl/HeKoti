@@ -31,8 +31,9 @@
 .DS_Store
 *.pem
 
-# editor / local AI session noise (do not commit)
+# Cursor: локальные правила и сессия (не в git; см. AGENTS.md — правила в .cursor/rules/)
 .cursor/
+.cursor/**
 .history/
 
 # debug

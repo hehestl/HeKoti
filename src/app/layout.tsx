@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import crypto from "crypto";
+import { headers } from "next/headers";
+import { connection } from "next/server";
 import "./globals.css";
+import { CSP_NONCE_HEADER } from "@/lib/csp";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { getGlobalSettings } from "@/lib/i18n";
 import { parseTelemetrySnippet } from "@/lib/telemetry-snippets";
@@ -45,32 +47,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
+  const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
   const { headHtml, bodyHtml } = await getGlobalSettings();
   const head = parseTelemetrySnippet(headHtml);
   const body = parseTelemetrySnippet(bodyHtml);
   const headNodes = head.nodes;
   const bodyNodes = body.nodes;
-  const nonce = crypto.randomBytes(16).toString("base64");
-  const csp = [
-    `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' https://mc.yandex.ru https://www.googletagmanager.com https://www.google-analytics.com`,
-    "img-src 'self' data: https:",
-    "connect-src 'self' https://mc.yandex.ru https://www.google-analytics.com https://region1.google-analytics.com",
-    "style-src 'self' 'unsafe-inline'",
-    "font-src 'self' data:",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "upgrade-insecure-requests",
-  ].join("; ");
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta httpEquiv="Content-Security-Policy" content={csp} />
         {headNodes.map((n, i) =>
           n.kind === "script" ? (
-            <script key={`h-s-${i}`} nonce={nonce} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
+            <script key={`h-s-${i}`} {...(nonce ? { nonce } : {})} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
           ) : n.kind === "meta" ? (
             <meta key={`h-m-${i}`} {...toReactAttrs(n.attrs)} />
           ) : n.kind === "link" ? (
@@ -84,7 +73,7 @@ export default async function RootLayout({
         <AppThemeProvider>{children}</AppThemeProvider>
         {bodyNodes.map((n, i) =>
           n.kind === "script" ? (
-            <script key={`b-s-${i}`} nonce={nonce} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
+            <script key={`b-s-${i}`} {...(nonce ? { nonce } : {})} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />
           ) : n.kind === "meta" ? (
             <meta key={`b-m-${i}`} {...toReactAttrs(n.attrs)} />
           ) : n.kind === "link" ? (

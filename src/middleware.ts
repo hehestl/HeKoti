@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { addSecurityHeaders } from "@/lib/security-headers";
+import { CSP_NONCE_HEADER, createCspRequestContext } from "@/lib/csp";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import { validateContentType } from "@/lib/content-type-validator";
 
 /**
@@ -97,11 +98,17 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const method = request.method;
 
-  // Set CSRF cookie for all responses (used by frontend)
-  let response = NextResponse.next();
+  const { nonce, csp } = createCspRequestContext();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(CSP_NONCE_HEADER, nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
-  // Add security headers to all responses
-  response = addSecurityHeaders(request, response);
+  // Set CSRF cookie for all responses (used by frontend)
+  let response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  response = applySecurityHeaders(request, response, csp);
 
   // Validate Content-Type for state-changing requests
   const contentTypeError = validateContentType(request);

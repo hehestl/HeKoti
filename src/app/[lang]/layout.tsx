@@ -3,6 +3,7 @@ import { TopBar } from "@/components/topbar";
 import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
 import { enabledLanguages, safeLang, getDictionary } from "@/lib/i18n";
+import { languageSwitcherOptions } from "@/lib/language-labels";
 
 export default async function LocaleLayout({
   params,
@@ -22,7 +23,7 @@ export default async function LocaleLayout({
       <TopBar
         lang={lang}
         ai={aiLinks}
-        langs={enabledLanguages.map((code) => ({ code, label: code.toUpperCase() }))}
+        langs={languageSwitcherOptions(enabledLanguages)}
         adminUser={adminUser}
         dict={dict.common}
       />

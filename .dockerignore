@@ -12,5 +12,8 @@ npm-debug.log*
 .env.production
 
 # Smaller build context (multi-stage build produces .next inside the image, not from host)
+# Cursor / IDE — не в production-образ и не в build context
 .cursor
+.cursor/**
+.history
 .github

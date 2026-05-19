@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Globe, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { LanguageSwitch } from "@/components/language-switch";
 import { ThemeModeToggle } from "@/components/theme-mode-toggle";
 import { WikiSearchPalette } from "@/components/wiki-search-palette";
 import type { AiLink } from "@/lib/ai-links";
@@ -23,6 +24,7 @@ type TopBarDict = {
   themeDark: string;
   themeSystem: string;
   themeModeAria: string;
+  languageAria: string;
 };
 
 export function TopBar({
@@ -92,21 +94,12 @@ export function TopBar({
         <Link href={`/${lang}/admin`} className="topbar-add-page-link topbar-icon-link" aria-label={dict.addPageAria}>
           <Plus size={16} />
         </Link>
-        <div className="topbar-lang-wrap">
-          <Globe size={14} className="topbar-globe" aria-hidden />
-          <select
-            defaultValue={lang}
-            onChange={(event) => onSwitchLang(event.target.value)}
-            style={{ ...inputStyle, paddingLeft: 28 }}
-            aria-label="Language"
-          >
-            {langs.map((entry) => (
-              <option key={entry.code} value={entry.code}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <LanguageSwitch
+          lang={lang}
+          langs={langs}
+          groupAria={dict.languageAria}
+          onSwitch={onSwitchLang}
+        />
         <ThemeModeToggle
           labels={{
             light: dict.themeLight,

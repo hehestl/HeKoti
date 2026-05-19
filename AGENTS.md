@@ -1,3 +1,19 @@
+# AGENTS — Hekoti
+
+Агент Cursor **обязан** следовать правилам в [`.cursor/rules/`](.cursor/rules/).
+
+| Файл | Назначение |
+|------|------------|
+| `00-hekoti.mdc` | Всегда включено (`alwaysApply: true`) |
+| `00global.md` | Глобальные приоритеты и формат работы |
+| `glossary.md` | Имена доменов (Loka, Hemonea, Hefest и др.) |
+| `architecture.md` | Архитектура и слои |
+| `postgres.md` | PostgreSQL, миграции |
+| `telegram.md` | Telegram-боты |
+| `testing.md` | Тестирование |
+
+Папка `.cursor/` в `.gitignore` и `.dockerignore` — **не коммитить** и **не попадать в Docker-образ** (только локальные правила и сессия Cursor). При необходимости скопируйте правила из `hehe-ecosystem/.cursor/rules/`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 

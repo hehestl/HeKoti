@@ -26,7 +26,8 @@
     "themeLight": "Светлая",
     "themeDark": "Тёмная",
     "themeSystem": "Как в системе",
-    "themeModeAria": "Тема: светлая, тёмная или как в системе"
+    "themeModeAria": "Тема: светлая, тёмная или как в системе",
+    "languageAria": "Язык интерфейса"
   },
   "home": {
     "title": "Hekotia",

@@ -107,6 +107,11 @@ services:
       HEKOTI_ADMIN_EMAIL: ${HEKOTI_ADMIN_EMAIL:-admin}
       HEKOTI_ADMIN_PASSWORD: ${HEKOTI_ADMIN_PASSWORD:-hehe}
       HEKOTI_FORCE_ADMIN_RESET: ${HEKOTI_FORCE_ADMIN_RESET:-0}
+      # Production (entrypoint sets HEKOTI_ENFORCE_PROD_SECRETS=1): задайте в `.env`, каждый ≥32 символов.
+      # Сгенерировать: openssl rand -hex 32
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      AUTH_PENDING_SECRET: ${AUTH_PENDING_SECRET:-}
+      HEKOTI_TOTP_ENCRYPTION_KEY: ${HEKOTI_TOTP_ENCRYPTION_KEY:-}
     depends_on:
       hekoti-postgres:
         condition: service_healthy

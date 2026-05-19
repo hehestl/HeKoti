@@ -26,7 +26,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System",
-    "themeModeAria": "Theme: light, dark, or match system"
+    "themeModeAria": "Theme: light, dark, or match system",
+    "languageAria": "Interface language"
   },
   "home": {
     "title": "Hekotia",
