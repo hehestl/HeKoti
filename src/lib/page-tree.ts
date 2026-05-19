@@ -9,7 +9,7 @@ export type PathTreeNode<T extends { path: string }> = {
 };
 
 /** Builds a path tree (wiki URLs as nested folders). Intermediate segments exist if deeper pages do. */
-export function buildPathTree<T extends { path: string; title: string; navOrder?: number }>(
+export function buildPathTree<T extends { id: string; path: string; title: string; navOrder?: number }>(
   pages: T[],
   lang: string,
 ): PathTreeNode<T>[] {

@@ -1,5 +1,5 @@
 import { WikiPageRow } from "@/components/wiki-page-row";
-import { WikiPageTree } from "@/components/wiki-page-tree";
+import { WikiPageTree, type WikiTreePageBrief } from "@/components/wiki-page-tree";
 import { prisma } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 import { buildPathTree } from "@/lib/page-tree";
@@ -57,7 +57,7 @@ export async function WikiRepositoryLayout({
   }
 
   const dict = await getDictionary(lang);
-  const pathTree = buildPathTree(listPages, lang);
+  const pathTree = buildPathTree(listPages satisfies WikiTreePageBrief[], lang);
 
   return (
     <div className="repo-layout">
