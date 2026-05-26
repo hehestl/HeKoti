@@ -15,8 +15,8 @@
 # `prisma migrate deploy`, затем `scripts/ensure-admin.ts` (если User пусто — admin/hehe), потом `node server.js`.
 #
 # Seed DB (tsx is a production dep so it exists in the image; no interactive npx):
-#   docker compose exec hekoti-app npm run db:seed
-#   docker compose exec hekoti-app npx --yes tsx prisma/seed.ts
+#   docker compose exec hh-hekoti-app npm run db:seed
+#   docker compose exec hh-hekoti-app npx --yes tsx prisma/seed.ts
 #
 # Optional `.env`: use `required: false` so `docker compose up` works with zero
 # files; copy `.env.example` when you want to override secrets or app settings.
@@ -26,16 +26,17 @@
 #   (from tutorials) initializes the DB with role `postgres` only — `hekoti_user` will NOT exist.
 # - The official image does NOT create the `postgres` DB role when `POSTGRES_USER` is custom;
 #   use `psql -U "$POSTGRES_USER" ...`, not blindly `-U postgres`.
-# - Diagnose: `docker compose exec hekoti-postgres sh -c 'printenv POSTGRES_USER; psql -U "${POSTGRES_USER}" -d postgres -c "\\du"'`
+# - Diagnose: `docker compose exec hh-hekoti-pg sh -c 'printenv POSTGRES_USER; psql -U "${POSTGRES_USER}" -d postgres -c "\\du"'`
 #
 # Reverse proxy (Nginx Proxy Manager и т.д.): создайте сеть один раз
 #   docker network create proxy-network
-# В NPM укажите upstream http://hekoti-app:3310 (имя контейнера резолвится в proxy-network).
+# В NPM укажите upstream http://hh-hekoti-app:3310 (container_name в proxy-network).
+# WARNING: image: и container_name — .cursor/rules/docker-naming.md
 
 services:
   hekoti-postgres:
     image: postgres:17-alpine
-    container_name: hekoti-postgres
+    container_name: hh-hekoti-pg
     restart: unless-stopped
     environment:
       # Defaults match hekoti-app / docker-entrypoint. Override only with matching DB volume or after recreate.
@@ -54,7 +55,7 @@ services:
 
   hekoti-redis:
     image: redis:7-alpine
-    container_name: hekoti-redis
+    container_name: hh-hekoti-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -82,11 +83,11 @@ services:
       - default
 
   hekoti-app:
-    image: hekoti-hekoti-app
+    image: hh-hekoti-app:latest
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: hekoti-app
+    container_name: hh-hekoti-app
     restart: unless-stopped
     env_file:
       - path: .env

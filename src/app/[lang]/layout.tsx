@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopBar } from "@/components/topbar";
+import { SiteFooterControls } from "@/components/site-footer-controls";
 import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
 import { enabledLanguages, safeLang, getDictionary } from "@/lib/i18n";
@@ -20,13 +21,7 @@ export default async function LocaleLayout({
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <TopBar
-        lang={lang}
-        ai={aiLinks}
-        langs={languageSwitcherOptions(enabledLanguages)}
-        adminUser={adminUser}
-        dict={dict.common}
-      />
+      <TopBar lang={lang} ai={aiLinks} adminUser={adminUser} dict={dict.common} />
       <div
         style={{
           flex: 1,
@@ -39,41 +34,34 @@ export default async function LocaleLayout({
       >
         {children}
       </div>
-      <footer
-        style={{
-          padding: "12px 0",
-          borderTop: "1px solid var(--line)",
-          color: "var(--muted)",
-          fontSize: 13,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "6px 14px",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1.5,
-          }}
-        >
+      <footer className="site-footer">
+        <div className="site-footer-links">
           <span>{dict.common.developedBy}</span>
-          <a href="https://t.me/hehestl" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+          <a href="https://t.me/hehestl" target="_blank" rel="noopener noreferrer">
             @hehestl
           </a>
           <span aria-hidden>·</span>
-          <a href="https://github.com/hehestl" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+          <a href="https://github.com/hehestl" target="_blank" rel="noopener noreferrer">
             {dict.common.github}
           </a>
           <span aria-hidden>·</span>
-          <a href="https://t.me/PhiloraBot" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+          <a href="https://t.me/PhiloraBot" target="_blank" rel="noopener noreferrer">
             {dict.common.support}
           </a>
           <span aria-hidden>·</span>
-          <Link href={`/${lang}/donate`} style={{ color: "var(--accent)" }}>
-            {dict.common.donate}
-          </Link>
+          <Link href={`/${lang}/donate`}>{dict.common.donate}</Link>
         </div>
+        <SiteFooterControls
+          lang={lang}
+          langs={languageSwitcherOptions(enabledLanguages)}
+          labels={{
+            languageAria: dict.common.languageAria,
+            themeLight: dict.common.themeLight,
+            themeDark: dict.common.themeDark,
+            themeSystem: dict.common.themeSystem,
+            themeModeAria: dict.common.themeModeAria,
+          }}
+        />
       </footer>
     </div>
   );

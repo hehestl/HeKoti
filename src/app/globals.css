@@ -298,6 +298,45 @@ select {
   color: var(--accent);
 }
 
+.site-footer {
+  padding: 12px 14px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.site-footer-links a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.site-footer-links a:hover {
+  text-decoration: underline;
+}
+
+.site-footer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-footer-controls .topbar-lang-group {
+  max-width: min(100%, 420px);
+}
+
 .wiki-search-backdrop {
   position: fixed;
   inset: 0;

@@ -3,12 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { LanguageSwitch } from "@/components/language-switch";
-import { ThemeModeToggle } from "@/components/theme-mode-toggle";
 import { WikiSearchPalette } from "@/components/wiki-search-palette";
 import type { AiLink } from "@/lib/ai-links";
-
-type Option = { code: string; label: string };
 
 type TopBarDict = {
   login: string;
@@ -20,22 +16,15 @@ type TopBarDict = {
   aiLinks: string;
   searchPaletteTitle: string;
   searchGo: string;
-  themeLight: string;
-  themeDark: string;
-  themeSystem: string;
-  themeModeAria: string;
-  languageAria: string;
 };
 
 export function TopBar({
   lang,
-  langs,
   ai,
   adminUser,
   dict,
 }: {
   lang: string;
-  langs: Option[];
   ai: AiLink[];
   /** If admin is logged in — show "Admin" and logout instead of "Login". */
   adminUser?: { login: string } | null;
@@ -87,15 +76,6 @@ export function TopBar({
         <Link href={`/${lang}/admin`} className="topbar-add-page-link topbar-icon-link" aria-label={dict.addPageAria}>
           <Plus size={16} />
         </Link>
-        <LanguageSwitch lang={lang} langs={langs} groupAria={dict.languageAria} />
-        <ThemeModeToggle
-          labels={{
-            light: dict.themeLight,
-            dark: dict.themeDark,
-            system: dict.themeSystem,
-            groupAria: dict.themeModeAria,
-          }}
-        />
         {adminUser ? (
           <>
             <Link
