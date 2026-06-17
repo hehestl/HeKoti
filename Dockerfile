@@ -40,6 +40,7 @@ COPY --chown=nextjs:nodejs --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
 COPY --chown=nextjs:nodejs --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --chown=nextjs:nodejs --from=builder /app/scripts ./scripts
+COPY --chown=nextjs:nodejs VERSION ./VERSION
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 

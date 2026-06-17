@@ -84,6 +84,15 @@ Zero‑config (defaults live in `docker-compose.yml`):
 docker compose up -d --build
 ```
 
+**Server update** (pull + rebuild + recreate app):
+
+```bash
+sh scripts/deploy-update.sh
+# if UI still old: NO_CACHE=1 sh scripts/deploy-update.sh
+```
+
+After deploy, hard-refresh the browser (Ctrl+Shift+R) or check in incognito. If you use Nginx Proxy Manager, purge its cache or disable HTML caching for the wiki host.
+
 Optional tuning:
 
 ```bash
@@ -183,6 +192,15 @@ Hekoti — лёгкий self‑hosted движок вики: публикуеш�
 ```bash
 docker compose up -d --build
 ```
+
+**Обновление на сервере** (pull + пересборка + пересоздание app):
+
+```bash
+sh scripts/deploy-update.sh
+# если UI старый: NO_CACHE=1 sh scripts/deploy-update.sh
+```
+
+После деплоя — жёсткое обновление в браузере (Ctrl+Shift+R) или проверка в инкognito. За NPM отключите кэш HTML для wiki-хоста.
 
 С настройками:
 
