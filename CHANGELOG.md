@@ -33,6 +33,7 @@
 
 ### Fixed
 
+- **Docker build (npm ci)**: синхронизация `@emnapi/core` / `@emnapi/runtime` в `package-lock.json` для `@rolldown/binding-wasm32-wasi` (Alpine/npm 10); overrides + `scripts/fix-lock-emnapi.cjs`, вызов из `deploy-update.sh`.
 - **CI typecheck**: `prisma generate` перед `tsc` в Security workflow (`npm ci --ignore-scripts` не генерировал клиент).
 - **Зависимости (npm audit)**: `next` 16.2.6, `sanitize-html` 2.17.4, overrides для `hono`, `@hono/node-server`, `fast-uri`, `dompurify`, `postcss`; CI `npm audit fix --dry-run` снова проходит.
 - **CSP / клиентский JS**: `script-src` с `'unsafe-inline'` вместо nonce (совместимость с Next.js); блокировка `<meta http-equiv="Content-Security-Policy">` в телеметрии; prefetch исключён из middleware matcher.

@@ -11,6 +11,11 @@ cd "$(dirname "$0")/.."
 echo "==> git pull"
 git pull --ff-only
 
+if [ -f scripts/fix-lock-emnapi.cjs ]; then
+  echo "==> sync package-lock @emnapi (npm ci in Alpine)"
+  node scripts/fix-lock-emnapi.cjs
+fi
+
 echo "==> docker compose build hekoti-app"
 if [ "${NO_CACHE:-0}" = "1" ]; then
   docker compose build --no-cache hekoti-app
