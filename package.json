@@ -31,7 +31,7 @@
     "gray-matter": "^4.0.3",
     "ioredis": "^5.10.1",
     "jose": "^6.2.3",
-    "lru-cache": "^11.3.5",
+    "lru-cache": "^11.5.1",
     "lucide-react": "^1.11.0",
     "marked": "^18.0.2",
     "next": "16.2.6",
