@@ -6,6 +6,7 @@ import { ensureDefaultChannel } from "@/lib/agent-chat";
 import { aiAgents } from "@/lib/ai-links";
 import { prisma } from "@/lib/db";
 import { enabledLanguages, safeLang, getDictionary, getGlobalSettings } from "@/lib/i18n";
+import { getAppVersion } from "@/lib/version";
 import pkg from "../../../../package.json";
 
 export default async function AdminPage({
@@ -46,7 +47,7 @@ export default async function AdminPage({
 
   const settings = await getGlobalSettings();
   const tech = {
-    version: pkg.version,
+    version: getAppVersion(),
     next: (pkg.dependencies as Record<string, string | undefined>)?.next ?? "",
     react: (pkg.dependencies as Record<string, string | undefined>)?.react ?? "",
     prisma: (pkg.dependencies as Record<string, string | undefined>)?.prisma ?? "",

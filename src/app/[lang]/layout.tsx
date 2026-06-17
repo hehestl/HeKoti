@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TopBar } from "@/components/topbar";
+import { TopBarContainer } from "@/components/topbar-container";
 import { SiteFooterControls } from "@/components/site-footer-controls";
 import { getSessionUser } from "@/lib/auth";
 import { aiLinks } from "@/lib/ai-links";
@@ -21,7 +21,13 @@ export default async function LocaleLayout({
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <TopBar lang={lang} ai={aiLinks} adminUser={adminUser} dict={dict.common} />
+      <TopBarContainer
+        lang={lang}
+        langs={languageSwitcherOptions(enabledLanguages)}
+        ai={aiLinks}
+        adminUser={adminUser}
+        dict={dict.common}
+      />
       <div
         style={{
           flex: 1,
@@ -30,6 +36,7 @@ export default async function LocaleLayout({
           flexDirection: "column",
           minHeight: 0,
           padding: 0,
+          position: "relative",
         }}
       >
         {children}
@@ -52,10 +59,7 @@ export default async function LocaleLayout({
           <Link href={`/${lang}/donate`}>{dict.common.donate}</Link>
         </div>
         <SiteFooterControls
-          lang={lang}
-          langs={languageSwitcherOptions(enabledLanguages)}
           labels={{
-            languageAria: dict.common.languageAria,
             themeLight: dict.common.themeLight,
             themeDark: dict.common.themeDark,
             themeSystem: dict.common.themeSystem,

@@ -32,6 +32,11 @@
   "home": {
     "title": "Hekotia",
     "description": "Hekoti — селф-хостед архив публичных вики. Спроси Hekoti, и знание проснется.",
+    "helpTitle": "Чем можем помочь?",
+    "searchPlaceholder": "Поиск по статьям…",
+    "articlesCount": "{n} статей",
+    "noThemes": "Тем пока нет.",
+    "noThemesHint": "Создайте вложенные страницы в админке (например /wallet/fees), чтобы появились карточки тем.",
     "privateWiki": "Приватная вики",
     "loginRequired": "Требуется вход.",
     "goToLogin": "Перейти к логину",
@@ -39,6 +44,18 @@
     "newMaterials": "Новые материалы",
     "updatedAt": "обновлено {date}",
     "noMaterials": "Материалов пока нет."
+  },
+  "collection": {
+    "allCollections": "Все коллекции",
+    "articlesCount": "{n} статей",
+    "empty": "В этой коллекции пока нет статей.",
+    "defaultDescription": "Статьи по этой теме.",
+    "updatedAt": "Обновлено {date}"
+  },
+  "search": {
+    "resultsTitle": "Результаты поиска «{q}»",
+    "noResults": "Ничего не найдено.",
+    "updatedAt": "Обновлено {date}"
   },
   "admin": {
     "accountSettings": "Настройки аккаунта",

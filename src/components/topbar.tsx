@@ -3,8 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { LanguageSwitch } from "@/components/language-switch";
 import { WikiSearchPalette } from "@/components/wiki-search-palette";
 import type { AiLink } from "@/lib/ai-links";
+
+type LangOption = { code: string; label: string };
 
 type TopBarDict = {
   login: string;
@@ -16,46 +19,58 @@ type TopBarDict = {
   aiLinks: string;
   searchPaletteTitle: string;
   searchGo: string;
+  languageAria: string;
 };
 
 export function TopBar({
   lang,
+  langs,
   ai,
   adminUser,
   dict,
+  variant = "default",
 }: {
   lang: string;
+  langs: LangOption[];
   ai: AiLink[];
-  /** If admin is logged in — show "Admin" and logout instead of "Login". */
   adminUser?: { login: string } | null;
   dict: TopBarDict;
+  variant?: "default" | "help-center";
 }) {
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     window.location.href = `/${lang}`;
   };
 
+  const shellClass =
+    variant === "help-center" ? "topbar-shell topbar-shell--help-center" : "topbar-shell";
+
   return (
-    <header className="topbar-shell">
+    <header className={shellClass}>
       <div className="topbar-left">
-        <Link href={`/${lang}`} className="topbar-brand" aria-label={dict.homeAria}>
-          <span className="topbar-logo">
-            <Image src="/hekoti.png" alt="" width={50} height={50} aria-hidden priority />
-          </span>
-          <strong className="topbar-title">Hekoti</strong>
-        </Link>
+        {variant !== "help-center" ? (
+          <Link href={`/${lang}`} className="topbar-brand" aria-label={dict.homeAria}>
+            <span className="topbar-logo">
+              <Image src="/hekoti.png" alt="" width={50} height={50} aria-hidden priority />
+            </span>
+            <strong className="topbar-title">Hekoti</strong>
+          </Link>
+        ) : null}
       </div>
 
       <div className="topbar-center">
-        <WikiSearchPalette
-          lang={lang}
-          searchLabel={dict.search}
-          paletteTitle={dict.searchPaletteTitle}
-          goLabel={dict.searchGo}
-        />
+        {variant !== "help-center" ? (
+          <WikiSearchPalette
+            lang={lang}
+            searchLabel={dict.search}
+            paletteTitle={dict.searchPaletteTitle}
+            goLabel={dict.searchGo}
+          />
+        ) : null}
       </div>
 
       <div className="topbar-right">
+        <LanguageSwitch lang={lang} langs={langs} groupAria={dict.languageAria} />
         <select
           className="topbar-ai-links-select"
           style={inputStyle}

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { normalizePath, toSlug } from "@/lib/slug";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
+import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 
 const createSchema = z.object({
@@ -36,18 +37,12 @@ export async function GET(request: Request) {
   const cached = await getCached(cacheKey);
   if (cached) return NextResponse.json(JSON.parse(cached));
 
-  const terms = query.split(/\s+/).filter(Boolean).slice(0, 6);
+  const terms = parseSearchTerms(query);
   const rows = await prisma.page.findMany({
     where: {
       lang,
       isPublished: true,
-      ...(terms.length > 0
-        ? {
-            AND: terms.map((t) => ({
-              OR: [{ title: { contains: t, mode: "insensitive" } }, { contentMd: { contains: t, mode: "insensitive" } }],
-            })),
-          }
-        : {}),
+      ...buildSearchWhere(terms),
     },
     orderBy: { updatedAt: "desc" },
     take: 30,

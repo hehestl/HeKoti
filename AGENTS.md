@@ -22,10 +22,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Versioning
 
-- **Changelog:** правьте `CHANGELOG.md`: новые изменения — в раздел `[Unreleased]` (короткие буллеты: Added / Fixed / Changed).
-- **Релиз:** перед `npm run release:*` перенесите пункты из `[Unreleased]` в новый заголовок `## [x.y.z] — YYYY-MM-DD`, затем:
-  - `npm run release:patch` — патч (0.1.0 → 0.1.1),
-  - `npm run release:minor` — минор (0.1.0 → 0.2.0),
-  - `npm run release:major` — мажор (0.1.0 → 1.0.0).
-- `preversion` выполняет `npm run lint`; при необходимости добавьте в него `build` локально (не обязательно в CI для каждого патча).
-- Коммит сообщения от `npm version`: `chore(release): x.y.z`.
+- Каноническая версия приложения — файл **`VERSION`** в корне (одна строка SemVer).
+- `package.json.version` — для npm и зависимостей; при `npm run release:*` обновляется вместе с `VERSION` через `postversion`.
+- UI: админка → Tech → `getAppVersion()` из `src/lib/version.ts`.
+- **Changelog:** правки в `CHANGELOG.md` → `[Unreleased]`; одна строка на изменение (`Модуль: суть`).
+- **Релиз:** перенести `[Unreleased]` в `## [x.y.z] — YYYY-MM-DD`, затем:
+  - `npm run release:patch` | `release:minor` | `release:major`
+  - или `npm run release` (= patch)
+- `preversion` → `npm run lint`; коммит: `chore(release): x.y.z`.

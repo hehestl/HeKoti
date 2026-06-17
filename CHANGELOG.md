@@ -1,9 +1,14 @@
 # Changelog
 
-Краткие заметки по версиям. Перед релизом переносите пункты из **[Unreleased]** в новый блок с номером и датой, затем `npm run release:patch|minor|major` (см. `AGENTS.md`).
+Все изменения Hekoti.  
+Формат: [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/), упрощённый.
+
+Правило: **одна строка = одно изменение**; начинать с модуля/области.  
+Пример: `- Admin: версия приложения из файла VERSION`
+
+Перед релизом: перенести `[Unreleased]` → `## [x.y.z] — YYYY-MM-DD`, затем `npm run release:*`.
 
 ## [Unreleased]
-
 ### Security
 
 - **CSRF защита**: добавлен middleware с HMAC-based double-submit cookie pattern для всех state-changing запросов (POST/PUT/PATCH/DELETE)
@@ -36,7 +41,7 @@
 
 ### Changed
 
-- **Шапка / подвал**: переключатель языков и темы перенесены из topbar в footer.
+- **Help Center UX**: новая главная с маскотом, центральным поиском и карточками тем; публичная навигация «тема → ветка → статья» без sidebar; страницы коллекций для промежуточных URL; переключатель языка в topbar (в footer — только тема).
 - **AGENTS.md**: обязательные правила из `.cursor/rules/`; `.cursor` явно исключён из git и Docker build context.
 - Вики: одна колонка навигации — **сворачиваемое дерево** опубликованных страниц (режим поиска `q` по-прежнему даёт плоский список); колонка «Разделы» убрана.
 - Админ (посты): левое дерево в стиле Docmost — chevron, меню действий по строке, иконки **Eye/EyeOff** для черновика/публикации, шапка **Pages** с кнопкой «Новая страница».
@@ -65,15 +70,12 @@
 - Макет вики как в Snibox: две левые колонки (секции / список страниц) и основная область контента на главной и на страницах wiki.
 - Скрипты `release:patch|minor|major`, `preversion` запускает `lint`.
 - Этот файл и правило версионирования в `AGENTS.md`.
-
-### Added
-
 - Дефолтный админ **admin** / **hehe**: `scripts/ensure-admin.ts` после миграций в `docker-entrypoint`; `HEKOTI_FORCE_ADMIN_RESET=1` для принудительного upsert пароля; блок **Account** в админке (`PATCH /api/admin/account`) — смена логина и пароля.
 - Docker Compose: сервис `hekoti-app` в сетях `default` + внешняя `proxy-network` (для NPM и др.), тег образа `hekoti-hekoti-app`; остальные сервисы в `default`.
 - `POST /api/auth/login` пишет в stdout строки `[hekoti:auth] …` (хост, `x-forwarded-proto`, результат) — удобно для `docker logs` и проверки прокси.
+- Versioning: файл `VERSION`, `getAppVersion()`, синхронизация через `postversion`.
 
 ### Fixed
-
 - Сборка production: `AuditLog.metadata` сериализуется в JSON-строку под текущую Prisma-схему.
 - Security tests: email validation отвергает домены без TLD/двойные точки, TOTP verification возвращает `false` вместо исключения для нестандартной длины кода.
 - Middleware: CSRF HMAC переведён на Web Crypto API, чтобы не импортировать Node `crypto` в Edge Runtime.

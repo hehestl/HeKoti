@@ -32,6 +32,11 @@
   "home": {
     "title": "Hekotia",
     "description": "Hekoti — self-hosted public wiki archive. Ask Hekoti and knowledge awakens.",
+    "helpTitle": "How can we help you?",
+    "searchPlaceholder": "Search for articles…",
+    "articlesCount": "{n} articles",
+    "noThemes": "No topics yet.",
+    "noThemesHint": "Create nested pages in Admin (e.g. /wallet/fees) to build topic cards here.",
     "privateWiki": "Private wiki",
     "loginRequired": "Login required.",
     "goToLogin": "Go to login",
@@ -39,6 +44,18 @@
     "newMaterials": "New materials",
     "updatedAt": "updated {date}",
     "noMaterials": "No materials yet."
+  },
+  "collection": {
+    "allCollections": "All collections",
+    "articlesCount": "{n} articles",
+    "empty": "This collection has no articles yet.",
+    "defaultDescription": "Browse articles in this topic.",
+    "updatedAt": "Updated {date}"
+  },
+  "search": {
+    "resultsTitle": "Search results for “{q}”",
+    "noResults": "No articles match your search.",
+    "updatedAt": "Updated {date}"
   },
   "admin": {
     "accountSettings": "Account Settings",

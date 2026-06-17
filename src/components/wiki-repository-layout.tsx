@@ -3,6 +3,7 @@ import { WikiPageTree, type WikiTreePageBrief } from "@/components/wiki-page-tre
 import { prisma } from "@/lib/db";
 import { getDictionary } from "@/lib/i18n";
 import { buildPathTree } from "@/lib/page-tree";
+import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
 
 export async function WikiRepositoryLayout({
   lang,
@@ -10,6 +11,7 @@ export async function WikiRepositoryLayout({
   q,
   activeWikiPath,
   isAdmin = false,
+  mode = "admin",
 }: {
   lang: string;
   children: React.ReactNode;
@@ -20,28 +22,22 @@ export async function WikiRepositoryLayout({
   activeWikiPath?: string;
   /** Context menu: delete / move up — only for authorized admin */
   isAdmin?: boolean;
+  /** public — no sidebar; admin — sidebar + tree */
+  mode?: "public" | "admin";
 }) {
-  const qTrim = q?.trim() ?? "";
-  const terms = qTrim.split(/\s+/).filter(Boolean).slice(0, 6);
-  const searchMode = terms.length > 0;
+  if (mode === "public") {
+    return <main className="repo-main repo-main-full">{children}</main>;
+  }
 
-  const searchWhere =
-    searchMode
-      ? {
-          AND: terms.map((t) => ({
-            OR: [
-              { title: { contains: t, mode: "insensitive" as const } },
-              { contentMd: { contains: t, mode: "insensitive" as const } },
-            ],
-          })),
-        }
-      : {};
+  const qTrim = q?.trim() ?? "";
+  const terms = parseSearchTerms(qTrim);
+  const searchMode = terms.length > 0;
 
   const listPages = await prisma.page.findMany({
     where: {
       lang,
       isPublished: true,
-      ...searchWhere,
+      ...buildSearchWhere(terms),
     },
     orderBy: searchMode ? { updatedAt: "desc" } : [{ navOrder: "asc" }, { title: "asc" }],
     take: searchMode ? 80 : 600,
