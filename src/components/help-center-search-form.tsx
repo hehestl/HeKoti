@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { resolveSearchNavigation } from "@/lib/search-navigation";
 
 export function HelpCenterSearchForm({
   lang,
@@ -24,8 +25,9 @@ export function HelpCenterSearchForm({
         e.preventDefault();
         const q = query.trim();
         if (!q) return;
+        const loginUrl = resolveSearchNavigation(lang, q);
         startTransition(() => {
-          router.push(`/${lang}?q=${encodeURIComponent(q)}`);
+          router.push(loginUrl ?? `/${lang}?q=${encodeURIComponent(q)}`);
         });
       }}
     >

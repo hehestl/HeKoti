@@ -118,6 +118,40 @@ export function breadcrumbChain<T extends { path: string; title: string }>(
   return chain;
 }
 
+export function breadcrumbChainForPage(
+  pagePath: string,
+  pageTitle: string,
+  lang: string,
+  tree: PathTreeNode<WikiTreePage>[],
+  allCollectionsLabel: string,
+): BreadcrumbItem[] {
+  const segs = pathSegmentsAfterLang(pagePath, lang);
+  if (segs.length === 0) {
+    return [{ label: allCollectionsLabel, href: `/${lang}` }, { label: pageTitle }];
+  }
+
+  const chain: BreadcrumbItem[] = [{ label: allCollectionsLabel, href: `/${lang}` }];
+
+  for (let i = 0; i < segs.length - 1; i++) {
+    const partialPath = `/${lang}/${segs.slice(0, i + 1).join("/")}`;
+    const partialNode = findCollectionNode(tree, partialPath);
+    const label = partialNode ? collectionTitle(partialNode) : humanizeSegment(segs[i]!);
+    chain.push({ label, href: `/${lang}/wiki/${segs.slice(0, i + 1).join("/")}` });
+  }
+
+  chain.push({ label: pageTitle });
+  return chain;
+}
+
+export function formatWikiDate(date: Date, lang: string): string {
+  return date.toLocaleDateString(lang, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
 async function loadLangPages(lang: string): Promise<WikiTreePage[]> {
   return prisma.page.findMany({
     where: { lang, isPublished: true },

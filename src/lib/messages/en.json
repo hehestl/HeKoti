@@ -55,7 +55,8 @@
   "search": {
     "resultsTitle": "Search results for “{q}”",
     "noResults": "No articles match your search.",
-    "updatedAt": "Updated {date}"
+    "updatedAt": "Updated {date}",
+    "breadcrumbLabel": "Search"
   },
   "admin": {
     "accountSettings": "Account Settings",

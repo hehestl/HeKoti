@@ -1,10 +1,12 @@
 import { HelpCenterHome } from "@/components/help-center-home";
-import { WikiRepositoryLayout } from "@/components/wiki-repository-layout";
+import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
+import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { WikiSearchResults } from "@/components/wiki-search-results";
 import { getSessionUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { safeLang, getDictionary } from "@/lib/i18n";
 import { getExcerptByPath, getLangPathTree } from "@/lib/wiki-collection";
+import { getWikiShellProps } from "@/lib/wiki-shell-props";
 import { searchPublishedPages } from "@/lib/wiki-search";
 import Link from "next/link";
 
@@ -34,6 +36,7 @@ export default async function LanguageHome({
 
   const qTrim = q?.trim() ?? "";
   const searchMode = qTrim.length > 0;
+  const shell = await getWikiShellProps(lang);
 
   const [pathTree, excerptByPath, searchResults] = await Promise.all([
     getLangPathTree(lang),
@@ -41,15 +44,22 @@ export default async function LanguageHome({
     searchMode ? searchPublishedPages(lang, qTrim) : Promise.resolve([]),
   ]);
 
+  const searchCrumbs = [
+    { label: dict.collection.allCollections, href: `/${lang}` },
+    { label: dict.search.breadcrumbLabel },
+  ];
+
   return (
-    <WikiRepositoryLayout lang={lang} mode="public">
+    <WikiPublicShell
+      {...shell}
+      variant={searchMode ? "compact" : "home"}
+      initialSearchQuery={searchMode ? qTrim : undefined}
+    >
       {searchMode ? (
-        <WikiSearchResults
-          lang={lang}
-          query={qTrim}
-          results={searchResults}
-          dict={dict.search}
-        />
+        <>
+          <WikiBreadcrumbs items={searchCrumbs} />
+          <WikiSearchResults lang={lang} query={qTrim} results={searchResults} dict={dict.search} />
+        </>
       ) : (
         <HelpCenterHome
           lang={lang}
@@ -59,6 +69,6 @@ export default async function LanguageHome({
           dict={dict.home}
         />
       )}
-    </WikiRepositoryLayout>
+    </WikiPublicShell>
   );
 }

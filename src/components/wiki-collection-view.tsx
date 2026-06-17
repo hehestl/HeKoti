@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight, FileText, Folder } from "lucide-react";
 import type { PathTreeNode } from "@/lib/page-tree";
 import {
-  breadcrumbChain,
   collectionDescription,
   collectionTitle,
   countDescendantPages,
@@ -14,44 +13,25 @@ import {
 export function WikiCollectionView({
   node,
   lang,
-  tree,
   excerptByPath,
   dict,
 }: {
   node: PathTreeNode<WikiTreePage>;
   lang: string;
-  tree: PathTreeNode<WikiTreePage>[];
   excerptByPath: Map<string, string | null>;
   dict: {
-    allCollections: string;
     articlesCount: string;
     empty: string;
     defaultDescription: string;
     updatedAt: string;
   };
 }) {
-  const crumbs = breadcrumbChain(node, lang, tree, dict.allCollections);
   const title = collectionTitle(node);
   const description = collectionDescription(node, dict.defaultDescription, excerptByPath);
   const total = countDescendantPages(node);
 
   return (
     <article className="wiki-collection">
-      <nav className="wiki-breadcrumbs" aria-label="Breadcrumb">
-        {crumbs.map((crumb, i) => (
-          <span key={`${crumb.label}-${i}`} className="wiki-breadcrumb-item">
-            {i > 0 ? <span className="wiki-breadcrumb-sep" aria-hidden>{">"}</span> : null}
-            {crumb.href ? (
-              <Link href={crumb.href} prefetch={false}>
-                {crumb.label}
-              </Link>
-            ) : (
-              <span aria-current="page">{crumb.label}</span>
-            )}
-          </span>
-        ))}
-      </nav>
-
       <h1 className="wiki-collection-title">{title}</h1>
       <p className="wiki-collection-desc">{description}</p>
       <p className="wiki-collection-count">{dict.articlesCount.replace("{n}", String(total))}</p>
@@ -87,6 +67,7 @@ export function WikiCollectionView({
                             year: "numeric",
                             month: "short",
                             day: "2-digit",
+                            timeZone: "UTC",
                           }),
                         )}
                       </span>

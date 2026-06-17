@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { logoutAction } from "@/lib/actions/logout";
 import type { Dictionary } from "@/lib/i18n";
 
 export function AdminAccountSettings({
@@ -94,6 +95,11 @@ export function AdminAccountSettings({
         </button>
         {status ? <p style={{ margin: 0, fontSize: 13, color: isError ? "#ff5f7d" : "var(--muted)" }}>{status}</p> : null}
       </div>
+      <form action={logoutAction.bind(null, lang)} style={{ marginTop: 16 }}>
+        <button type="submit" style={logoutBtn}>
+          {dict.common.logout}
+        </button>
+      </form>
     </section>
   );
 }
@@ -114,4 +120,14 @@ const btn: CSSProperties = {
   color: "#fff",
   cursor: "pointer",
   justifySelf: "start",
+};
+
+const logoutBtn: CSSProperties = {
+  border: "1px solid var(--line)",
+  borderRadius: 8,
+  padding: "8px 12px",
+  background: "transparent",
+  color: "var(--muted)",
+  cursor: "pointer",
+  fontSize: 13,
 };

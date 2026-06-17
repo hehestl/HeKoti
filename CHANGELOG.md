@@ -9,6 +9,7 @@
 Перед релизом: перенести `[Unreleased]` → `## [x.y.z] — YYYY-MM-DD`, затем `npm run release:*`.
 
 ## [Unreleased]
+
 ### Security
 
 - **CSRF защита**: добавлен middleware с HMAC-based double-submit cookie pattern для всех state-changing запросов (POST/PUT/PATCH/DELETE)
@@ -42,6 +43,9 @@
 
 ### Changed
 
+- **Help Center layout**: `WikiPublicShell` вместо глобального TopBar — hero (маскот + поиск + язык / compact без маскота), breadcrumbs `ol/li` с ellipsis, дата статьи (UTC).
+- **Шапка**: убраны AI links, кнопка «+», Login/Admin/Logout; справа только компактный переключатель языка (клик по метке — следующий язык, стрелка — меню Radix).
+- **Вход в админку**: slash-команды в поиске (`login`, `admin`, `>login`, `/a`, …); короткие URL `/{lang}/a` и `/{lang}/l`; выход — кнопка в админке → Settings (Server Action).
 - **Help Center UX**: новая главная с маскотом, центральным поиском и карточками тем; публичная навигация «тема → ветка → статья» без sidebar; страницы коллекций для промежуточных URL; переключатель языка в topbar (в footer — только тема).
 - **AGENTS.md**: обязательные правила из `.cursor/rules/`; `.cursor` явно исключён из git и Docker build context.
 - Вики: одна колонка навигации — **сворачиваемое дерево** опубликованных страниц (режим поиска `q` по-прежнему даёт плоский список); колонка «Разделы» убрана.

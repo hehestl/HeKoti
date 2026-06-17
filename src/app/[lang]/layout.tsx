@@ -1,10 +1,6 @@
 import Link from "next/link";
-import { TopBarContainer } from "@/components/topbar-container";
 import { SiteFooterControls } from "@/components/site-footer-controls";
-import { getSessionUser } from "@/lib/auth";
-import { aiLinks } from "@/lib/ai-links";
-import { enabledLanguages, safeLang, getDictionary } from "@/lib/i18n";
-import { languageSwitcherOptions } from "@/lib/language-labels";
+import { safeLang, getDictionary } from "@/lib/i18n";
 
 export default async function LocaleLayout({
   params,
@@ -16,18 +12,9 @@ export default async function LocaleLayout({
   const { lang: inputLang } = await params;
   const lang = safeLang(inputLang);
   const dict = await getDictionary(lang);
-  const user = await getSessionUser();
-  const adminUser = user?.role === "admin" ? { login: user.email } : null;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <TopBarContainer
-        lang={lang}
-        langs={languageSwitcherOptions(enabledLanguages)}
-        ai={aiLinks}
-        adminUser={adminUser}
-        dict={dict.common}
-      />
       <div
         style={{
           flex: 1,
@@ -35,8 +22,6 @@ export default async function LocaleLayout({
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
-          padding: 0,
-          position: "relative",
         }}
       >
         {children}

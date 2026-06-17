@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiCollectionView } from "@/components/wiki-collection-view";
+import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { WikiRepositoryLayout } from "@/components/wiki-repository-layout";
 import { getSessionUser } from "@/lib/auth";
 import { getCached, setCached } from "@/lib/cache";
@@ -10,10 +12,14 @@ import { env } from "@/lib/env";
 import { enabledLanguages, getDictionary, safeLang } from "@/lib/i18n";
 import { renderWikiHtml } from "@/lib/markdown";
 import { normalizePath } from "@/lib/slug";
+import { getWikiShellProps } from "@/lib/wiki-shell-props";
 import {
+  breadcrumbChain,
+  breadcrumbChainForPage,
   collectionDescription,
   collectionTitle,
   findCollectionNode,
+  formatWikiDate,
   getExcerptByPath,
   getLangPathTree,
 } from "@/lib/wiki-collection";
@@ -83,13 +89,28 @@ export default async function WikiPage({
       await setCached(cacheKey, JSON.stringify({ title, html }));
     }
 
+    const [tree, dict, shell] = await Promise.all([
+      getLangPathTree(lang),
+      getDictionary(lang),
+      getWikiShellProps(lang),
+    ]);
+    const crumbs = breadcrumbChainForPage(path, title, lang, tree, dict.collection.allCollections);
+    const dateLabel = dict.collection.updatedAt.replace(
+      "{date}",
+      formatWikiDate(page.updatedAt, lang),
+    );
+
     return (
-      <WikiRepositoryLayout lang={lang} activeWikiPath={path} isAdmin={isAdmin} mode="public">
+      <WikiPublicShell {...shell} variant="compact">
+        <WikiBreadcrumbs items={crumbs} />
         <article className="wiki-article">
           <h1 className="wiki-article-title">{title}</h1>
+          <time className="wiki-article-date" dateTime={page.updatedAt.toISOString()}>
+            {dateLabel}
+          </time>
           <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: html }} />
         </article>
-      </WikiRepositoryLayout>
+      </WikiPublicShell>
     );
   }
 
@@ -101,16 +122,19 @@ export default async function WikiPage({
   const node = findCollectionNode(tree, path);
 
   if (node && node.children.length > 0) {
+    const shell = await getWikiShellProps(lang);
+    const crumbs = breadcrumbChain(node, lang, tree, dict.collection.allCollections);
+
     return (
-      <WikiRepositoryLayout lang={lang} mode="public">
+      <WikiPublicShell {...shell} variant="home">
+        <WikiBreadcrumbs items={crumbs} />
         <WikiCollectionView
           node={node}
           lang={lang}
-          tree={tree}
           excerptByPath={excerptByPath}
           dict={dict.collection}
         />
-      </WikiRepositoryLayout>
+      </WikiPublicShell>
     );
   }
 

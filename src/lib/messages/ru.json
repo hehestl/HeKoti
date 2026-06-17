@@ -55,7 +55,8 @@
   "search": {
     "resultsTitle": "Результаты поиска «{q}»",
     "noResults": "Ничего не найдено.",
-    "updatedAt": "Обновлено {date}"
+    "updatedAt": "Обновлено {date}",
+    "breadcrumbLabel": "Поиск"
   },
   "admin": {
     "accountSettings": "Настройки аккаунта",
