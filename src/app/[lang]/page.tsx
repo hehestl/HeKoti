@@ -57,7 +57,10 @@ export default async function LanguageHome({
     >
       {searchMode ? (
         <>
-          <WikiBreadcrumbs items={searchCrumbs} />
+          <WikiBreadcrumbs
+            items={searchCrumbs}
+            pagePath={`/${lang}?q=${encodeURIComponent(qTrim)}`}
+          />
           <WikiSearchResults lang={lang} query={qTrim} results={searchResults} dict={dict.search} />
         </>
       ) : (

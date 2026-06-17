@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { breadcrumbChainForPage } from "@/lib/wiki-collection";
+import {
+  breadcrumbChainForPage,
+  buildBreadcrumbJsonLd,
+  staticBreadcrumbChain,
+} from "@/lib/wiki-collection";
 import type { PathTreeNode } from "@/lib/page-tree";
 import type { WikiTreePage } from "@/lib/wiki-collection";
 
@@ -44,5 +48,41 @@ describe("breadcrumbChainForPage", () => {
       { label: "Wallet", href: "/en/wiki/wallet" },
       { label: "Fees and limits" },
     ]);
+  });
+});
+
+describe("staticBreadcrumbChain", () => {
+  it("builds two-level chain without href on last item", () => {
+    const chain = staticBreadcrumbChain("en", "All collections", "Donate");
+    expect(chain).toEqual([
+      { label: "All collections", href: "/en" },
+      { label: "Donate" },
+    ]);
+    expect(chain[1]?.href).toBeUndefined();
+  });
+});
+
+describe("buildBreadcrumbJsonLd", () => {
+  it("maps items to BreadcrumbList with absolute URLs", () => {
+    const items = staticBreadcrumbChain("en", "All collections", "Donate");
+    const json = buildBreadcrumbJsonLd(items, "/en/donate", "https://wiki.example.com");
+    expect(json).toEqual({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "All collections",
+          item: "https://wiki.example.com/en",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Donate",
+          item: "https://wiki.example.com/en/donate",
+        },
+      ],
+    });
   });
 });

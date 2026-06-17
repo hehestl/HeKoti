@@ -43,6 +43,7 @@
 
 ### Changed
 
+- **Breadcrumbs**: крошки на donate/login; JSON-LD `BreadcrumbList` в `WikiBreadcrumbs` (prop `pagePath`).
 - **Help Center layout**: `WikiPublicShell` вместо глобального TopBar — hero (маскот + поиск + язык / compact без маскота), breadcrumbs `ol/li` с ellipsis, дата статьи (UTC).
 - **Шапка**: убраны AI links, кнопка «+», Login/Admin/Logout; справа только компактный переключатель языка (клик по метке — следующий язык, стрелка — меню Radix).
 - **Вход в админку**: slash-команды в поиске (`login`, `admin`, `>login`, `/a`, …); короткие URL `/{lang}/a` и `/{lang}/l`; выход — кнопка в админке → Settings (Server Action).

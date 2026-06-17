@@ -143,6 +143,44 @@ export function breadcrumbChainForPage(
   return chain;
 }
 
+export function staticBreadcrumbChain(
+  lang: string,
+  allCollectionsLabel: string,
+  currentLabel: string,
+): BreadcrumbItem[] {
+  return [
+    { label: allCollectionsLabel, href: `/${lang}` },
+    { label: currentLabel },
+  ];
+}
+
+function breadcrumbAbsUrl(appUrl: string, path: string): string {
+  const base = appUrl.replace(/\/$/, "");
+  return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
+}
+
+export function buildBreadcrumbJsonLd(
+  items: BreadcrumbItem[],
+  pagePath: string,
+  appUrl: string,
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((crumb, i) => {
+      const isLast = i === items.length - 1;
+      const path = crumb.href ?? (isLast ? pagePath : undefined);
+      const entry: Record<string, string | number> = {
+        "@type": "ListItem",
+        position: i + 1,
+        name: crumb.label,
+      };
+      if (path) entry.item = breadcrumbAbsUrl(appUrl, path);
+      return entry;
+    }),
+  };
+}
+
 export function formatWikiDate(date: Date, lang: string): string {
   return date.toLocaleDateString(lang, {
     year: "numeric",

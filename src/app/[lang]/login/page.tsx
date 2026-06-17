@@ -1,7 +1,9 @@
 import { LoginForm } from "@/components/login-form";
+import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { redirectIfAuthenticated } from "@/lib/auth-routes";
 import { safeLang, getDictionary } from "@/lib/i18n";
+import { staticBreadcrumbChain } from "@/lib/wiki-collection";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
 
 export default async function LoginPage({ params }: { params: Promise<{ lang: string }> }) {
@@ -12,6 +14,10 @@ export default async function LoginPage({ params }: { params: Promise<{ lang: st
 
   return (
     <WikiPublicShell {...shell} variant="compact">
+      <WikiBreadcrumbs
+        items={staticBreadcrumbChain(lang, dict.collection.allCollections, dict.admin.auth.adminLogin)}
+        pagePath={`/${lang}/login`}
+      />
       <main style={{ display: "grid", placeItems: "center", minHeight: "50vh", padding: 12 }}>
         <section
           style={{

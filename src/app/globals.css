@@ -904,6 +904,36 @@ select {
   width: 100%;
 }
 
+.wiki-public-header .topbar-lang-switch-wrap {
+  flex-shrink: 0;
+}
+
+.wiki-public-header .topbar-lang-switch {
+  border-color: color-mix(in srgb, white 32%, transparent);
+  background: color-mix(in srgb, white 18%, transparent);
+}
+
+.wiki-public-header .topbar-lang-current {
+  border-right-color: color-mix(in srgb, white 32%, transparent);
+  background: color-mix(in srgb, white 24%, transparent);
+  color: #fff;
+}
+
+.wiki-public-header .topbar-lang-current:hover {
+  background: color-mix(in srgb, white 34%, transparent);
+  color: #fff;
+}
+
+.wiki-public-header .topbar-lang-toggle {
+  color: color-mix(in srgb, white 92%, transparent);
+}
+
+.wiki-public-header .topbar-lang-toggle:hover,
+.wiki-public-header .topbar-lang-toggle[data-state="open"] {
+  background: color-mix(in srgb, white 18%, transparent);
+  color: #fff;
+}
+
 .wiki-public-content {
   flex: 1 1 auto;
   width: 100%;

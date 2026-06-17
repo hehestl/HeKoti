@@ -102,7 +102,10 @@ export default async function WikiPage({
 
     return (
       <WikiPublicShell {...shell} variant="compact">
-        <WikiBreadcrumbs items={crumbs} />
+        <WikiBreadcrumbs
+          items={crumbs}
+          pagePath={`/${lang}/wiki/${slug.join("/")}`}
+        />
         <article className="wiki-article">
           <h1 className="wiki-article-title">{title}</h1>
           <time className="wiki-article-date" dateTime={page.updatedAt.toISOString()}>
@@ -127,7 +130,10 @@ export default async function WikiPage({
 
     return (
       <WikiPublicShell {...shell} variant="home">
-        <WikiBreadcrumbs items={crumbs} />
+        <WikiBreadcrumbs
+          items={crumbs}
+          pagePath={`/${lang}/wiki/${slug.join("/")}`}
+        />
         <WikiCollectionView
           node={node}
           lang={lang}

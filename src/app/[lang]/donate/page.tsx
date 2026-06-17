@@ -1,7 +1,9 @@
 import { CopyButton } from "@/components/copy-button";
+import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { cryptoWallets, donateLinks } from "@/lib/funding";
 import { safeLang, getDictionary } from "@/lib/i18n";
+import { staticBreadcrumbChain } from "@/lib/wiki-collection";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
 
 export default async function DonatePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -11,6 +13,10 @@ export default async function DonatePage({ params }: { params: Promise<{ lang: s
 
   return (
     <WikiPublicShell {...shell} variant="compact">
+      <WikiBreadcrumbs
+        items={staticBreadcrumbChain(lang, dict.collection.allCollections, dict.admin.donate.title)}
+        pagePath={`/${lang}/donate`}
+      />
       <main style={{ padding: 12 }}>
         <h1>{dict.admin.donate.title}</h1>
         <p style={{ color: "var(--muted)", marginTop: 6 }}>
