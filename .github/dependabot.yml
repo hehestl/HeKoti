@@ -5,10 +5,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    versioning-strategy: increase
     # eslint-config-next’s bundled eslint-plugin-react is not compatible with ESLint 10 yet (getFilename).
     ignore:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@emnapi/core"
+      - dependency-name: "@emnapi/runtime"
     groups:
       next:
         patterns:
@@ -18,3 +21,7 @@ updates:
         patterns:
           - "@prisma/*"
           - "prisma"
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"

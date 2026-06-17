@@ -1,7 +1,7 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
-import { prisma } from "@/lib/db";
 import { expandPostWikiLinks } from "@/lib/wiki-link-expand";
+import { getWikiLinkPages } from "@/lib/wiki-link-index";
 
 const EXTRA_TAGS = [
   "img",
@@ -28,17 +28,13 @@ export function renderMarkdown(markdown: string) {
       ...sanitizeHtml.defaults.allowedAttributes,
       img: ["src", "alt", "title"],
       a: ["href", "name", "target", "rel"],
-      "*": ["style"],
     },
   });
 }
 
 /** Renders wiki markdown: resolves `/post slug` to internal links, then HTML. */
 export async function renderWikiHtml(markdown: string, lang: string) {
-  const pages = await prisma.page.findMany({
-    where: { lang, isPublished: true },
-    select: { path: true, title: true },
-  });
+  const pages = await getWikiLinkPages(lang);
   const expanded = expandPostWikiLinks(markdown, lang, pages);
   return renderMarkdown(expanded);
 }

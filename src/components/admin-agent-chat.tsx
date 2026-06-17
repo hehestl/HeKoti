@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 type Msg = { id: string; role: string; content: string; createdAt: string };
@@ -60,7 +61,7 @@ export function AdminAgentChat({
           const message = text;
           setText("");
           setStatus(dict.admin.posts.chatSending);
-          const response = await fetch("/api/agent/chat", {
+          const response = await apiFetch("/api/agent/chat", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ channelKey: "admin-main", message }),
@@ -71,7 +72,7 @@ export function AdminAgentChat({
             return;
           }
           setMessages(body.messages ?? []);
-          const getState = await fetch("/api/agent/chat");
+          const getState = await apiFetch("/api/agent/chat");
           if (getState.ok) {
             const stateBody = (await getState.json()) as {
               ok: boolean;

@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { getSessionUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/user-role";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
-import { aiAgents } from "@/lib/ai-links";
 import { prisma } from "@/lib/db";
-import { enabledLanguages, safeLang, getDictionary, getGlobalSettings } from "@/lib/i18n";
+import { safeLangAsync, getDictionary, getGlobalSettings } from "@/lib/i18n";
+import { getSiteConfig } from "@/lib/site-config";
 import { getAppVersion } from "@/lib/version";
 import pkg from "../../../../package.json";
 
@@ -18,10 +19,14 @@ export default async function AdminPage({
 }) {
   const { lang: inputLang } = await params;
   const { tab: rawTab, activePath: rawActivePath } = await searchParams;
-  const lang = safeLang(inputLang);
+  const [{ enabledLanguages, aiAgents, knownLanguages }, lang] = await Promise.all([
+    getSiteConfig(),
+    safeLangAsync(inputLang),
+  ]);
   const dict = await getDictionary(lang);
   const user = await getSessionUser();
   if (!user) redirect(`/${lang}/login`);
+  if (!isAdminRole(user.role)) redirect(`/${lang}`);
 
   const initialTotpStatus =
     user.isTotpEnabled ? "enabled" : user.totpSecret ? "pending" : "off";
@@ -52,8 +57,13 @@ export default async function AdminPage({
     react: (pkg.dependencies as Record<string, string | undefined>)?.react ?? "",
     prisma: (pkg.dependencies as Record<string, string | undefined>)?.prisma ?? "",
     db: "PostgreSQL",
-    enabledAgents: aiAgents.filter((a) => a.enabled).map((a) => a.title),
   };
+  const agentRows = aiAgents.map((a) => ({
+    id: a.id,
+    title: a.title,
+    enabled: a.enabled,
+    hasApi: Boolean(a.apiBaseUrl && a.apiKeyEnv),
+  }));
   const initialTab = rawTab === "posts" || rawTab === "ai" || rawTab === "settings" || rawTab === "tech" ? rawTab : "posts";
   const initialActivePath = rawActivePath && rawActivePath.startsWith(`/${lang}/`) ? rawActivePath : undefined;
 
@@ -74,6 +84,8 @@ export default async function AdminPage({
             headHtml={settings.headHtml}
             bodyHtml={settings.bodyHtml}
             enabledLanguages={enabledLanguages}
+            knownLanguages={knownLanguages}
+            aiAgents={agentRows}
             tech={tech}
             initialTab={initialTab}
             initialActivePath={initialActivePath}

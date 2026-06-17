@@ -21,4 +21,14 @@ describe("cache invalidation", () => {
     expect(await getCached("wiki:en:path1")).toBeNull();
     expect(await getCached("wiki:ru:path1")).toBe("b");
   });
+
+  it("invalidates wiki link index cache by language", async () => {
+    await setCached("wiki-links:en", JSON.stringify([{ path: "/en/a", title: "A" }]), 60);
+    await setCached("wiki-links:ru", JSON.stringify([{ path: "/ru/a", title: "A" }]), 60);
+
+    await invalidateWikiLangCache("en");
+
+    expect(await getCached("wiki-links:en")).toBeNull();
+    expect(await getCached("wiki-links:ru")).not.toBeNull();
+  });
 });

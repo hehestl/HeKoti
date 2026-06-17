@@ -17,6 +17,7 @@
     "cancel": "Cancel",
     "settings": "Settings",
     "tech": "Tech",
+    "administration": "Administration",
     "dashboard": "Dashboard",
     "aiAgents": "AI Agents",
     "posts": "Posts",
@@ -122,6 +123,19 @@
       "cantMoveRoot": "Already at top level.",
       "cloneToTitle": "Create/open the same page in {lang}",
       "cloneHereTitle": "Current language",
+      "treeLanguage": "Branch language",
+      "openLangVersion": "Open {lang} version",
+      "aiLocalizeTitle": "AI: localize to {lang} (Shift — empty clone)",
+      "aiLocalizeAll": "AI → all langs",
+      "aiLocalizeAllTitle": "Create/update missing language versions via AI",
+      "aiLocalizing": "AI localizing…",
+      "aiLocalizingAll": "AI localizing to all languages…",
+      "aiLocalizedAll": "Done: other language versions updated.",
+      "aiLocalizeBranch": "AI → whole tree",
+      "aiLocalizeBranchTitle": "Localize this page and {count} nested pages to all missing languages",
+      "aiLocalizingBranch": "AI localizing tree ({count} pages)…",
+      "aiLocalizedBranch": "Done: tree {pages} pages, {created} versions created.",
+      "aiLocalizedBranchPartial": "Partial: {created} created, {failed} failed.",
       "sidebarTitle": "Pages",
       "newPage": "New page",
       "newPageTitle": "Add a root-level page (same as + Sibling with nothing selected)",
@@ -237,7 +251,10 @@
       "invalidCode": "Invalid code",
       "adminLogin": "Admin login",
       "publicInfo": "Public users can read pages. Editing requires admin session.",
-      "dockerInfo": "Docker: default login is admin / hehe (if DB is empty). Change it in Admin → Account."
+      "dockerInfo": "Docker: default login is admin / hehe (if DB is empty). Change it in Admin → Account.",
+      "heronHint": "Sign in with your Heron Auth account. Wiki admins need a hekoti grant in Heron.",
+      "heronLogin": "Sign in with Heron",
+      "emailFallback": "Email and password"
     },
     "account": {
       "desc": "Change admin login and password. Current password is required.",
@@ -268,6 +285,15 @@
       "newQR": "New QR (will cancel current setup)",
       "success": "Done.",
       "error": "Error"
+    },
+    "administration": {
+      "title": "Administration",
+      "languagesHint": "Enabled wiki languages (click to toggle)",
+      "agentsHint": "AI agents for chat and localization (click to toggle)",
+      "langOn": "Language enabled",
+      "langOff": "Language disabled",
+      "langKeepOne": "At least one language must stay enabled.",
+      "agentNoApi": "API key not configured in .env"
     },
     "tech": {
       "title": "Technical info",

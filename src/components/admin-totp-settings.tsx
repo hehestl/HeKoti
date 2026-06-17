@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 export type TotpStatus = "off" | "pending" | "enabled";
@@ -30,9 +31,8 @@ export function AdminTotpSettings({
     setIsError(false);
     setBusy(true);
     try {
-      const res = await fetch("/api/auth/totp/setup", {
+      const res = await apiFetch("/api/auth/totp/setup", {
         method: "POST",
-        credentials: "same-origin",
       });
       const body = (await res.json()) as {
         ok?: boolean;
@@ -58,10 +58,9 @@ export function AdminTotpSettings({
     setIsError(false);
     setBusy(true);
     try {
-      const res = await fetch("/api/auth/totp/confirm", {
+      const res = await apiFetch("/api/auth/totp/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
         body: JSON.stringify({ code: confirmCode.trim() }),
       });
       const body = (await res.json()) as { ok?: boolean; message?: string };
@@ -86,10 +85,9 @@ export function AdminTotpSettings({
     setIsError(false);
     setBusy(true);
     try {
-      const res = await fetch("/api/auth/totp/disable", {
+      const res = await apiFetch("/api/auth/totp/disable", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
         body: JSON.stringify({ currentPassword: disablePassword, code: disableCode.trim() }),
       });
       const body = (await res.json()) as { ok?: boolean; message?: string; relogin?: boolean };

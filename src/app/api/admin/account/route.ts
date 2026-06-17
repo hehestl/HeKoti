@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { getSessionUser, isValidEmail } from "@/lib/auth";
+import { isAdminRole } from "@/lib/user-role";
 import { prisma } from "@/lib/db";
 
 export async function PATCH(request: Request) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role !== "admin") {
+  if (!sessionUser || !isAdminRole(sessionUser.role)) {
     return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
   }
 
@@ -27,6 +28,10 @@ export async function PATCH(request: Request) {
   const full = await prisma.user.findUnique({ where: { id: sessionUser.id } });
   if (!full) {
     return NextResponse.json({ ok: false, message: "User not found." }, { status: 404 });
+  }
+
+  if (!full.passwordHash) {
+    return NextResponse.json({ ok: false, message: "Password login is not available for this account." }, { status: 400 });
   }
 
   const valid = await bcrypt.compare(currentPassword, full.passwordHash);

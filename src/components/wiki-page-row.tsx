@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 const menuBtn: CSSProperties = {
@@ -62,7 +63,7 @@ export function WikiPageCell({
   );
 
   const moveUp = async () => {
-    const res = await fetch(`/api/pages/${id}/move-up`, { method: "POST", credentials: "same-origin" });
+    const res = await apiFetch(`/api/pages/${id}/move-up`, { method: "POST" });
     const body = (await res.json()) as { message?: string };
     if (!res.ok) {
       alert(body.message ?? dict.admin.wiki.moveUpError);
@@ -74,7 +75,7 @@ export function WikiPageCell({
 
   const remove = async () => {
     if (!confirm(dict.admin.wiki.deleteConfirm.replace("{title}", title))) return;
-    const res = await fetch(`/api/pages/${id}`, { method: "DELETE", credentials: "same-origin" });
+    const res = await apiFetch(`/api/pages/${id}`, { method: "DELETE" });
     const body = (await res.json()) as { ok?: boolean; path?: string; message?: string };
     if (!res.ok) {
       alert(body.message ?? dict.admin.wiki.deleteError);

@@ -1,3 +1,4 @@
+import { UserRole } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -41,8 +42,8 @@ async function main() {
 
     const admin = await prisma.user.upsert({
       where: { email: adminEmail },
-      update: { passwordHash: hash, role: "admin" },
-      create: { email: adminEmail, passwordHash: hash, role: "admin" },
+      update: { passwordHash: hash, role: UserRole.ADMIN },
+      create: { email: adminEmail, passwordHash: hash, role: UserRole.ADMIN },
     });
 
     const samples: {

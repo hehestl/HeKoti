@@ -13,6 +13,7 @@ import {
 } from "@/lib/monaco-md-helpers";
 import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
 import type { Dictionary } from "@/lib/i18n";
+import "@/lib/monaco-setup";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 

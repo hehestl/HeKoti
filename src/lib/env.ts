@@ -31,6 +31,16 @@ const envSchema = z.object({
    * If unset, a key is derived from WEBHOOK_SECRET (weaker if the webhook secret is guessable).
    */
   HEKOTI_TOTP_ENCRYPTION_KEY: z.string().optional(),
+  HEKOTI_HERON_AUTH_ENABLED: z.enum(["0", "1"]).default("0"),
+  NEXT_PUBLIC_HERON_AUTH_URL: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
+  HERON_AUTH_API_URL: z.string().optional(),
+  HERON_JWT_ISSUER: z.string().optional(),
+  HERON_JWT_AUDIENCE: z.string().optional(),
+  HERON_JWT_PUBLIC_KEY_PEM: z.string().optional(),
+  HERON_FETCH_TIMEOUT_MS: z.string().optional(),
+  HEKOTI_HERON_DEFAULT_RETURN: z.string().default("/ru/admin"),
+  HEKOTI_HERON_EXCHANGE_RATE_LIMIT: z.coerce.number().default(20),
 });
 
 const parsed = envSchema.parse(process.env);

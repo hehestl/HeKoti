@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
+import { WikiClonePageForm } from "@/components/wiki-clone-page-form";
 import { WikiCollectionView } from "@/components/wiki-collection-view";
 import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { WikiRepositoryLayout } from "@/components/wiki-repository-layout";
 import { getSessionUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/user-role";
 import { getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { enabledLanguages, getDictionary, safeLang } from "@/lib/i18n";
+import { getDictionary, safeLangAsync } from "@/lib/i18n";
+import { getEnabledLanguages } from "@/lib/site-config";
 import { renderWikiHtml } from "@/lib/markdown";
 import { normalizePath } from "@/lib/slug";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
@@ -30,7 +33,7 @@ export async function generateMetadata({
   params: Promise<{ lang: string; slug: string[] }>;
 }): Promise<Metadata> {
   const { lang: inputLang, slug } = await params;
-  const lang = safeLang(inputLang);
+  const lang = await safeLangAsync(inputLang);
   const path = normalizePath(lang, slug);
   const page = await prisma.page.findUnique({
     where: { path },
@@ -65,12 +68,13 @@ export default async function WikiPage({
 }: {
   params: Promise<{ lang: string; slug: string[] }>;
 }) {
-  const { lang, slug } = await params;
+  const { lang: inputLang, slug } = await params;
+  const [enabledLanguages, lang] = await Promise.all([getEnabledLanguages(), safeLangAsync(inputLang)]);
   const user = await getSessionUser();
   if (!env.PUBLIC_READ_MODE && !user) return notFound();
 
   const path = normalizePath(lang, slug);
-  const isAdmin = !!user && user.role === "admin";
+  const isAdmin = !!user && isAdminRole(user.role);
   const page = await prisma.page.findUnique({ where: { path } });
 
   if (page?.isPublished) {
@@ -196,33 +200,12 @@ export default async function WikiPage({
           </div>
 
           {source ? (
-            <form method="post" action="/api/pages" style={{ marginTop: 8 }}>
-              <input type="hidden" name="sourcePath" value={source.path} />
-              <input type="hidden" name="targetLang" value={lang} />
-              <input
-                type="hidden"
-                name="redirectTo"
-                value={`/${lang}/admin?tab=posts&activePath=${encodeURIComponent(path)}`}
-              />
-              <button
-                type="submit"
-                style={{
-                  border: "1px solid var(--line)",
-                  borderRadius: 10,
-                  padding: "10px 14px",
-                  background: "var(--accent)",
-                  color: "white",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  width: "fit-content",
-                }}
-              >
-                {dict.admin.wiki.createFrom.replace("{lang}", source.lang.toUpperCase())}
-              </button>
-              <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>
-                {dict.admin.wiki.createNote}
-              </div>
-            </form>
+            <WikiClonePageForm
+              sourcePath={source.path}
+              targetLang={lang}
+              label={dict.admin.wiki.createFrom.replace("{lang}", source.lang.toUpperCase())}
+              note={dict.admin.wiki.createNote}
+            />
           ) : (
             <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>{dict.admin.wiki.noSource}</div>
           )}

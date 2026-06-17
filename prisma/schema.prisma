@@ -6,11 +6,17 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  ADMIN
+  READER
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String    @unique
-  passwordHash   String
-  role           String    @default("admin")
+  passwordHash   String?
+  heronSubjectId String?   @unique
+  role           UserRole  @default(READER)
   totpSecret     String?
   isTotpEnabled  Boolean   @default(false)
   createdAt      DateTime  @default(now())
@@ -85,11 +91,15 @@ model AgentMessage {
 }
 
 model GlobalSettings {
-  id              String   @id @default("default")
-  defaultLanguage String   @default("en")
-  headHtml        String   @default("")
-  bodyHtml        String   @default("")
-  updatedAt       DateTime @updatedAt
+  id                   String   @id @default("default")
+  defaultLanguage      String   @default("en")
+  headHtml             String   @default("")
+  bodyHtml             String   @default("")
+  /** JSON array of enabled locale codes; empty = use ENABLED_LANGUAGES env. */
+  enabledLanguagesJson String   @default("")
+  /** JSON array of {id, enabled} overrides for AI agents; empty = use AI_AGENTS_JSON env. */
+  aiAgentsJson         String   @default("")
+  updatedAt            DateTime @updatedAt
 }
 
 model AuditLog {

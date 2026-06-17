@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { logoutAction } from "@/lib/actions/logout";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 export function AdminAccountSettings({
@@ -29,10 +30,9 @@ export function AdminAccountSettings({
     if (newLogin.trim() !== initialLogin) payload.newEmail = newLogin.trim();
     if (newPassword.length > 0) payload.newPassword = newPassword;
 
-    const res = await fetch("/api/admin/account", {
+    const res = await apiFetch("/api/admin/account", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
       body: JSON.stringify(payload),
     });
     const body = (await res.json()) as { ok?: boolean; message?: string; relogin?: boolean };

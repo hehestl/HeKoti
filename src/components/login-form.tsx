@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 type Step = "password" | "totp";
@@ -21,10 +22,9 @@ export function LoginForm({ lang, dict }: { lang: string; dict: Dictionary }) {
         setError("");
 
         if (step === "password") {
-          const res = await fetch("/api/auth/login", {
+          const res = await apiFetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "same-origin",
             body: JSON.stringify({ email: email.trim(), password }),
           });
           const body = (await res.json()) as {
@@ -46,10 +46,9 @@ export function LoginForm({ lang, dict }: { lang: string; dict: Dictionary }) {
           return;
         }
 
-        const res = await fetch("/api/auth/login/totp", {
+        const res = await apiFetch("/api/auth/login/totp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
           body: JSON.stringify({ pendingToken, code: totpCode.trim() }),
         });
         const body = (await res.json()) as { ok?: boolean; message?: string };

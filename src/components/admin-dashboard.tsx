@@ -8,6 +8,7 @@ import { AdminEditor } from "@/components/admin-editor";
 import { AdminTotpSettings, type TotpStatus } from "@/components/admin-totp-settings";
 
 import { AdminGlobalSettings } from "@/components/admin-global-settings";
+import { AdminSiteConfig } from "@/components/admin-site-config";
 import type { Dictionary } from "@/lib/i18n";
 
 type AdminTab = "posts" | "ai" | "settings" | "tech";
@@ -28,8 +29,9 @@ type TechInfo = {
   react: string;
   prisma: string;
   db: string;
-  enabledAgents: string[];
 };
+
+type AgentRow = { id: string; title: string; enabled: boolean; hasApi: boolean };
 
 export function AdminDashboard({
   lang,
@@ -43,6 +45,8 @@ export function AdminDashboard({
   headHtml,
   bodyHtml,
   enabledLanguages,
+  knownLanguages,
+  aiAgents,
   tech,
   initialTab,
   initialActivePath,
@@ -58,6 +62,8 @@ export function AdminDashboard({
   headHtml: string;
   bodyHtml: string;
   enabledLanguages: string[];
+  knownLanguages: string[];
+  aiAgents: AgentRow[];
   tech: TechInfo;
   initialTab: AdminTab;
   initialActivePath?: string;
@@ -101,7 +107,7 @@ export function AdminDashboard({
             ["posts", dict.common.posts] as const,
             ["ai", dict.common.aiAgents] as const,
             ["settings", dict.common.settings] as const,
-            ["tech", dict.common.tech] as const,
+            ["tech", dict.common.administration] as const,
           ] as const
         ).map(([id, label]) => {
           const active = tab === id;
@@ -139,6 +145,7 @@ export function AdminDashboard({
             enabledLanguages={enabledLanguages}
             dict={dict}
             initialActivePath={initialActivePath}
+            activeAgentId={initialActiveAgentId}
           />
         ) : tab === "ai" ? (
           <AdminAgentChat
@@ -159,87 +166,15 @@ export function AdminDashboard({
             <AdminAccountSettings lang={lang} initialLogin={initialLogin} dict={dict} />
           </>
         ) : (
-          <AdminTechInfo tech={tech} enabledLanguages={enabledLanguages} dict={dict} />
+          <AdminSiteConfig
+            dict={dict}
+            tech={tech}
+            initialKnownLanguages={knownLanguages}
+            initialEnabledLanguages={enabledLanguages}
+            initialAgents={aiAgents}
+          />
         )}
       </div>
     </div>
-  );
-}
-
-function AdminTechInfo({
-  tech,
-  enabledLanguages,
-  dict,
-}: {
-  tech: TechInfo;
-  enabledLanguages: string[];
-  dict: Dictionary;
-}) {
-  const badge: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    border: "1px solid var(--line)",
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: "color-mix(in srgb, var(--fg) 3%, var(--panel))",
-    color: "var(--fg)",
-    fontSize: 13,
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-  };
-
-  const panel: React.CSSProperties = {
-    border: "1px solid var(--line)",
-    borderRadius: 12,
-    background: "var(--panel)",
-    padding: 12,
-    marginBottom: 12,
-  };
-
-  return (
-    <section style={panel}>
-      <h2 style={{ marginTop: 0 }}>{dict.admin.tech.title}</h2>
-      <div style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <span style={badge}>
-            {dict.admin.tech.version}: {tech.version}
-          </span>
-          <span style={badge}>
-            Next.js {tech.next}
-          </span>
-          <span style={badge}>
-            React {tech.react}
-          </span>
-          <span style={badge}>
-            Prisma {tech.prisma}
-          </span>
-          <span style={badge}>{tech.db}</span>
-          <span style={badge}>{dict.admin.tech.apiRoutes}</span>
-        </div>
-
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>{dict.admin.tech.aiAgents}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {(tech.enabledAgents.length > 0 ? tech.enabledAgents : [dict.admin.tech.noAiAgents]).map((t) => (
-              <span key={t} style={badge}>
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>{dict.admin.tech.enabledLanguages}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {enabledLanguages.map((l) => (
-              <span key={l} style={badge}>
-                {l.toUpperCase()}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }

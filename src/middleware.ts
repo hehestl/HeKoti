@@ -17,7 +17,9 @@ const CSRF_EXEMPT_PATHS = [
   "/api/health",
   "/api/webhooks/incoming", // Has its own signature verification
   "/api/auth/login",
+  "/api/auth/login/totp",
   "/api/auth/logout",
+  "/api/auth/heron/exchange",
 ];
 
 // HTTP methods that require CSRF protection

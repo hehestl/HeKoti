@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/user-role";
 import { limitTotpLogin, requestIp } from "@/lib/auth-rate-limit";
 import { prisma } from "@/lib/db";
 import { decryptTotpSecret, verifyTotpToken } from "@/lib/totp";
@@ -23,7 +24,7 @@ function readCode(body: unknown): { code: string } | { error: string } {
 
 export async function POST(request: Request) {
   const sessionUser = await getSessionUser();
-  if (!sessionUser || sessionUser.role !== "admin") {
+  if (!sessionUser || !isAdminRole(sessionUser.role)) {
     return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
   }
 

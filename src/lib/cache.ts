@@ -43,6 +43,7 @@ export async function delCached(key: string) {
 
 /** Drop all cached wiki HTML for a language (e.g. after /post targets or titles change). */
 export async function invalidateWikiLangCache(lang: string) {
+  await delCached(`wiki-links:${lang}`);
   const prefix = `wiki:${lang}:`;
   const redis = getRedis();
   if (redis) {

@@ -14,6 +14,7 @@
     "cancel": "Отмена",
     "settings": "Настройки",
     "tech": "Тех. данные",
+    "administration": "Администрирование",
     "dashboard": "Дашборд",
     "aiAgents": "AI-агенты",
     "posts": "Посты",
@@ -122,6 +123,19 @@
       "cantMoveRoot": "Уже верхний уровень.",
       "cloneToTitle": "Создать/открыть такую же страницу на {lang}",
       "cloneHereTitle": "Текущий язык",
+      "treeLanguage": "Ветка на языке",
+      "openLangVersion": "Открыть версию на {lang}",
+      "aiLocalizeTitle": "AI: локализовать на {lang} (Shift — пустой клон)",
+      "aiLocalizeAll": "AI → все языки",
+      "aiLocalizeAllTitle": "Создать/обновить версии на всех недостающих языках через AI",
+      "aiLocalizing": "AI локализует…",
+      "aiLocalizingAll": "AI локализует на все языки…",
+      "aiLocalizedAll": "Готово: версии на других языках обновлены.",
+      "aiLocalizeBranch": "AI → всё дерево",
+      "aiLocalizeBranchTitle": "Локализовать эту страницу и {count} вложенных на все недостающие языки",
+      "aiLocalizingBranch": "AI локализует дерево ({count} стр.)…",
+      "aiLocalizedBranch": "Готово: дерево {pages} стр., создано {created} версий.",
+      "aiLocalizedBranchPartial": "Частично: создано {created}, ошибок {failed}.",
       "sidebarTitle": "Страницы",
       "newPage": "Новая страница",
       "newPageTitle": "Страница в корень (то же, что родственник без выбранной страницы)",
@@ -237,7 +251,10 @@
       "invalidCode": "Неверный код",
       "adminLogin": "Вход для админа",
       "publicInfo": "Обычные пользователи могут читать страницы. Редактирование требует входа.",
-      "dockerInfo": "Docker: логин по умолчанию admin / hehe. Смените в Админка → Аккаунт."
+      "dockerInfo": "Docker: логин по умолчанию admin / hehe. Смените в Админка → Аккаунт.",
+      "heronHint": "Войдите через Heron Auth. Админы wiki — при grant hekoti:admin в Heron.",
+      "heronLogin": "Войти через Heron",
+      "emailFallback": "Email и пароль"
     },
     "account": {
       "desc": "Смена логина и пароля администратора. Текущий пароль обязателен.",
@@ -268,6 +285,15 @@
       "newQR": "Новый QR (отменит текущую привязку)",
       "success": "Готово.",
       "error": "Ошибка"
+    },
+    "administration": {
+      "title": "Администрирование",
+      "languagesHint": "Включённые языки вики (клик — вкл/выкл)",
+      "agentsHint": "AI-агенты для чата и локализации (клик — вкл/выкл)",
+      "langOn": "Язык включён",
+      "langOff": "Язык выключен",
+      "langKeepOne": "Нужен хотя бы один язык.",
+      "agentNoApi": "API ключ не настроен в .env"
     },
     "tech": {
       "title": "Технические данные",

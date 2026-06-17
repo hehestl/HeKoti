@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 
 const TEMPLATE_YANDEX = `<!-- Яндекс.Метрика: замените COUNTER_ID на номер счётчика -->
@@ -75,7 +76,7 @@ export function AdminGlobalSettings({
   const submit = async () => {
     setStatus(dict.common.loading);
     try {
-      const res = await fetch("/api/admin/settings", {
+      const res = await apiFetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ defaultLanguage: defLang, headHtml: head, bodyHtml: body }),

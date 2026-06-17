@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { signPendingLogin, verifyPendingLogin } from "@/lib/pending-login";
 import { decryptTotpSecret, verifyTotpToken } from "@/lib/totp";
+import { isAdminRole } from "@/lib/user-role";
 
 /**
  * Email validation regex
@@ -62,17 +63,16 @@ async function sessionCookieSecure(): Promise<boolean> {
 // Maximum session lifetime (30 days) - absolute timeout
 const MAX_SESSION_LIFETIME_HOURS = 720;
 
-export async function createAdminSession(userId: string) {
+export async function createUserSession(userId: string) {
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashToken(rawToken);
-  
-  // Calculate expiration with maximum lifetime cap
+
   const ttlMs = Math.min(
     env.SESSION_TTL_HOURS * 3600 * 1000,
-    MAX_SESSION_LIFETIME_HOURS * 3600 * 1000
+    MAX_SESSION_LIFETIME_HOURS * 3600 * 1000,
   );
   const expiresAt = new Date(Date.now() + ttlMs);
-  
+
   await prisma.session.create({ data: { tokenHash, userId, expiresAt } });
   const store = await cookies();
   const secure = await sessionCookieSecure();
@@ -85,29 +85,31 @@ export async function createAdminSession(userId: string) {
   });
 }
 
+/** @deprecated Use createUserSession */
+export const createAdminSession = createUserSession;
+
 /**
  * Password step: creates session immediately if TOTP is off; otherwise returns a short-lived pending token.
  */
 export async function loginAdminPasswordStep(input: { email: string; password: string }) {
   const email = input.email.trim();
-  
-  // Validate email format
+
   if (!isValidEmail(email)) {
     throw new Error("Invalid credentials.");
   }
-  
+
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error("Invalid credentials.");
+  if (!user?.passwordHash) throw new Error("Invalid credentials.");
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) throw new Error("Invalid credentials.");
 
   if (!user.isTotpEnabled) {
-    await createAdminSession(user.id);
+    await createUserSession(user.id);
     return { needsTotp: false as const };
   }
 
   if (!user.totpSecret) {
-    await createAdminSession(user.id);
+    await createUserSession(user.id);
     return { needsTotp: false as const };
   }
 
@@ -139,7 +141,7 @@ export async function loginAdminTotpStep(input: { pendingToken: string; code: st
     throw new Error("Invalid code.");
   }
 
-  await createAdminSession(user.id);
+  await createUserSession(user.id);
 }
 
 export async function logoutAdmin() {
@@ -155,35 +157,31 @@ export async function getSessionUser() {
   const store = await cookies();
   const token = store.get(env.SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  
+
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(token) },
     include: { user: true },
   });
-  
+
   if (!session || session.expiresAt <= new Date()) {
-    // Clean up expired session
     if (session) {
       await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     }
     return null;
   }
-  
-  // Check if session is approaching expiration (refresh if needed)
+
   const now = Date.now();
   const expiresAt = session.expiresAt.getTime();
   const timeLeft = expiresAt - now;
   const ttlMs = env.SESSION_TTL_HOURS * 3600 * 1000;
-  
-  // If more than half the TTL has passed, extend the session
+
   if (timeLeft < ttlMs / 2) {
     const newExpiresAt = new Date(Date.now() + ttlMs);
     await prisma.session.update({
       where: { id: session.id },
       data: { expiresAt: newExpiresAt },
     });
-    
-    // Update cookie expiration
+
     const secure = await sessionCookieSecure();
     store.set(env.SESSION_COOKIE_NAME, token, {
       httpOnly: true,
@@ -193,12 +191,12 @@ export async function getSessionUser() {
       path: "/",
     });
   }
-  
+
   return session.user;
 }
 
 export async function requireAdminUser() {
   const user = await getSessionUser();
-  if (!user || user.role !== "admin") throw new Error("Unauthorized.");
+  if (!user || !isAdminRole(user.role)) throw new Error("Unauthorized.");
   return user;
 }

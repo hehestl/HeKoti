@@ -12,7 +12,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/gif",
   "image/webp",
-  "image/svg+xml",
 ]);
 
 /**
@@ -34,7 +33,7 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
   // Check file extension
   const ext = file.name.split(".").pop()?.toLowerCase();
-  const allowedExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg"]);
+  const allowedExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
   if (ext && !allowedExtensions.has(ext)) {
     return {
       valid: false,
@@ -79,25 +78,6 @@ export async function POST(request: Request) {
     // Prevent path traversal attacks
     if (!resolvedTarget.startsWith(path.resolve(targetDir))) {
       return NextResponse.json({ ok: false, message: "Invalid file path." }, { status: 400 });
-    }
-
-    // Process and save the image
-    // Note: SVG files should be handled differently as sharp doesn't support SVG output
-    if (file.type === "image/svg+xml") {
-      // For SVG, just copy the file after validating it's valid XML
-      const content = Buffer.from(bytes).toString("utf-8");
-      if (!content.includes("<svg")) {
-        return NextResponse.json({ ok: false, message: "Invalid SVG file." }, { status: 400 });
-      }
-      // Save SVG with webp extension won't work, so we keep svg extension
-      const svgName = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.svg`;
-      const svgTarget = path.join(targetDir, svgName);
-      await fs.writeFile(svgTarget, content);
-      const publicPath = `/uploads/${svgName}`;
-      return NextResponse.json({
-        ok: true,
-        url: env.ASSETS_BASE_URL ? `${env.ASSETS_BASE_URL}${publicPath}` : publicPath,
-      });
     }
 
     // Process image with sharp

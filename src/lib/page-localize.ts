@@ -1,0 +1,249 @@
+import { prisma } from "@/lib/db";
+import { callAiAgent, extractJsonObject } from "@/lib/ai-agent";
+import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache";
+import { canonicalPageId, findPageCounterpart } from "@/lib/page-counterparts";
+import { getEnabledLanguages } from "@/lib/site-config";
+import { normalizePath, toSlug } from "@/lib/slug";
+import { getSiblingGroupPaths } from "@/lib/wiki-path";
+import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+
+type LocalizedPayload = { title: string; contentMd: string };
+
+async function translatePage(input: {
+  title: string;
+  contentMd: string;
+  sourceLang: string;
+  targetLang: string;
+  agentId?: string | null;
+}): Promise<LocalizedPayload> {
+  const prompt = `Translate this wiki article from ${input.sourceLang} to ${input.targetLang}.
+Preserve markdown structure, code blocks, links paths, and /post wiki syntax.
+Return ONLY JSON: {"title":"localized title","contentMd":"localized markdown"}
+
+Title: ${input.title}
+
+Content:
+${input.contentMd}`;
+
+  const raw = await callAiAgent(prompt, input.agentId);
+  const parsed = extractJsonObject<LocalizedPayload>(raw);
+  if (!parsed?.title?.trim() || typeof parsed.contentMd !== "string") {
+    throw new Error(`AI localization failed: ${raw.slice(0, 240)}`);
+  }
+  return { title: parsed.title.trim(), contentMd: parsed.contentMd };
+}
+
+export async function localizePageToLanguage(input: {
+  pageId: string;
+  targetLang: string;
+  editorId: string;
+  agentId?: string | null;
+}) {
+  const source = await prisma.page.findUnique({ where: { id: input.pageId } });
+  if (!source) throw new Error("Source page not found.");
+  if (source.lang === input.targetLang) throw new Error("Target language matches source.");
+
+  const existing = await findPageCounterpart(source, input.targetLang);
+  const localized = await translatePage({
+    title: source.title,
+    contentMd: source.contentMd,
+    sourceLang: source.lang,
+    targetLang: input.targetLang,
+    agentId: input.agentId,
+  });
+
+  if (existing) {
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.page.update({
+        where: { id: existing.id },
+        data: {
+          title: localized.title,
+          contentMd: localized.contentMd,
+          originalId: canonicalPageId(source),
+        },
+      });
+      await tx.pageRevision.create({
+        data: {
+          pageId: row.id,
+          editorId: input.editorId,
+          title: row.title,
+          contentMd: row.contentMd,
+        },
+      });
+      return row;
+    });
+    await invalidateWikiLangCache(input.targetLang);
+    await invalidateSearchLangCache(input.targetLang);
+    await emitOutgoingWebhook("page.updated", { pageId: updated.id, path: updated.path, published: updated.isPublished });
+    return { page: updated, created: false };
+  }
+
+  const tail = source.path.replace(new RegExp(`^/${source.lang}/`), "").split("/").filter(Boolean);
+  const slug = tail[tail.length - 1] ?? toSlug(localized.title);
+  const parentParts = tail.slice(0, -1);
+  const path = normalizePath(input.targetLang, [...parentParts, slug]);
+
+  const created = await prisma.$transaction(async (tx) => {
+    const conflict = await tx.page.findUnique({ where: { path } });
+    if (conflict) throw new Error("Target path already exists.");
+
+    const existingSameLang = await tx.page.findMany({
+      where: { lang: input.targetLang },
+      select: { path: true, navOrder: true },
+    });
+    const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, input.targetLang));
+    const maxNav = existingSameLang
+      .filter((p) => siblingPaths.has(p.path))
+      .reduce((m, p) => Math.max(m, p.navOrder), 0);
+
+    const row = await tx.page.create({
+      data: {
+        title: localized.title,
+        slug,
+        lang: input.targetLang,
+        contentMd: localized.contentMd,
+        excerpt: source.excerpt,
+        isPublished: false,
+        path,
+        navOrder: maxNav + 10,
+        originalId: canonicalPageId(source),
+      },
+    });
+    await tx.pageRevision.create({
+      data: {
+        pageId: row.id,
+        editorId: input.editorId,
+        title: row.title,
+        contentMd: row.contentMd,
+      },
+    });
+    return row;
+  });
+
+  await invalidateWikiLangCache(input.targetLang);
+  await invalidateSearchLangCache(input.targetLang);
+  await emitOutgoingWebhook("page.created", { pageId: created.id, path: created.path, published: created.isPublished });
+  return { page: created, created: true };
+}
+
+export async function localizePageToAllMissing(input: {
+  pageId: string;
+  targetLangs: string[];
+  editorId: string;
+  agentId?: string | null;
+}) {
+  const results: { lang: string; ok: boolean; path?: string; message?: string }[] = [];
+  for (const lang of input.targetLangs) {
+    try {
+      const { page } = await localizePageToLanguage({
+        pageId: input.pageId,
+        targetLang: lang,
+        editorId: input.editorId,
+        agentId: input.agentId,
+      });
+      results.push({ lang, ok: true, path: page.path });
+    } catch (error) {
+      results.push({
+        lang,
+        ok: false,
+        message: error instanceof Error ? error.message : "Localization failed",
+      });
+    }
+  }
+  return results;
+}
+
+export async function collectBranchPageIds(rootPath: string, lang: string): Promise<string[]> {
+  const pages = await prisma.page.findMany({
+    where: {
+      lang,
+      OR: [{ path: rootPath }, { path: { startsWith: `${rootPath}/` } }],
+    },
+    select: { id: true, path: true },
+  });
+  return pages
+    .sort((a, b) => a.path.split("/").filter(Boolean).length - b.path.split("/").filter(Boolean).length)
+    .map((p) => p.id);
+}
+
+export type BranchLocalizeResult = {
+  pageId: string;
+  sourcePath: string;
+  lang: string;
+  ok: boolean;
+  path?: string;
+  created?: boolean;
+  message?: string;
+};
+
+export async function localizeBranchToMissing(input: {
+  rootPageId: string;
+  editorId: string;
+  agentId?: string | null;
+  targetLangs?: string[];
+}): Promise<{ pageCount: number; results: BranchLocalizeResult[] }> {
+  const root = await prisma.page.findUnique({
+    where: { id: input.rootPageId },
+    select: { id: true, path: true, lang: true, originalId: true },
+  });
+  if (!root) throw new Error("Root page not found.");
+
+  const enabled = await getEnabledLanguages();
+  const targetLangs =
+    input.targetLangs?.filter((l) => l !== root.lang && enabled.includes(l)) ??
+    enabled.filter((l) => l !== root.lang);
+
+  const pageIds = await collectBranchPageIds(root.path, root.lang);
+  const results: BranchLocalizeResult[] = [];
+
+  for (const pageId of pageIds) {
+    const source = await prisma.page.findUnique({
+      where: { id: pageId },
+      select: { id: true, path: true, lang: true, originalId: true },
+    });
+    if (!source) continue;
+
+    for (const targetLang of targetLangs) {
+      const existing = await findPageCounterpart(source, targetLang);
+      if (existing) {
+        results.push({
+          pageId: source.id,
+          sourcePath: source.path,
+          lang: targetLang,
+          ok: true,
+          path: existing.path,
+          created: false,
+          message: "Already exists.",
+        });
+        continue;
+      }
+
+      try {
+        const { page, created } = await localizePageToLanguage({
+          pageId: source.id,
+          targetLang,
+          editorId: input.editorId,
+          agentId: input.agentId,
+        });
+        results.push({
+          pageId: source.id,
+          sourcePath: source.path,
+          lang: targetLang,
+          ok: true,
+          path: page.path,
+          created,
+        });
+      } catch (error) {
+        results.push({
+          pageId: source.id,
+          sourcePath: source.path,
+          lang: targetLang,
+          ok: false,
+          message: error instanceof Error ? error.message : "Localization failed",
+        });
+      }
+    }
+  }
+
+  return { pageCount: pageIds.length, results };
+}

@@ -4,7 +4,7 @@
  * - HEKOTI_FORCE_ADMIN_RESET=1 → upsert пользователя с этим email и перезапись пароля (аварийный сброс).
  */
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import pg from "pg";
 
@@ -33,8 +33,8 @@ async function main() {
       const hash = await bcrypt.hash(password, 12);
       await prisma.user.upsert({
         where: { email },
-        update: { passwordHash: hash, role: "admin" },
-        create: { email, passwordHash: hash, role: "admin" },
+        update: { passwordHash: hash, role: UserRole.ADMIN },
+        create: { email, passwordHash: hash, role: UserRole.ADMIN },
       });
       console.log(`[ensure-admin] HEKOTI_FORCE_ADMIN_RESET: password updated for login="${email}"`);
       return;
@@ -48,7 +48,7 @@ async function main() {
 
     const hash = await bcrypt.hash(password, 12);
     await prisma.user.create({
-      data: { email, passwordHash: hash, role: "admin" },
+      data: { email, passwordHash: hash, role: UserRole.ADMIN },
     });
     console.log(`[ensure-admin] created admin login="${email}"`);
   } finally {

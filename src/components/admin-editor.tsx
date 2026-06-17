@@ -12,6 +12,7 @@ import {
   TreeDepthSpacer,
 } from "@/components/page-tree-shared";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
+import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 import { Eye, EyeOff, GripVertical, MoreVertical } from "lucide-react";
 
@@ -47,18 +48,22 @@ type PageRow = {
   navOrder: number;
 };
 
+type Counterpart = { id: string; path: string; title: string; lang: string };
+
 export function AdminEditor({
   initialPages,
   lang,
   enabledLanguages,
   dict,
   initialActivePath,
+  activeAgentId,
 }: {
   initialPages: PageRow[];
   lang: string;
   enabledLanguages: string[];
   dict: Dictionary;
   initialActivePath?: string;
+  activeAgentId?: string | null;
 }) {
   const router = useRouter();
   const [pages, setPages] = useState(initialPages);
@@ -77,7 +82,29 @@ export function AdminEditor({
   const [renameModal, setRenameModal] = useState<{ id: string; title: string } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [counterparts, setCounterparts] = useState<Record<string, Counterpart | null>>({});
   const active = useMemo(() => pages.find((item) => item.id === activeId), [pages, activeId]);
+  const branchPageCount = useMemo(() => {
+    if (!active) return 0;
+    return pages.filter((p) => p.path === active.path || p.path.startsWith(`${active.path}/`)).length;
+  }, [pages, active]);
+
+  useEffect(() => {
+    if (!activeId) {
+      setCounterparts({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const res = await apiFetch(`/api/pages/${activeId}/counterparts`);
+      if (!res.ok || cancelled) return;
+      const body = (await res.json()) as { counterparts?: Record<string, Counterpart | null> };
+      if (!cancelled) setCounterparts(body.counterparts ?? {});
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId]);
   const pathTree = useMemo(() => buildPathTree(pages, lang), [pages, lang]);
 
   const getParentParts = useCallback(
@@ -105,7 +132,7 @@ export function AdminEditor({
     if (!active) return;
     setStatus(dict.admin.posts.saving);
     startTransition(async () => {
-      const response = await fetch(`/api/pages/${active.id}`, {
+      const response = await apiFetch(`/api/pages/${active.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -120,10 +147,9 @@ export function AdminEditor({
 
   const patchPage = useCallback(
     async (id: string, patch: { title?: string; contentMd?: string; isPublished?: boolean; navOrder?: number; parentPathParts?: string[] }) => {
-      const res = await fetch(`/api/pages/${id}`, {
+      const res = await apiFetch(`/api/pages/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        credentials: "same-origin",
         body: JSON.stringify(patch),
       });
       const body = (await res.json()) as PageRow & { ok?: boolean; message?: string };
@@ -136,14 +162,158 @@ export function AdminEditor({
     [updatePage],
   );
 
+  const adminPathForLang = useCallback(
+    (targetLang: string, sourcePath?: string) => {
+      const base = sourcePath ?? active?.path;
+      if (!base) return `/${targetLang}/admin?tab=posts`;
+      const tail = pathSegmentsAfterLang(base, lang);
+      const nextPath = tail.length > 0 ? `/${targetLang}/${tail.join("/")}` : `/${targetLang}`;
+      return `/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(nextPath)}`;
+    },
+    [active?.path, lang],
+  );
+
+  const switchTreeLanguage = (targetLang: string) => {
+    if (targetLang === lang) return;
+    router.push(adminPathForLang(targetLang));
+  };
+
+  const openCounterpart = (targetLang: string) => {
+    const hit = counterparts[targetLang];
+    if (hit?.path) {
+      router.push(`/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(hit.path)}`);
+      return;
+    }
+    router.push(adminPathForLang(targetLang));
+  };
+
+  const localizeToLanguage = async (targetLang: string) => {
+    if (!active || targetLang === lang) return;
+    setStatus(dict.admin.posts.aiLocalizing);
+    setStatusTone("neutral");
+    try {
+      const res = await apiFetch(`/api/pages/${active.id}/localize`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ targetLang, agentId: activeAgentId ?? undefined }),
+      });
+      const body = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        page?: PageRow;
+      };
+      if (!res.ok || !body.ok || !body.page) {
+        setStatusTone("error");
+        setStatus(body.message ?? dict.admin.posts.failed);
+        return;
+      }
+      router.push(`/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(body.page.path)}`);
+    } catch {
+      setStatusTone("error");
+      setStatus(dict.admin.posts.failed);
+    }
+  };
+
+  const localizeBranchMissing = async () => {
+    if (!active) return;
+    setStatus(
+      dict.admin.posts.aiLocalizingBranch.replace("{count}", String(branchPageCount)),
+    );
+    setStatusTone("neutral");
+    try {
+      const res = await apiFetch(`/api/pages/${active.id}/localize-branch`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ agentId: activeAgentId ?? undefined }),
+      });
+      const body = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        pageCount?: number;
+        summary?: { created: number; skipped: number; failed: number; total: number };
+        results?: { ok: boolean; lang: string; message?: string; sourcePath?: string }[];
+      };
+      if (!res.ok || !body.ok) {
+        setStatusTone("error");
+        setStatus(body.message ?? dict.admin.posts.failed);
+        return;
+      }
+      const failed = (body.results ?? []).filter((r) => !r.ok);
+      if (failed.length > 0) {
+        setStatusTone("error");
+        const preview = failed
+          .slice(0, 3)
+          .map((f) => `${f.sourcePath ?? "?"} (${f.lang}): ${f.message ?? "error"}`)
+          .join("; ");
+        setStatus(
+          dict.admin.posts.aiLocalizedBranchPartial
+            .replace("{created}", String(body.summary?.created ?? 0))
+            .replace("{failed}", String(failed.length))
+            .concat(preview ? ` — ${preview}` : ""),
+        );
+      } else {
+        setStatus(
+          dict.admin.posts.aiLocalizedBranch
+            .replace("{pages}", String(body.pageCount ?? branchPageCount))
+            .replace("{created}", String(body.summary?.created ?? 0)),
+        );
+      }
+      const refresh = await apiFetch(`/api/pages/${active.id}/counterparts`);
+      if (refresh.ok) {
+        const data = (await refresh.json()) as { counterparts?: Record<string, Counterpart | null> };
+        setCounterparts(data.counterparts ?? {});
+      }
+    } catch {
+      setStatusTone("error");
+      setStatus(dict.admin.posts.failed);
+    }
+  };
+
+  const localizeAllMissing = async () => {
+    if (!active) return;
+    setStatus(dict.admin.posts.aiLocalizingAll);
+    setStatusTone("neutral");
+    try {
+      const res = await apiFetch(`/api/pages/${active.id}/localize-all`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ agentId: activeAgentId ?? undefined }),
+      });
+      const body = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        results?: { lang: string; ok: boolean; message?: string }[];
+      };
+      if (!res.ok || !body.ok) {
+        setStatusTone("error");
+        setStatus(body.message ?? dict.admin.posts.failed);
+        return;
+      }
+      const failed = (body.results ?? []).filter((r) => !r.ok);
+      if (failed.length > 0) {
+        setStatusTone("error");
+        setStatus(failed.map((f) => `${f.lang}: ${f.message ?? "error"}`).join("; "));
+        return;
+      }
+      setStatus(dict.admin.posts.aiLocalizedAll);
+      const refresh = await apiFetch(`/api/pages/${active.id}/counterparts`);
+      if (refresh.ok) {
+        const data = (await refresh.json()) as { counterparts?: Record<string, Counterpart | null> };
+        setCounterparts(data.counterparts ?? {});
+      }
+    } catch {
+      setStatusTone("error");
+      setStatus(dict.admin.posts.failed);
+    }
+  };
+
   const cloneToLanguage = async (targetLang: string) => {
     if (!active) return;
     if (targetLang === lang) return;
     setStatus(dict.admin.posts.saving);
-    const res = await fetch("/api/pages", {
+    const res = await apiFetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      credentials: "same-origin",
       body: JSON.stringify({ sourcePath: active.path, targetLang }),
     });
     const body = (await res.json()) as { id?: string; path?: string; ok?: boolean; code?: string; existingPath?: string; message?: string };
@@ -162,7 +332,7 @@ export function AdminEditor({
     const page = pages.find((p) => p.id === id);
     if (!page) return;
     setStatus(dict.common.loading);
-    const res = await fetch(`/api/pages/${id}`, { method: "DELETE", credentials: "same-origin" });
+    const res = await apiFetch(`/api/pages/${id}`, { method: "DELETE" });
     const body = (await res.json()) as { ok?: boolean; message?: string };
     if (!res.ok || !body.ok) {
       setStatusTone("error");
@@ -330,7 +500,7 @@ export function AdminEditor({
   };
 
   const createWithParent = async (parentPathParts: string[], title: string) => {
-    const response = await fetch("/api/pages", {
+    const response = await apiFetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ lang, title, contentMd: "", isPublished: false, parentPathParts }),
@@ -410,6 +580,35 @@ export function AdminEditor({
   return (
     <section style={{ display: "grid", gridTemplateColumns: "minmax(300px, min(40vw, 420px)) 1fr", gap: 12 }}>
       <aside style={{ ...panelStyle, minWidth: 0 }}>
+        <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
+          <div style={{ color: "var(--muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            {dict.admin.posts.treeLanguage}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {enabledLanguages.map((l) => {
+              const isCurrent = l === lang;
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => switchTreeLanguage(l)}
+                  disabled={isCurrent || isPending}
+                  style={{
+                    ...buttonStyle,
+                    padding: "5px 10px",
+                    fontSize: 12,
+                    fontWeight: isCurrent ? 700 : 500,
+                    borderColor: isCurrent ? "color-mix(in srgb, var(--accent) 55%, var(--line))" : "var(--line)",
+                    background: isCurrent ? "color-mix(in srgb, var(--accent) 14%, var(--panel))" : "transparent",
+                    color: isCurrent ? "var(--accent)" : "var(--fg)",
+                  }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div
           style={{
             display: "flex",
@@ -505,25 +704,70 @@ export function AdminEditor({
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 {enabledLanguages.map((l) => {
                   const isCurrent = l === lang;
+                  const hit = counterparts[l];
+                  const hasVersion = Boolean(hit?.id);
                   return (
                     <button
                       key={l}
                       type="button"
-                      onClick={() => cloneToLanguage(l)}
+                      onClick={(e) => {
+                        if (isCurrent) return;
+                        if (hasVersion) {
+                          openCounterpart(l);
+                          return;
+                        }
+                        if (e.shiftKey) {
+                          void cloneToLanguage(l);
+                          return;
+                        }
+                        void localizeToLanguage(l);
+                      }}
                       disabled={isCurrent || isPending}
-                      title={isCurrent ? dict.admin.posts.cloneHereTitle : dict.admin.posts.cloneToTitle.replace("{lang}", l.toUpperCase())}
+                      title={
+                        isCurrent
+                          ? dict.admin.posts.cloneHereTitle
+                          : hasVersion
+                            ? dict.admin.posts.openLangVersion.replace("{lang}", l.toUpperCase())
+                            : dict.admin.posts.aiLocalizeTitle.replace("{lang}", l.toUpperCase())
+                      }
                       style={{
                         ...buttonStyle,
                         padding: "6px 10px",
                         minHeight: 30,
                         opacity: isCurrent ? 0.55 : 1,
                         cursor: isCurrent ? "default" : "pointer",
+                        borderStyle: hasVersion || isCurrent ? "solid" : "dashed",
+                        borderColor: hasVersion
+                          ? "color-mix(in srgb, #4caf50 55%, var(--line))"
+                          : isCurrent
+                            ? "var(--line)"
+                            : "color-mix(in srgb, var(--accent) 45%, var(--line))",
+                        color: hasVersion ? "#4caf50" : isCurrent ? "var(--muted)" : "var(--accent)",
                       }}
                     >
+                      {hasVersion ? "● " : "○ "}
                       {l.toUpperCase()}
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  style={{ ...buttonStyle, padding: "6px 10px", fontWeight: 700 }}
+                  disabled={!active || isPending}
+                  onClick={() => void localizeAllMissing()}
+                  title={dict.admin.posts.aiLocalizeAllTitle}
+                >
+                  {dict.admin.posts.aiLocalizeAll}
+                </button>
+                <button
+                  type="button"
+                  style={{ ...buttonStyle, padding: "6px 10px", fontWeight: 700 }}
+                  disabled={!active || isPending || branchPageCount < 1}
+                  onClick={() => void localizeBranchMissing()}
+                  title={dict.admin.posts.aiLocalizeBranchTitle.replace("{count}", String(branchPageCount))}
+                >
+                  {dict.admin.posts.aiLocalizeBranch}
+                </button>
               </div>
               <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <input
