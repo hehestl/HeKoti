@@ -9,6 +9,18 @@ node ./scripts/install-banner.cjs --startup
 export HOSTNAME=0.0.0.0
 export HEKOTI_ENFORCE_PROD_SECRETS=1
 
+# Fail fast before migrate if production secrets are missing (otherwise node server.js crashes → NPM 502).
+if [ "${HEKOTI_ENFORCE_PROD_SECRETS}" = "1" ]; then
+  for name in WEBHOOK_SECRET AUTH_PENDING_SECRET HEKOTI_TOTP_ENCRYPTION_KEY; do
+    eval "val=\${$name:-}"
+    if [ -z "$val" ] || [ "${#val}" -lt 32 ]; then
+      echo "ERROR: $name must be set in .env (at least 32 characters). See .env.example"
+      echo "  Generate: openssl rand -hex 32"
+      exit 1
+    fi
+  done
+fi
+
 # If Compose (or .env) did not set DATABASE_URL, build it from POSTGRES_* (same defaults as postgres service).
 if [ -z "${DATABASE_URL:-}" ]; then
   u="${POSTGRES_USER:-hekoti_user}"

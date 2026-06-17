@@ -83,6 +83,7 @@
 - Сессия за HTTPS reverse proxy: флаг `Secure` на cookie учитывает заголовок `X-Forwarded-Proto` (не только `APP_URL`).
 - CI: `package-lock.json` синхронизирован — `@emnapi/core@1.11.1`, `@emnapi/runtime@1.11.1`, `@emnapi/wasi-threads@1.2.2` для `npm ci`.
 - Ops: `scripts/deploy-update.sh` — git pull, rebuild и `--force-recreate` app; smoke-проверка help-center в HTML.
+- Docker entrypoint: ранняя проверка production-секретов в `.env` (понятная ошибка вместо NPM 502).
 - Docker: `package-lock.json` синхронизирован с npm 10 (как в образе `node:22-alpine`): в lock добавлены `@emnapi/core` и `@emnapi/runtime@1.10.0`, без чего `npm ci --omit=dev` завершался ошибкой «Missing from lock file».
 - `admin-editor.tsx`: стили `panelStyle` / `buttonStyle` / `inputStyle` в начале файла + `CSSProperties` из `react` (сборка Docker/TS).
 - `POST /api/auth/login`: разбор тела без строгого Zod (меньше ложных 400), явные сообщения; в форме входа — `credentials: "same-origin"` и заголовок `Content-Type`.

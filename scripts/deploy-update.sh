@@ -34,6 +34,12 @@ while [ "$i" -lt 24 ]; do
   sleep 5
 done
 
+echo "==> docker compose ps"
+docker compose ps hekoti-app 2>/dev/null || docker compose ps
+
+echo "==> last app logs (if 502 in NPM, check here)"
+docker compose logs --tail=40 hekoti-app 2>/dev/null || true
+
 PORT="${PORT:-3310}"
 echo "==> smoke: help-center markup on homepage"
 if curl -sf "http://127.0.0.1:${PORT}/en" | grep -q 'help-center'; then
