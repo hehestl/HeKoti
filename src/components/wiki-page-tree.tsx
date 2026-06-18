@@ -109,8 +109,8 @@ function WikiTreeNode({
               dict={dict}
             />
             {hasChildren ? (
-              <span className="repo-tree-node-meta">
-                <Folder size={14} aria-hidden strokeWidth={2} title={dict.admin.posts.hasChildrenWithPage} />
+              <span className="repo-tree-node-meta" title={dict.admin.posts.hasChildrenWithPage}>
+                <Folder size={14} aria-hidden strokeWidth={2} />
                 <a
                   href={wikiPublicHref(lang, page.path)}
                   target="_blank"

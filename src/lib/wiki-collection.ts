@@ -26,16 +26,16 @@ export function isCollectionNode<T extends { path: string }>(node: PathTreeNode<
   return node.children.length > 0;
 }
 
-export function isWikiCatalogNode(node: PathTreeNode<unknown> | null): boolean {
+export function isWikiCatalogNode(node: PathTreeNode<{ path: string }> | null): boolean {
   if (!node) return false;
   return node.children.length > 0;
 }
 
-export function isWikiLeafArticle(node: PathTreeNode<unknown> | null): boolean {
+export function isWikiLeafArticle(node: PathTreeNode<{ path: string }> | null): boolean {
   return !isWikiCatalogNode(node) && !!node?.page;
 }
 
-export function getWikiNodeType(node: PathTreeNode<unknown> | null): WikiNodeType {
+export function getWikiNodeType(node: PathTreeNode<{ path: string }> | null): WikiNodeType {
   if (isWikiCatalogNode(node)) return "catalog";
   if (node?.page) return "article";
   return "missing";

@@ -671,6 +671,7 @@ export function AdminEditor({
           ) : (
             <AdminPathTree
               nodes={pathTree}
+              lang={lang}
               activeId={activeId}
               onSelect={setActiveId}
               onRename={requestRename}
@@ -974,6 +975,7 @@ const adminMenuBtn: CSSProperties = {
 
 function AdminPathTree({
   nodes,
+  lang,
   activeId,
   onSelect,
   onRename,
@@ -987,6 +989,7 @@ function AdminPathTree({
   dict,
 }: {
   nodes: PathTreeNode<PageRow>[];
+  lang: string;
   activeId: string;
   onSelect: (id: string) => void;
   onRename: (id: string) => void;
@@ -1028,6 +1031,7 @@ function AdminPathTree({
         <AdminTreeBranch
           key={node.pathKey}
           node={node}
+          lang={lang}
           depth={0}
           activeId={activeId}
           onSelect={onSelect}
@@ -1144,6 +1148,7 @@ function RowActionsMenu({
 
 function AdminTreeBranch({
   node,
+  lang,
   depth,
   activeId,
   onSelect,
@@ -1162,6 +1167,7 @@ function AdminTreeBranch({
   adminIconBtnStyle,
 }: {
   node: PathTreeNode<PageRow>;
+  lang: string;
   depth: number;
   activeId: string;
   onSelect: (id: string) => void;
@@ -1258,13 +1264,12 @@ function AdminTreeBranch({
             <EyeOff size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.55, flexShrink: 0 }} />
           )}
           {hasChildren ? (
-            <Folder
-              size={15}
-              aria-hidden
-              strokeWidth={2}
-              style={{ opacity: 0.85, flexShrink: 0 }}
+            <span
               title={dict.admin.posts.hasChildrenWithPage}
-            />
+              style={{ display: "inline-flex", flexShrink: 0, opacity: 0.85 }}
+            >
+              <Folder size={15} aria-hidden strokeWidth={2} />
+            </span>
           ) : (
             <FileText size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.75, flexShrink: 0 }} />
           )}
@@ -1370,6 +1375,7 @@ function AdminTreeBranch({
             <AdminTreeBranch
               key={child.pathKey}
               node={child}
+              lang={lang}
               depth={depth + 1}
               activeId={activeId}
               onSelect={onSelect}
