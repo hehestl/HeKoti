@@ -2,10 +2,12 @@
 
 import type { PathTreeNode } from "@/lib/page-tree";
 import { pathKeysBranchingToTarget } from "@/lib/page-tree";
+import { wikiPublicHref } from "@/lib/wiki-path";
 import { useState } from "react";
 import type { Dictionary } from "@/lib/i18n";
 import { WikiPageCell } from "@/components/wiki-page-row";
 import { TreeChevronButton, TreeChevronSpacer, TreeDepthSpacer } from "@/components/page-tree-shared";
+import { ExternalLink, FileText, Folder } from "lucide-react";
 
 export type WikiTreePageBrief = { id: string; title: string; path: string; navOrder?: number };
 
@@ -96,7 +98,7 @@ function WikiTreeNode({
           <TreeChevronSpacer />
         )}
         {page ? (
-          <div className="repo-tree-cell-grow">
+          <div className="repo-tree-cell-grow repo-tree-cell-with-meta">
             <WikiPageCell
               id={page.id}
               href={href!}
@@ -106,12 +108,30 @@ function WikiTreeNode({
               isActive={isActive}
               dict={dict}
             />
+            {hasChildren ? (
+              <span className="repo-tree-node-meta">
+                <Folder size={14} aria-hidden strokeWidth={2} title={dict.admin.posts.hasChildrenWithPage} />
+                <a
+                  href={wikiPublicHref(lang, page.path)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="repo-tree-catalog-link"
+                  title={dict.admin.posts.openPublicCatalog}
+                  aria-label={dict.admin.posts.openPublicCatalog}
+                >
+                  <ExternalLink size={14} strokeWidth={2} aria-hidden />
+                </a>
+              </span>
+            ) : (
+              <FileText size={14} aria-hidden strokeWidth={2} className="repo-tree-node-icon" />
+            )}
           </div>
         ) : (
           <div
             className="repo-tree-folder-label"
             title={dict.admin.posts.hasChildrenNoArticle}
           >
+            <Folder size={14} aria-hidden strokeWidth={2} />
             <span className="repo-tree-folder-segment">{node.segment}</span>
             <span className="repo-tree-folder-hint">{dict.admin.posts.noArticle}</span>
           </div>

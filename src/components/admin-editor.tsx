@@ -14,7 +14,8 @@ import {
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
-import { Eye, EyeOff, GripVertical, MoreVertical } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, FileText, Folder, GripVertical, MoreVertical } from "lucide-react";
+import { wikiPublicHref } from "@/lib/wiki-path";
 
 const panelStyle: CSSProperties = {
   border: "1px solid var(--line)",
@@ -1256,8 +1257,31 @@ function AdminTreeBranch({
           ) : (
             <EyeOff size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.55, flexShrink: 0 }} />
           )}
+          {hasChildren ? (
+            <Folder
+              size={15}
+              aria-hidden
+              strokeWidth={2}
+              style={{ opacity: 0.85, flexShrink: 0 }}
+              title={dict.admin.posts.hasChildrenWithPage}
+            />
+          ) : (
+            <FileText size={15} aria-hidden strokeWidth={2} style={{ opacity: 0.75, flexShrink: 0 }} />
+          )}
           <span title={node.page.isPublished ? dict.admin.posts.published : dict.admin.posts.draft}>{node.page.title}</span>
         </button>
+        {hasChildren ? (
+          <a
+            href={wikiPublicHref(lang, node.page.path)}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={adminIconBtnStyle}
+            title={dict.admin.posts.openPublicCatalog}
+            aria-label={dict.admin.posts.openPublicCatalog}
+          >
+            <ExternalLink size={16} strokeWidth={2} />
+          </a>
+        ) : null}
         <button
           type="button"
           style={adminIconBtnStyle}
@@ -1319,6 +1343,7 @@ function AdminTreeBranch({
         }}
         title={dict.admin.posts.hasChildrenNoArticle}
       >
+        <Folder size={14} aria-hidden strokeWidth={2} style={{ opacity: 0.75, flexShrink: 0 }} />
         <span style={{ opacity: 0.75, fontSize: 12 }}>{node.segment}/</span>
         <small style={{ opacity: 0.85 }}>{dict.admin.posts.noArticle}</small>
       </div>

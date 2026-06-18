@@ -31,3 +31,10 @@ export function wikiCacheKey(path: string, lang: string): string {
   const segs = pathSegmentsAfterLang(path, lang);
   return `wiki:${lang}:${segs.join("/")}`;
 }
+
+/** Public wiki URL from DB path /{lang}/segment/... */
+export function wikiPublicHref(lang: string, dbPath: string): string {
+  const prefix = `/${lang}/`;
+  if (!dbPath.startsWith(prefix)) return `/${lang}`;
+  return `/${lang}/wiki/${dbPath.slice(prefix.length)}`;
+}

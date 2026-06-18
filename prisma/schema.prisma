@@ -11,6 +11,12 @@ enum UserRole {
   READER
 }
 
+enum PageReaction {
+  BROKEN
+  NEUTRAL
+  LOVED
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String    @unique
@@ -24,6 +30,7 @@ model User {
   sessions       Session[]
   pageRevisions  PageRevision[]
   agentMessages  AgentMessage[]
+  pageRatings    PageRating[]
 }
 
 model Session {
@@ -52,6 +59,7 @@ model Page {
   parent       Page?          @relation("PageChildren", fields: [parentId], references: [id], onDelete: SetNull)
   children     Page[]         @relation("PageChildren")
   revisions    PageRevision[]
+  ratings      PageRating[]
 
   @@index([lang, slug])
 }
@@ -65,6 +73,21 @@ model PageRevision {
   createdAt   DateTime @default(now())
   page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
   editor      User     @relation(fields: [editorId], references: [id], onDelete: Cascade)
+}
+
+model PageRating {
+  id        String       @id @default(uuid())
+  pageId    String
+  userId    String
+  reaction  PageReaction
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  page      Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, userId])
+  @@index([pageId])
+  @@index([userId])
 }
 
 model AgentChannel {

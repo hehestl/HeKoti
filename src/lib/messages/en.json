@@ -51,7 +51,17 @@
     "articlesCount": "{n} articles",
     "empty": "This collection has no articles yet.",
     "defaultDescription": "Browse articles in this topic.",
-    "updatedAt": "Updated {date}"
+    "updatedAt": "Updated {date}",
+    "articlesNavLabel": "Articles in this collection"
+  },
+  "article": {
+    "relatedTitle": "More in this section",
+    "relatedNeighborTitle": "From nearby topics",
+    "ratingTitle": "How did you like this article?",
+    "ratingThanks": "Thanks for your feedback",
+    "ratingBroken": "Did not help",
+    "ratingNeutral": "Okay",
+    "ratingLoved": "Loved it"
   },
   "search": {
     "resultsTitle": "Search results for “{q}”",
@@ -108,7 +118,9 @@
       "roleAI": "AI",
       "roleYou": "You",
       "noArticle": "no article",
-      "hasChildrenNoArticle": "Has subpages, but no page at this exact URL",
+      "hasChildrenNoArticle": "Implicit collection: subpages exist, no page at this exact URL",
+      "hasChildrenWithPage": "Public URL shows catalog + article body above the list",
+      "openPublicCatalog": "Open public catalog",
       "delete": "Delete",
       "deleteConfirm": "Delete page \"{title}\"?",
       "deleteFailed": "Delete failed",

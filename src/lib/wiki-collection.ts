@@ -20,8 +20,29 @@ export function humanizeSegment(segment: string): string {
     .join(" ");
 }
 
+export type WikiNodeType = "catalog" | "article" | "missing";
+
 export function isCollectionNode<T extends { path: string }>(node: PathTreeNode<T>): boolean {
-  return !node.page && node.children.length > 0;
+  return node.children.length > 0;
+}
+
+export function isWikiCatalogNode(node: PathTreeNode<unknown> | null): boolean {
+  if (!node) return false;
+  return node.children.length > 0;
+}
+
+export function isWikiLeafArticle(node: PathTreeNode<unknown> | null): boolean {
+  return !isWikiCatalogNode(node) && !!node?.page;
+}
+
+export function getWikiNodeType(node: PathTreeNode<unknown> | null): WikiNodeType {
+  if (isWikiCatalogNode(node)) return "catalog";
+  if (node?.page) return "article";
+  return "missing";
+}
+
+export function hasPublishedPage(page: { isPublished: boolean } | null | undefined): boolean {
+  return page?.isPublished === true;
 }
 
 export function getCollectionUrl(node: PathTreeNode<{ path: string }>, lang: string): string {
@@ -178,6 +199,32 @@ export function buildBreadcrumbJsonLd(
       if (path) entry.item = breadcrumbAbsUrl(appUrl, path);
       return entry;
     }),
+  };
+}
+
+export function buildCatalogJsonLd(
+  title: string,
+  description: string,
+  pagePath: string,
+  children: { title: string; url: string }[],
+  appUrl: string,
+): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: title,
+    description,
+    url: breadcrumbAbsUrl(appUrl, pagePath),
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: children.length,
+      itemListElement: children.map((child, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: child.title,
+        url: breadcrumbAbsUrl(appUrl, child.url),
+      })),
+    },
   };
 }
 

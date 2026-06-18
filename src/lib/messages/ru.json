@@ -51,7 +51,17 @@
     "articlesCount": "{n} статей",
     "empty": "В этой коллекции пока нет статей.",
     "defaultDescription": "Статьи по этой теме.",
-    "updatedAt": "Обновлено {date}"
+    "updatedAt": "Обновлено {date}",
+    "articlesNavLabel": "Статьи в этой коллекции"
+  },
+  "article": {
+    "relatedTitle": "Ещё в этом разделе",
+    "relatedNeighborTitle": "Из соседних тем",
+    "ratingTitle": "Как вам статья?",
+    "ratingThanks": "Спасибо за оценку!",
+    "ratingBroken": "Не помогла",
+    "ratingNeutral": "Нормально",
+    "ratingLoved": "Отлично"
   },
   "search": {
     "resultsTitle": "Результаты поиска «{q}»",
@@ -108,7 +118,9 @@
       "roleAI": "ИИ",
       "roleYou": "Вы",
       "noArticle": "нет статьи",
-      "hasChildrenNoArticle": "Есть вложенные страницы, но страницы с этим точным URL нет",
+      "hasChildrenNoArticle": "Неявная коллекция: есть вложенные страницы, но страницы с этим URL нет",
+      "hasChildrenWithPage": "На публичном URL — каталог; тело статьи над списком",
+      "openPublicCatalog": "Открыть публичный каталог",
       "delete": "Удалить",
       "deleteConfirm": "Удалить страницу «{title}»?",
       "deleteFailed": "Не удалось удалить",

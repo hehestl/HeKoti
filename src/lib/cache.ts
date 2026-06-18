@@ -44,21 +44,23 @@ export async function delCached(key: string) {
 /** Drop all cached wiki HTML for a language (e.g. after /post targets or titles change). */
 export async function invalidateWikiLangCache(lang: string) {
   await delCached(`wiki-links:${lang}`);
-  const prefix = `wiki:${lang}:`;
+  const prefixes = [`wiki:${lang}:`, `wiki-catalog:${lang}:`];
   const redis = getRedis();
   if (redis) {
-    let cursor = "0";
-    do {
-      const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
-      cursor = next;
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
-    } while (cursor !== "0");
+    for (const prefix of prefixes) {
+      let cursor = "0";
+      do {
+        const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
+        cursor = next;
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } while (cursor !== "0");
+    }
     return;
   }
   for (const key of memoryCache.keys()) {
-    if (typeof key === "string" && key.startsWith(prefix)) {
+    if (typeof key === "string" && prefixes.some((prefix) => key.startsWith(prefix))) {
       memoryCache.delete(key);
     }
   }
