@@ -17,6 +17,13 @@ export function readCsrfTokenFromDocument(): string | null {
   return null;
 }
 
+async function ensureCsrfToken(): Promise<string | null> {
+  const existing = readCsrfTokenFromDocument();
+  if (existing) return existing;
+  await fetch("/api/health", { credentials: "same-origin" });
+  return readCsrfTokenFromDocument();
+}
+
 /**
  * Same-origin fetch wrapper: adds `x-csrf-token` for state-changing requests.
  * Login/logout/heron exchange remain CSRF-exempt in middleware when called without the header.
@@ -26,7 +33,7 @@ export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {})
   const headers = new Headers(init.headers);
 
   if (MUTATING_METHODS.has(method)) {
-    const token = readCsrfTokenFromDocument();
+    const token = (await ensureCsrfToken()) ?? readCsrfTokenFromDocument();
     if (token && !headers.has("x-csrf-token")) {
       headers.set("x-csrf-token", token);
     }

@@ -53,6 +53,13 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function withCsrfCookies(source: NextResponse, target: NextResponse): NextResponse {
+  for (const cookie of source.cookies.getAll()) {
+    target.cookies.set(cookie.name, cookie.value, cookie);
+  }
+  return target;
+}
+
 async function signCsrfRandom(randomHex: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -137,18 +144,21 @@ export async function middleware(request: NextRequest) {
 
   // Verify CSRF token
   if (!headerToken && !queryToken) {
-    return NextResponse.json(
-      { ok: false, message: "CSRF token missing. Include x-csrf-token header or csrf_token query parameter." },
-      { status: 403 }
+    return withCsrfCookies(
+      response,
+      NextResponse.json(
+        { ok: false, message: "CSRF token missing. Include x-csrf-token header or csrf_token query parameter." },
+        { status: 403 },
+      ),
     );
   }
 
   const tokenToVerify = headerToken || queryToken;
 
   if (!cookieToken || !tokenToVerify || !(await verifyCsrfToken(tokenToVerify, cookieToken))) {
-    return NextResponse.json(
-      { ok: false, message: "Invalid CSRF token." },
-      { status: 403 }
+    return withCsrfCookies(
+      response,
+      NextResponse.json({ ok: false, message: "Invalid CSRF token." }, { status: 403 }),
     );
   }
 

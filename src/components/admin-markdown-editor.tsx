@@ -15,9 +15,7 @@ import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
 import type { Dictionary } from "@/lib/i18n";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
-import "@/lib/monaco-setup";
-
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+const MonacoEditor = dynamic(() => import("@/components/admin-monaco"), { ssr: false });
 
 const tbBtn: CSSProperties = {
   border: "1px solid var(--line)",

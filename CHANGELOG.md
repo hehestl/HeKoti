@@ -15,6 +15,8 @@
 - Admin: VS Code-like workbench (activity bar, explorer, tabs, split preview)
 - Admin: действия дерева и markdown через ПКМ; языки — сворачиваемые секции explorer
 - Admin: dirty tabs с guard beforeunload; preview API `/api/admin/preview`
+- Admin: Monaco из бандла (без CDN jsdelivr) — совместимость с CSP
+- Security: CSRF cookie на 403; apiFetch bootstrap через `/api/health`
 
 ## [0.2.0] — 2026-06-19
 
