@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
 import { SiteFooterControls } from "@/components/site-footer-controls";
 import { safeLang, getDictionary } from "@/lib/i18n";
 
@@ -14,7 +15,8 @@ export default async function LocaleLayout({
   const dict = await getDictionary(lang);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="site-root" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <HekotiMascotLink lang={lang} className="site-layout-mascot" />
       <div
         style={{
           flex: 1,
@@ -28,7 +30,7 @@ export default async function LocaleLayout({
       </div>
       <footer className="site-footer">
         <div className="site-footer-links">
-          <span>{dict.common.developedBy}</span>
+          <Link href={`/${lang}`}>{dict.common.developedBy}</Link>
           <a href="https://t.me/hehestl" target="_blank" rel="noopener noreferrer">
             @hehestl
           </a>

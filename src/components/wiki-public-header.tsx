@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
+import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
 import { HelpCenterSearchForm } from "@/components/help-center-search-form";
 import { LanguageSwitch, LanguageSwitchFallback } from "@/components/language-switch";
 
@@ -28,11 +27,11 @@ export function WikiPublicHeader({
   return (
     <header className="wiki-public-header">
       <div className="wiki-public-header-inner">
-        {variant === "home" ? (
-          <Link href={`/${lang}`} className="wiki-public-header-mascot" aria-label="Hekoti">
-            <Image src="/hekoti.png" alt="" width={120} height={120} priority />
-          </Link>
-        ) : null}
+        <HekotiMascotLink
+          lang={lang}
+          className="wiki-public-header-mascot"
+          priority={variant === "home"}
+        />
         <div className="wiki-public-header-search">
           <HelpCenterSearchForm
             lang={lang}
