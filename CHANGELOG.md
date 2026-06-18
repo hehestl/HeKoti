@@ -12,6 +12,9 @@
 
 - UI: маскот на всех страницах (включая админку), клик — на главную
 - UI: «Разработано и создано» в подвале — ссылка на главную
+- Admin: VS Code-like workbench (activity bar, explorer, tabs, split preview)
+- Admin: действия дерева и markdown через ПКМ; языки — сворачиваемые секции explorer
+- Admin: dirty tabs с guard beforeunload; preview API `/api/admin/preview`
 
 ## [0.2.0] — 2026-06-19
 

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { safeLangAsync, getDictionary, getGlobalSettings } from "@/lib/i18n";
 import { getSiteConfig } from "@/lib/site-config";
 import { getAppVersion } from "@/lib/version";
+import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import pkg from "../../../../package.json";
 
 export default async function AdminPage({
@@ -31,12 +32,20 @@ export default async function AdminPage({
   const initialTotpStatus =
     user.isTotpEnabled ? "enabled" : user.totpSecret ? "pending" : "off";
 
-  const pages = await prisma.page.findMany({
-    where: { lang },
-    orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
-    take: 100,
-    select: { id: true, title: true, path: true, contentMd: true, isPublished: true, navOrder: true },
-  });
+  const pagesByLangEntries = await Promise.all(
+    enabledLanguages.map(async (pageLang) => {
+      const rows = await prisma.page.findMany({
+        where: { lang: pageLang },
+        orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
+        take: 100,
+        select: { id: true, title: true, path: true, contentMd: true, isPublished: true, navOrder: true },
+      });
+      const pages: AdminPageRow[] = rows.map((r) => ({ ...r, lang: pageLang }));
+      return [pageLang, pages] as const;
+    }),
+  );
+  const initialPagesByLang: AdminPagesByLang = Object.fromEntries(pagesByLangEntries);
+
   const channel = await ensureDefaultChannel();
   const agentMessages = await prisma.agentMessage.findMany({
     where: { channelId: channel.id },
@@ -65,33 +74,31 @@ export default async function AdminPage({
     hasApi: Boolean(a.apiBaseUrl && a.apiKeyEnv),
   }));
   const initialTab = rawTab === "posts" || rawTab === "ai" || rawTab === "settings" || rawTab === "tech" ? rawTab : "posts";
-  const initialActivePath = rawActivePath && rawActivePath.startsWith(`/${lang}/`) ? rawActivePath : undefined;
+  const initialActivePath =
+    rawActivePath && rawActivePath.startsWith(`/${lang}/`) ? rawActivePath : undefined;
 
   return (
-    <main style={{ padding: 12 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <h1 style={{ marginBottom: 10 }}>{dict.common.admin}</h1>
-        <Suspense fallback={<div style={{ color: "var(--muted)" }}>{dict.common.loading}</div>}>
-          <AdminDashboard
-            lang={lang}
-            initialLogin={user.email}
-            initialTotpStatus={initialTotpStatus}
-            initialPages={pages}
-            initialMessages={initialMessages}
-            initialActiveAgentId={channel.activeAgentId}
-            dict={dict}
-            defaultLanguage={settings.defaultLanguage}
-            headHtml={settings.headHtml}
-            bodyHtml={settings.bodyHtml}
-            enabledLanguages={enabledLanguages}
-            knownLanguages={knownLanguages}
-            aiAgents={agentRows}
-            tech={tech}
-            initialTab={initialTab}
-            initialActivePath={initialActivePath}
-          />
-        </Suspense>
-      </div>
+    <main className="admin-page-root">
+      <Suspense fallback={<div style={{ color: "var(--muted)", padding: 12 }}>{dict.common.loading}</div>}>
+        <AdminDashboard
+          lang={lang}
+          initialLogin={user.email}
+          initialTotpStatus={initialTotpStatus}
+          initialPagesByLang={initialPagesByLang}
+          initialMessages={initialMessages}
+          initialActiveAgentId={channel.activeAgentId}
+          dict={dict}
+          defaultLanguage={settings.defaultLanguage}
+          headHtml={settings.headHtml}
+          bodyHtml={settings.bodyHtml}
+          enabledLanguages={enabledLanguages}
+          knownLanguages={knownLanguages}
+          aiAgents={agentRows}
+          tech={tech}
+          initialTab={initialTab}
+          initialActivePath={initialActivePath}
+        />
+      </Suspense>
     </main>
   );
 }

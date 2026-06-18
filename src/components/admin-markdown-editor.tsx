@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type * as monaco from "monaco-editor";
 import {
@@ -13,6 +13,8 @@ import {
 } from "@/lib/monaco-md-helpers";
 import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
 import type { Dictionary } from "@/lib/i18n";
+import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
+import type { AdminContextMenuItem } from "@/types/admin-workbench";
 import "@/lib/monaco-setup";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -48,24 +50,6 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   const monRef = useRef<typeof monaco | null>(null);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!ctx) return;
-    const close = (e: MouseEvent) => {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      setCtx(null);
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCtx(null);
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("keydown", esc);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", esc);
-    };
-  }, [ctx]);
 
   const withEd = useCallback((fn: (ed: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => void) => {
     const ed = edRef.current;
@@ -188,91 +172,44 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     [withEd],
   );
 
-  const toolbarGroups: { label: string; items: { key: string; t: string; title?: string }[] }[] = [
-    {
-      label: dict.admin.editor.text,
-      items: [
-        { key: "bold", t: dict.admin.editor.bold, title: dict.admin.editor.boldTitle },
-        { key: "italic", t: dict.admin.editor.italic, title: dict.admin.editor.italicTitle },
-        { key: "underline", t: dict.admin.editor.underline, title: dict.admin.editor.underlineTitle },
-        { key: "strike", t: dict.admin.editor.strike, title: dict.admin.editor.strikeTitle },
-      ],
-    },
-    {
-      label: dict.admin.editor.headings,
-      items: [
-        { key: "h2", t: "H2", title: dict.admin.editor.h2Title },
-        { key: "h3", t: "H3", title: dict.admin.editor.h3Title },
-        { key: "h4", t: "H4", title: dict.admin.editor.h4Title },
-      ],
-    },
-    {
-      label: dict.admin.editor.structure,
-      items: [
-        { key: "bullet", t: dict.admin.editor.bullet, title: dict.admin.editor.bulletTitle },
-        { key: "quote", t: dict.admin.editor.quote, title: dict.admin.editor.quoteTitle },
-        { key: "hr", t: dict.admin.editor.hr, title: dict.admin.editor.hrTitle },
-        { key: "table", t: dict.admin.editor.table, title: dict.admin.editor.tableTitle },
-        { key: "details", t: dict.admin.editor.details, title: dict.admin.editor.detailsTitle },
-        { key: "callout", t: dict.admin.editor.callout, title: dict.admin.editor.calloutTitle },
-      ],
-    },
-    {
-      label: dict.admin.editor.code,
-      items: [
-        { key: "code", t: dict.admin.editor.inlineCode, title: dict.admin.editor.inlineCodeTitle },
-        { key: "codeBlock", t: dict.admin.editor.codeBlock, title: dict.admin.editor.codeBlockTitle },
-        { key: "formula", t: dict.admin.editor.formula, title: dict.admin.editor.formulaTitle },
-      ],
-    },
-  ];
+  const contextMenuItems = useMemo((): AdminContextMenuItem[] => {
+    const cm = dict.admin.editor.contextMenu;
+    const run = (key: string) => {
+      actions[key]?.();
+      setCtx(null);
+    };
+    return [
+      { id: "bold", label: cm.bold, onClick: () => run("bold") },
+      { id: "italic", label: cm.italic, onClick: () => run("italic") },
+      { id: "underline", label: cm.underline, onClick: () => run("underline") },
+      { id: "strike", label: cm.strike, onClick: () => run("strike") },
+      { id: "sep1", label: "", separator: true },
+      { id: "h2", label: "H2", onClick: () => run("h2") },
+      { id: "h3", label: "H3", onClick: () => run("h3") },
+      { id: "h4", label: "H4", onClick: () => run("h4") },
+      { id: "sep2", label: "", separator: true },
+      { id: "code", label: cm.code, onClick: () => run("code") },
+      { id: "codeBlock", label: dict.admin.editor.codeBlock, onClick: () => run("codeBlock") },
+      { id: "bullet", label: cm.bullet, onClick: () => run("bullet") },
+      { id: "quote", label: cm.quote, onClick: () => run("quote") },
+      { id: "hr", label: cm.hr, onClick: () => run("hr") },
+      { id: "table", label: cm.table, onClick: () => run("table") },
+      { id: "details", label: cm.details, onClick: () => run("details") },
+      { id: "callout", label: cm.callout, onClick: () => run("callout") },
+      { id: "formula", label: cm.formula, onClick: () => run("formula") },
+      { id: "sep3", label: "", separator: true },
+      { id: "wiki", label: cm.wikiLink, onClick: () => { insertWikiLink(); setCtx(null); } },
+      { id: "ext", label: cm.externalLink, onClick: () => { insertExternalLink(); setCtx(null); } },
+      { id: "post", label: cm.insertPost, onClick: () => { insertWikiPost(); setCtx(null); } },
+      { id: "date", label: cm.insertDateTime, onClick: () => { insertDateTime(); setCtx(null); } },
+    ];
+  }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertWikiLink, insertWikiPost]);
 
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          alignItems: "flex-start",
-          padding: "6px 8px",
-          borderRadius: 8,
-          border: "1px solid var(--line)",
-          background: "color-mix(in srgb, var(--fg) 4%, var(--panel))",
-        }}
-      >
-        {toolbarGroups.map((g) => (
-          <div key={g.label} style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-            <span style={{ fontSize: 10, color: "var(--muted)", marginRight: 2 }}>{g.label}</span>
-            {g.items.map((item) => (
-              <button key={item.key} type="button" title={item.title} style={tbBtn} onClick={actions[item.key]}>
-                {item.t}
-              </button>
-            ))}
-          </div>
-        ))}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-          <span style={{ fontSize: 10, color: "var(--muted)" }}>{dict.admin.editor.links}</span>
-          <button type="button" style={tbBtn} title={dict.admin.editor.postTitle} onClick={insertWikiPost}>
-            {dict.admin.editor.post}
-          </button>
-          <button type="button" style={tbBtn} title={dict.admin.editor.wikiTitle} onClick={insertWikiLink}>
-            {dict.admin.editor.wiki}
-          </button>
-          <button type="button" style={tbBtn} title={dict.admin.editor.urlTitle} onClick={insertExternalLink}>
-            {dict.admin.editor.url}
-          </button>
-          <button type="button" style={tbBtn} onClick={insertDateTime}>
-            {dict.admin.editor.date}
-          </button>
-        </div>
-      </div>
-      <p style={{ margin: 0, fontSize: 11, color: "var(--muted)", lineHeight: 1.45 }}>
-        {dict.admin.editor.help}
-      </p>
-      <div style={{ position: "relative", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
+    <div className="admin-monaco-wrap" style={{ height, minHeight: 120 }}>
+      <div className="admin-monaco-editor-host">
         <MonacoEditor
-          height={height}
+          height="100%"
           language="markdown"
           value={value}
           onChange={(v) => onChange(v ?? "")}
@@ -293,103 +230,8 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
             contextmenu: false,
           }}
         />
-        {ctx ? (
-          <div
-            ref={menuRef}
-            style={{
-              position: "fixed",
-              left: ctx.x,
-              top: ctx.y,
-              zIndex: 10000,
-              background: "var(--panel)",
-              border: "1px solid var(--line)",
-              borderRadius: 8,
-              padding: 6,
-              boxShadow: "0 8px 24px color-mix(in srgb, black 35%, transparent)",
-              display: "grid",
-              gap: 4,
-              maxWidth: 260,
-              maxHeight: "70vh",
-              overflowY: "auto",
-            }}
-            role="menu"
-          >
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {(
-                [
-                  ["bold", dict.admin.editor.contextMenu.bold],
-                  ["italic", dict.admin.editor.contextMenu.italic],
-                  ["underline", dict.admin.editor.contextMenu.underline],
-                  ["strike", dict.admin.editor.contextMenu.strike],
-                  ["h2", "H2"],
-                  ["h3", "H3"],
-                  ["code", dict.admin.editor.contextMenu.code],
-                  ["bullet", dict.admin.editor.contextMenu.bullet],
-                  ["quote", dict.admin.editor.contextMenu.quote],
-                  ["hr", dict.admin.editor.contextMenu.hr],
-                  ["table", dict.admin.editor.contextMenu.table],
-                  ["details", dict.admin.editor.contextMenu.details],
-                  ["callout", dict.admin.editor.contextMenu.callout],
-                  ["formula", dict.admin.editor.contextMenu.formula],
-                ] as const
-              ).map(([k, lab]) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="menuitem"
-                  style={{ ...tbBtn, fontSize: 11 }}
-                  onClick={() => {
-                    actions[k]();
-                    setCtx(null);
-                  }}
-                >
-                  {lab}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              style={{ ...tbBtn, fontSize: 11, justifySelf: "stretch" }}
-              onClick={() => {
-                insertWikiLink();
-                setCtx(null);
-              }}
-            >
-              {dict.admin.editor.contextMenu.wikiLink}
-            </button>
-            <button
-              type="button"
-              style={{ ...tbBtn, fontSize: 11, justifySelf: "stretch" }}
-              onClick={() => {
-                insertExternalLink();
-                setCtx(null);
-              }}
-            >
-              {dict.admin.editor.contextMenu.externalLink}
-            </button>
-            <button
-              type="button"
-              style={{ ...tbBtn, fontSize: 11, justifySelf: "stretch" }}
-              onClick={() => {
-                insertWikiPost();
-                setCtx(null);
-              }}
-            >
-              {dict.admin.editor.contextMenu.insertPost}
-            </button>
-            <button
-              type="button"
-              style={{ ...tbBtn, fontSize: 11, justifySelf: "stretch" }}
-              onClick={() => {
-                insertDateTime();
-                setCtx(null);
-              }}
-            >
-              {dict.admin.editor.contextMenu.insertDateTime}
-            </button>
-          </div>
-        ) : null}
       </div>
+      {ctx ? <AdminContextMenu x={ctx.x} y={ctx.y} items={contextMenuItems} onClose={() => setCtx(null)} /> : null}
       {linkModal ? (
         <div
           role="dialog"
