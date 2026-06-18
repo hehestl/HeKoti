@@ -10,6 +10,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-19
+
 ### Security
 
 - **CSRF защита**: добавлен middleware с HMAC-based double-submit cookie pattern для всех state-changing запросов (POST/PUT/PATCH/DELETE)
@@ -43,6 +45,8 @@
 
 ### Changed
 
+- **Wiki**: рекомендации соседних статей и оценка 💔/🤍/❤️ для авторизованных на листовых статьях.
+- **Wiki**: страницы с дочерними URL — каталог (список детей); листья — статья; гибрид — тело родителя над списком; JSON-LD `CollectionPage`/`ItemList`; кеш `wiki-catalog:`.
 - **Breadcrumbs**: крошки на donate/login; JSON-LD `BreadcrumbList` в `WikiBreadcrumbs` (prop `pagePath`).
 - **Help Center layout**: `WikiPublicShell` вместо глобального TopBar — hero (маскот + поиск + язык / compact без маскота), breadcrumbs `ol/li` с ellipsis, дата статьи (UTC).
 - **Шапка**: убраны AI links, кнопка «+», Login/Admin/Logout; справа только компактный переключатель языка (клик по метке — следующий язык, стрелка — меню Radix).
