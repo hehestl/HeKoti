@@ -5,14 +5,16 @@ export function HekotiMascotLink({
   lang,
   className,
   priority = false,
+  imageSize = 120,
 }: {
   lang: string;
   className?: string;
   priority?: boolean;
+  imageSize?: number;
 }) {
   return (
     <Link href={`/${lang}`} className={className} aria-label="Hekoti">
-      <Image src="/hekoti.png" alt="" width={120} height={120} priority={priority} />
+      <Image src="/hekoti.png" alt="" width={imageSize} height={imageSize} priority={priority} />
     </Link>
   );
 }

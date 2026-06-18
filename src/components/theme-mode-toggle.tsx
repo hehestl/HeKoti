@@ -14,8 +14,12 @@ function useHydrated() {
 
 export function ThemeModeToggle({
   labels,
+  layout = "horizontal",
+  className,
 }: {
   labels: { light: string; dark: string; system: string; groupAria: string };
+  layout?: "horizontal" | "vertical";
+  className?: string;
 }) {
   const { theme, setTheme } = useTheme();
   const hydrated = useHydrated();
@@ -31,8 +35,11 @@ export function ThemeModeToggle({
   const iconBtn = "topbar-theme-btn";
   const pressed = (mode: typeof active) => active === mode;
 
+  const groupClass =
+    layout === "vertical" ? "topbar-theme-group topbar-theme-group-vertical" : "topbar-theme-group";
+
   return (
-    <div className="topbar-theme-group" role="group" aria-label={labels.groupAria}>
+    <div className={className ? `${groupClass} ${className}` : groupClass} role="group" aria-label={labels.groupAria}>
       <button
         type="button"
         className={iconBtn}

@@ -17,6 +17,7 @@
 - Admin: dirty tabs с guard beforeunload; preview API `/api/admin/preview`
 - Admin: Monaco из бандла (без CDN jsdelivr) — совместимость с CSP
 - Security: CSRF cookie на 403; apiFetch bootstrap через `/api/health`
+- Admin: маскот в activity bar (ссылка на главную); футер и плавающий маскот скрыты; тема — в левой панели
 
 ## [0.2.0] — 2026-06-19
 

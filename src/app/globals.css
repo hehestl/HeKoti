@@ -319,6 +319,10 @@ select {
   background: color-mix(in srgb, var(--fg) 3%, transparent);
 }
 
+.topbar-theme-group-vertical {
+  flex-direction: column;
+}
+
 .topbar-theme-btn {
   display: inline-flex;
   align-items: center;
@@ -368,6 +372,11 @@ select {
 }
 
 .site-root:has(.wiki-public-header) .site-layout-mascot {
+  display: none;
+}
+
+.site-root:has(.admin-page-root) .site-layout-mascot,
+.site-root:has(.admin-page-root) .site-footer {
   display: none;
 }
 
@@ -1403,7 +1412,8 @@ select {
   --admin-sidebar-bg: color-mix(in srgb, var(--fg) 5%, var(--panel));
   padding: 0;
   margin: 0;
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-workbench {
@@ -1413,7 +1423,8 @@ select {
   grid-template-areas:
     "activity sidebar main"
     "activity status status";
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 0;
@@ -1428,6 +1439,54 @@ select {
   padding: 8px 0;
   background: var(--admin-activity-bg);
   border-right: 1px solid var(--line);
+}
+
+.admin-activity-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-activity-mascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  border: 1px solid var(--line);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.admin-activity-mascot:hover {
+  transform: scale(1.04);
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.admin-activity-mascot img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.admin-activity-theme {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding: 2px;
+  border: none;
+  background: transparent;
+}
+
+.admin-activity-theme .topbar-theme-btn {
+  width: 36px;
+  height: 30px;
+  border-radius: 6px;
 }
 
 .admin-activity-btn {
