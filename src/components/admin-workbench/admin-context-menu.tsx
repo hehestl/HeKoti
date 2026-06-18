@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
+
+const VIEWPORT_OFFSET = 8;
 
 export function AdminContextMenu({
   x,
@@ -15,6 +17,28 @@ export function AdminContextMenu({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [coords, setCoords] = useState({ x: -9999, y: -9999 });
+  const [visible, setVisible] = useState(false);
+
+  useLayoutEffect(() => {
+    setVisible(false);
+    const el = ref.current;
+    if (!el) return;
+
+    const menuRect = el.getBoundingClientRect();
+    let targetX = x;
+    let targetY = y;
+
+    if (targetY + menuRect.height > window.innerHeight) {
+      targetY = y - menuRect.height;
+    }
+
+    targetX = Math.max(VIEWPORT_OFFSET, Math.min(targetX, window.innerWidth - menuRect.width - VIEWPORT_OFFSET));
+    targetY = Math.max(VIEWPORT_OFFSET, Math.min(targetY, window.innerHeight - menuRect.height - VIEWPORT_OFFSET));
+
+    setCoords({ x: targetX, y: targetY });
+    setVisible(true);
+  }, [x, y, items]);
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
@@ -40,7 +64,12 @@ export function AdminContextMenu({
       ref={ref}
       className="admin-context-menu"
       role="menu"
-      style={{ left: x, top: y }}
+      style={{
+        left: coords.x,
+        top: coords.y,
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+      }}
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((item) =>

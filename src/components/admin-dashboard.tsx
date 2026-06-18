@@ -8,6 +8,8 @@ import { AdminEditorExplorer, AdminEditorMain, AdminPostsEditorProvider } from "
 import { AdminTotpSettings, type TotpStatus } from "@/components/admin-totp-settings";
 import { AdminGlobalSettings } from "@/components/admin-global-settings";
 import { AdminSiteConfig } from "@/components/admin-site-config";
+import { AdminTrashView } from "@/components/admin-trash-view";
+import { AdminArchitectureView } from "@/components/admin-architecture-view";
 import { AdminPagesProvider } from "@/components/admin-workbench/admin-pages-provider";
 import { AdminWorkbench } from "@/components/admin-workbench/admin-workbench";
 import { AdminActivitySidebar } from "@/components/admin-workbench/admin-activity-sidebar";
@@ -45,6 +47,7 @@ function AdminWorkbenchInner({
   defaultLanguage,
   headHtml,
   bodyHtml,
+  wikiTreeGuideColor,
   knownLanguages,
   aiAgents,
   onStatusChange,
@@ -67,6 +70,7 @@ function AdminWorkbenchInner({
   defaultLanguage: string;
   headHtml: string;
   bodyHtml: string;
+  wikiTreeGuideColor: string | null;
   knownLanguages: string[];
   aiAgents: AgentRow[];
   onStatusChange: (text: string, tone: "neutral" | "error") => void;
@@ -74,7 +78,7 @@ function AdminWorkbenchInner({
   const sidebar =
     tab === "posts" ? (
       <AdminEditorExplorer />
-    ) : (
+    ) : tab === "trash" || tab === "architecture" ? null : (
       <AdminActivitySidebar
         activity={tab}
         settingsSection={settingsSection}
@@ -86,6 +90,15 @@ function AdminWorkbenchInner({
   const main =
     tab === "posts" ? (
       <AdminEditorMain />
+    ) : tab === "trash" ? (
+      <AdminTrashView enabledLanguages={enabledLanguages} dict={dict} onStatusChange={(t, tone) => onStatusChange(t, tone ?? "neutral")} />
+    ) : tab === "architecture" ? (
+      <AdminArchitectureView
+        enabledLanguages={enabledLanguages}
+        dict={dict}
+        activeAgentId={initialActiveAgentId}
+        onStatusChange={(t, tone) => onStatusChange(t, tone ?? "neutral")}
+      />
     ) : tab === "ai" ? (
       <AdminAgentChat initialMessages={initialMessages} initialActiveAgentId={initialActiveAgentId} dict={dict} />
     ) : tab === "settings" ? (
@@ -96,6 +109,7 @@ function AdminWorkbenchInner({
             enabledLanguages={enabledLanguages}
             headHtml={headHtml}
             bodyHtml={bodyHtml}
+            wikiTreeGuideColor={wikiTreeGuideColor}
             dict={dict}
           />
         ) : null}
@@ -143,6 +157,7 @@ export function AdminDashboard({
   defaultLanguage,
   headHtml,
   bodyHtml,
+  wikiTreeGuideColor,
   enabledLanguages,
   knownLanguages,
   aiAgents,
@@ -160,6 +175,7 @@ export function AdminDashboard({
   defaultLanguage: string;
   headHtml: string;
   bodyHtml: string;
+  wikiTreeGuideColor: string | null;
   enabledLanguages: string[];
   knownLanguages: string[];
   aiAgents: AgentRow[];
@@ -178,7 +194,16 @@ export function AdminDashboard({
 
   const tab = useMemo((): AdminActivityTab => {
     const raw = searchParams.get("tab");
-    if (raw === "ai" || raw === "settings" || raw === "posts" || raw === "tech") return raw;
+    if (
+      raw === "ai" ||
+      raw === "settings" ||
+      raw === "posts" ||
+      raw === "tech" ||
+      raw === "architecture" ||
+      raw === "trash"
+    ) {
+      return raw;
+    }
     return initialTab;
   }, [searchParams, initialTab]);
 
@@ -214,6 +239,7 @@ export function AdminDashboard({
     defaultLanguage,
     headHtml,
     bodyHtml,
+    wikiTreeGuideColor,
     knownLanguages,
     aiAgents,
     onStatusChange,

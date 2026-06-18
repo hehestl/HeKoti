@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 
 export function parseSearchTerms(q: string): string[] {
   return q.trim().split(/\s+/).filter(Boolean).slice(0, 6);
@@ -37,6 +38,7 @@ export async function searchPublishedPages(
     where: {
       lang,
       isPublished: true,
+      ...activePageWhere,
       ...buildSearchWhere(terms),
     },
     orderBy: { updatedAt: "desc" },

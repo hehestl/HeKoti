@@ -47,13 +47,16 @@ model Page {
   title        String
   slug         String
   lang         String         @default("en")
-  path         String         @unique
+  path         String
   navOrder     Int            @default(0)
   contentMd    String         @default("")
   excerpt      String?
+  icon         String?
+  isCategory   Boolean        @default(false)
   isPublished  Boolean        @default(false)
   parentId     String?
   originalId   String?
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   parent       Page?          @relation("PageChildren", fields: [parentId], references: [id], onDelete: SetNull)
@@ -62,6 +65,9 @@ model Page {
   ratings      PageRating[]
 
   @@index([lang, slug])
+  @@index([isCategory])
+  @@index([deletedAt])
+  @@index([lang, deletedAt])
 }
 
 model PageRevision {
@@ -122,6 +128,7 @@ model GlobalSettings {
   enabledLanguagesJson String   @default("")
   /** JSON array of {id, enabled} overrides for AI agents; empty = use AI_AGENTS_JSON env. */
   aiAgentsJson         String   @default("")
+  wikiTreeGuideColor   String?
   updatedAt            DateTime @updatedAt
 }
 

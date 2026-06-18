@@ -53,22 +53,28 @@ export async function POST(request: Request) {
   const validatedPayload = validationResult.data;
   const slug = toSlug(validatedPayload.title);
   const path = normalizePath(validatedPayload.lang, [slug]);
-  
-  const page = await prisma.page.upsert({
-    where: { path },
-    update: { 
-      title: validatedPayload.title, 
-      contentMd: validatedPayload.contentMd, 
-      isPublished: Boolean(validatedPayload.publish) 
-    },
-    create: {
-      title: validatedPayload.title,
-      contentMd: validatedPayload.contentMd,
-      slug,
-      lang: validatedPayload.lang,
-      path,
-      isPublished: Boolean(validatedPayload.publish),
-    },
+
+  const existing = await prisma.page.findFirst({
+    where: { lang: validatedPayload.lang, path, deletedAt: null },
   });
+  const page = existing
+    ? await prisma.page.update({
+        where: { id: existing.id },
+        data: {
+          title: validatedPayload.title,
+          contentMd: validatedPayload.contentMd,
+          isPublished: Boolean(validatedPayload.publish),
+        },
+      })
+    : await prisma.page.create({
+        data: {
+          title: validatedPayload.title,
+          contentMd: validatedPayload.contentMd,
+          slug,
+          lang: validatedPayload.lang,
+          path,
+          isPublished: Boolean(validatedPayload.publish),
+        },
+      });
   return NextResponse.json({ ok: true, pageId: page.id });
 }

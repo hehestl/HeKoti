@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache";
 import { requireAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -9,14 +10,14 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     await requireAdminUser();
     const { id } = await params;
 
-    const page = await prisma.page.findUnique({ where: { id } });
+    const page = await prisma.page.findFirst({ where: { id, ...activePageWhere } });
     if (!page) {
       return NextResponse.json({ ok: false, message: "Page not found." }, { status: 404 });
     }
 
     const { lang } = page;
     const all = await prisma.page.findMany({
-      where: { lang },
+      where: { lang, ...activePageWhere },
       select: { id: true, path: true, navOrder: true, title: true },
     });
 

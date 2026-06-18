@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { getCached, setCached } from "@/lib/cache";
 import type { WikiLinkPage } from "@/lib/wiki-link-expand";
 
@@ -15,7 +16,7 @@ async function loadWikiLinkPages(lang: string): Promise<WikiLinkPage[]> {
   }
 
   const pages = await prisma.page.findMany({
-    where: { lang, isPublished: true },
+    where: { lang, isPublished: true, ...activePageWhere },
     select: { path: true, title: true },
   });
   await setCached(key, JSON.stringify(pages));

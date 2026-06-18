@@ -1,6 +1,7 @@
 import { WikiPageRow } from "@/components/wiki-page-row";
 import { WikiPageTree, type WikiTreePageBrief } from "@/components/wiki-page-tree";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { getDictionary } from "@/lib/i18n";
 import { buildPathTree } from "@/lib/page-tree";
 import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
@@ -37,6 +38,7 @@ export async function WikiRepositoryLayout({
     where: {
       lang,
       isPublished: true,
+      ...activePageWhere,
       ...buildSearchWhere(terms),
     },
     orderBy: searchMode ? { updatedAt: "desc" } : [{ navOrder: "asc" }, { title: "asc" }],

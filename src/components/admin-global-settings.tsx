@@ -60,17 +60,20 @@ export function AdminGlobalSettings({
   enabledLanguages,
   headHtml,
   bodyHtml,
+  wikiTreeGuideColor,
   dict,
 }: {
   defaultLanguage: string;
   enabledLanguages: string[];
   headHtml: string;
   bodyHtml: string;
+  wikiTreeGuideColor: string | null;
   dict: Dictionary;
 }) {
   const [defLang, setDefLang] = useState(defaultLanguage);
   const [head, setHead] = useState(headHtml);
   const [body, setBody] = useState(bodyHtml);
+  const [treeGuideColor, setTreeGuideColor] = useState(wikiTreeGuideColor ?? "#dce3ef");
   const [status, setStatus] = useState("");
 
   const submit = async () => {
@@ -79,7 +82,12 @@ export function AdminGlobalSettings({
       const res = await apiFetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ defaultLanguage: defLang, headHtml: head, bodyHtml: body }),
+        body: JSON.stringify({
+          defaultLanguage: defLang,
+          headHtml: head,
+          bodyHtml: body,
+          wikiTreeGuideColor: treeGuideColor || null,
+        }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -128,6 +136,16 @@ export function AdminGlobalSettings({
               </option>
             ))}
           </select>
+        </label>
+
+        <label style={{ display: "grid", gap: 4, fontSize: 13, marginTop: 8 }}>
+          {dict.admin.wikiTreeGuideColor}
+          <input
+            type="color"
+            value={treeGuideColor.startsWith("#") ? treeGuideColor.slice(0, 7) : "#dce3ef"}
+            onChange={(e) => setTreeGuideColor(e.target.value)}
+            style={{ width: 48, height: 32, padding: 0, border: "1px solid var(--line)", borderRadius: 8 }}
+          />
         </label>
 
         <div style={{ display: "grid", gap: 8, marginTop: 12 }}>

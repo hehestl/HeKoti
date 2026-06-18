@@ -6,6 +6,7 @@ import { getEnabledLanguages } from "@/lib/site-config";
 import { normalizePath, toSlug } from "@/lib/slug";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+import { activePageWhere } from "@/lib/page-query";
 
 type LocalizedPayload = { title: string; contentMd: string };
 
@@ -39,7 +40,7 @@ export async function localizePageToLanguage(input: {
   editorId: string;
   agentId?: string | null;
 }) {
-  const source = await prisma.page.findUnique({ where: { id: input.pageId } });
+  const source = await prisma.page.findFirst({ where: { id: input.pageId, ...activePageWhere } });
   if (!source) throw new Error("Source page not found.");
   if (source.lang === input.targetLang) throw new Error("Target language matches source.");
 
@@ -84,11 +85,11 @@ export async function localizePageToLanguage(input: {
   const path = normalizePath(input.targetLang, [...parentParts, slug]);
 
   const created = await prisma.$transaction(async (tx) => {
-    const conflict = await tx.page.findUnique({ where: { path } });
+    const conflict = await tx.page.findFirst({ where: { lang: input.targetLang, path, ...activePageWhere } });
     if (conflict) throw new Error("Target path already exists.");
 
     const existingSameLang = await tx.page.findMany({
-      where: { lang: input.targetLang },
+      where: { lang: input.targetLang, ...activePageWhere },
       select: { path: true, navOrder: true },
     });
     const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, input.targetLang));
@@ -157,6 +158,7 @@ export async function collectBranchPageIds(rootPath: string, lang: string): Prom
   const pages = await prisma.page.findMany({
     where: {
       lang,
+      ...activePageWhere,
       OR: [{ path: rootPath }, { path: { startsWith: `${rootPath}/` } }],
     },
     select: { id: true, path: true },
@@ -182,8 +184,8 @@ export async function localizeBranchToMissing(input: {
   agentId?: string | null;
   targetLangs?: string[];
 }): Promise<{ pageCount: number; results: BranchLocalizeResult[] }> {
-  const root = await prisma.page.findUnique({
-    where: { id: input.rootPageId },
+  const root = await prisma.page.findFirst({
+    where: { id: input.rootPageId, ...activePageWhere },
     select: { id: true, path: true, lang: true, originalId: true },
   });
   if (!root) throw new Error("Root page not found.");
@@ -240,6 +242,149 @@ export async function localizeBranchToMissing(input: {
           lang: targetLang,
           ok: false,
           message: error instanceof Error ? error.message : "Localization failed",
+        });
+      }
+    }
+  }
+
+  return { pageCount: pageIds.length, results };
+}
+
+async function translateTitleOnly(input: {
+  title: string;
+  sourceLang: string;
+  targetLang: string;
+  agentId?: string | null;
+}): Promise<string> {
+  const prompt = `Translate this wiki page title from ${input.sourceLang} to ${input.targetLang}.
+Return ONLY JSON: {"title":"localized title"}
+
+Title: ${input.title}`;
+
+  const raw = await callAiAgent(prompt, input.agentId);
+  const parsed = extractJsonObject<{ title?: string }>(raw);
+  if (!parsed?.title?.trim()) {
+    throw new Error(`AI title localization failed: ${raw.slice(0, 240)}`);
+  }
+  return parsed.title.trim();
+}
+
+export type TitleLocalizeResult = {
+  pageId: string;
+  sourcePath: string;
+  lang: string;
+  ok: boolean;
+  path?: string;
+  created?: boolean;
+  message?: string;
+};
+
+export async function localizeTitlesBranch(input: {
+  rootPageId: string;
+  editorId: string;
+  agentId?: string | null;
+  targetLangs?: string[];
+}): Promise<{ pageCount: number; results: TitleLocalizeResult[] }> {
+  const root = await prisma.page.findFirst({
+    where: { id: input.rootPageId, ...activePageWhere },
+    select: { id: true, path: true, lang: true, originalId: true, title: true },
+  });
+  if (!root) throw new Error("Root page not found.");
+
+  const enabled = await getEnabledLanguages();
+  const targetLangs =
+    input.targetLangs?.filter((l) => l !== root.lang && enabled.includes(l)) ??
+    enabled.filter((l) => l !== root.lang);
+
+  const pageIds = await collectBranchPageIds(root.path, root.lang);
+  const results: TitleLocalizeResult[] = [];
+
+  for (const pageId of pageIds) {
+    const source = await prisma.page.findFirst({
+      where: { id: pageId, ...activePageWhere },
+      select: { id: true, path: true, lang: true, originalId: true, title: true, excerpt: true, isCategory: true, icon: true },
+    });
+    if (!source) continue;
+
+    for (const targetLang of targetLangs) {
+      try {
+        const localizedTitle = await translateTitleOnly({
+          title: source.title,
+          sourceLang: source.lang,
+          targetLang,
+          agentId: input.agentId,
+        });
+
+        const existing = await findPageCounterpart(source, targetLang);
+        if (existing) {
+          const updated = await prisma.page.update({
+            where: { id: existing.id },
+            data: { title: localizedTitle, originalId: canonicalPageId(source) },
+          });
+          await invalidateWikiLangCache(targetLang);
+          results.push({
+            pageId: source.id,
+            sourcePath: source.path,
+            lang: targetLang,
+            ok: true,
+            path: updated.path,
+            created: false,
+          });
+          continue;
+        }
+
+        const tail = source.path.replace(new RegExp(`^/${source.lang}/`), "").split("/").filter(Boolean);
+        const slug = tail[tail.length - 1] ?? toSlug(localizedTitle);
+        const parentParts = tail.slice(0, -1);
+        const path = normalizePath(targetLang, [...parentParts, slug]);
+
+        const created = await prisma.$transaction(async (tx) => {
+          const conflict = await tx.page.findFirst({ where: { lang: targetLang, path, ...activePageWhere } });
+          if (conflict) throw new Error("Target path already exists.");
+
+          const existingSameLang = await tx.page.findMany({
+            where: { lang: targetLang, ...activePageWhere },
+            select: { path: true, navOrder: true },
+          });
+          const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, targetLang));
+          const maxNav = existingSameLang
+            .filter((p) => siblingPaths.has(p.path))
+            .reduce((m, p) => Math.max(m, p.navOrder), 0);
+
+          return tx.page.create({
+            data: {
+              title: localizedTitle,
+              slug,
+              lang: targetLang,
+              path,
+              contentMd: "",
+              excerpt: source.excerpt,
+              isPublished: false,
+              isCategory: source.isCategory,
+              icon: source.icon,
+              navOrder: maxNav + 10,
+              originalId: canonicalPageId(source),
+            },
+          });
+        });
+
+        await invalidateWikiLangCache(targetLang);
+        await invalidateSearchLangCache(targetLang);
+        results.push({
+          pageId: source.id,
+          sourcePath: source.path,
+          lang: targetLang,
+          ok: true,
+          path: created.path,
+          created: true,
+        });
+      } catch (error) {
+        results.push({
+          pageId: source.id,
+          sourcePath: source.path,
+          lang: targetLang,
+          ok: false,
+          message: error instanceof Error ? error.message : "Title localization failed",
         });
       }
     }

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { safeLangAsync, getDictionary, getGlobalSettings } from "@/lib/i18n";
 import { getSiteConfig } from "@/lib/site-config";
 import { getAppVersion } from "@/lib/version";
+import { activePageWhere } from "@/lib/page-query";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import pkg from "../../../../package.json";
 
@@ -35,12 +36,26 @@ export default async function AdminPage({
   const pagesByLangEntries = await Promise.all(
     enabledLanguages.map(async (pageLang) => {
       const rows = await prisma.page.findMany({
-        where: { lang: pageLang },
+        where: { lang: pageLang, ...activePageWhere },
         orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
         take: 100,
-        select: { id: true, title: true, path: true, contentMd: true, isPublished: true, navOrder: true },
+        select: {
+          id: true,
+          title: true,
+          path: true,
+          contentMd: true,
+          isPublished: true,
+          navOrder: true,
+          icon: true,
+          isCategory: true,
+        },
       });
-      const pages: AdminPageRow[] = rows.map((r) => ({ ...r, lang: pageLang }));
+      const pages: AdminPageRow[] = rows.map((r) => ({
+        ...r,
+        lang: pageLang,
+        icon: r.icon ?? null,
+        isCategory: r.isCategory ?? false,
+      }));
       return [pageLang, pages] as const;
     }),
   );
@@ -73,7 +88,15 @@ export default async function AdminPage({
     enabled: a.enabled,
     hasApi: Boolean(a.apiBaseUrl && a.apiKeyEnv),
   }));
-  const initialTab = rawTab === "posts" || rawTab === "ai" || rawTab === "settings" || rawTab === "tech" ? rawTab : "posts";
+  const initialTab =
+    rawTab === "posts" ||
+    rawTab === "ai" ||
+    rawTab === "settings" ||
+    rawTab === "tech" ||
+    rawTab === "architecture" ||
+    rawTab === "trash"
+      ? rawTab
+      : "posts";
   const initialActivePath =
     rawActivePath && rawActivePath.startsWith(`/${lang}/`) ? rawActivePath : undefined;
 
@@ -91,6 +114,7 @@ export default async function AdminPage({
           defaultLanguage={settings.defaultLanguage}
           headHtml={settings.headHtml}
           bodyHtml={settings.bodyHtml}
+          wikiTreeGuideColor={settings.wikiTreeGuideColor}
           enabledLanguages={enabledLanguages}
           knownLanguages={knownLanguages}
           aiAgents={agentRows}

@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { listPageCounterparts } from "@/lib/page-counterparts";
+import { activePageWhere } from "@/lib/page-query";
 import { getEnabledLanguages } from "@/lib/site-config";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAdminUser();
     const { id } = await params;
-    const page = await prisma.page.findUnique({
-      where: { id },
+    const page = await prisma.page.findFirst({
+      where: { id, ...activePageWhere },
       select: { id: true, originalId: true, path: true, lang: true, title: true },
     });
     if (!page) {

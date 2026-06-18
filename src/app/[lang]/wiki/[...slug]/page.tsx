@@ -11,6 +11,7 @@ import { getSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/user-role";
 import { getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { env } from "@/lib/env";
 import { getDictionary, safeLangAsync } from "@/lib/i18n";
 import { getEnabledLanguages } from "@/lib/site-config";
@@ -82,8 +83,8 @@ export async function generateMetadata({
   const pagePath = wikiPagePath(lang, slug);
 
   const [page, tree, excerptByPath, dict] = await Promise.all([
-    prisma.page.findUnique({
-      where: { path },
+    prisma.page.findFirst({
+      where: { lang, path, ...activePageWhere },
       select: { title: true, excerpt: true, isPublished: true },
     }),
     getLangPathTree(lang),
@@ -128,7 +129,7 @@ export default async function WikiPage({
   const isAdmin = !!user && isAdminRole(user.role);
 
   const [page, tree, excerptByPath, dict] = await Promise.all([
-    prisma.page.findUnique({ where: { path } }),
+    prisma.page.findFirst({ where: { lang, path, ...activePageWhere } }),
     getLangPathTree(lang),
     getExcerptByPath(lang),
     getDictionary(lang),
@@ -196,7 +197,10 @@ export default async function WikiPage({
     .filter((l) => l !== lang)
     .map((l) => ({ lang: l, path: normalizePath(l, slug) }));
   const existing = await prisma.page.findMany({
-    where: { OR: candidates.map((c) => ({ path: c.path })) },
+    where: {
+      ...activePageWhere,
+      OR: candidates.map((c) => ({ lang: c.lang, path: c.path })),
+    },
     select: { lang: true, path: true, title: true, isPublished: true },
     take: candidates.length,
   });

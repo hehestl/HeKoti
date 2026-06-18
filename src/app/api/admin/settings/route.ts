@@ -4,18 +4,20 @@ import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { getEnabledLanguages } from "@/lib/site-config";
 import { lintTelemetrySnippet } from "@/lib/telemetry-snippets";
+import { isValidWikiTreeGuideColor } from "@/lib/wiki-tree-theme";
 
 const settingsSchema = z.object({
   defaultLanguage: z.string().min(2).max(12),
   headHtml: z.string().max(100000).optional(),
   bodyHtml: z.string().max(100000).optional(),
+  wikiTreeGuideColor: z.string().max(9).nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
   try {
     await requireAdminUser();
     const body = await request.json();
-    const { defaultLanguage, headHtml, bodyHtml } = settingsSchema.parse(body);
+    const { defaultLanguage, headHtml, bodyHtml, wikiTreeGuideColor } = settingsSchema.parse(body);
     const enabled = await getEnabledLanguages();
     if (!enabled.includes(defaultLanguage)) {
       return NextResponse.json({ ok: false, message: "Invalid language" }, { status: 400 });
@@ -34,14 +36,25 @@ export async function PATCH(request: Request) {
       }
     }
 
+    if (wikiTreeGuideColor !== undefined && wikiTreeGuideColor !== null && !isValidWikiTreeGuideColor(wikiTreeGuideColor)) {
+      return NextResponse.json({ ok: false, message: "Invalid wikiTreeGuideColor hex." }, { status: 400 });
+    }
+
     await prisma.globalSettings.upsert({
       where: { id: "default" },
       update: {
         defaultLanguage,
         ...(headHtml !== undefined ? { headHtml } : {}),
         ...(bodyHtml !== undefined ? { bodyHtml } : {}),
+        ...(wikiTreeGuideColor !== undefined ? { wikiTreeGuideColor } : {}),
       },
-      create: { id: "default", defaultLanguage, headHtml: headHtml ?? "", bodyHtml: bodyHtml ?? "" },
+      create: {
+        id: "default",
+        defaultLanguage,
+        headHtml: headHtml ?? "",
+        bodyHtml: bodyHtml ?? "",
+        wikiTreeGuideColor: wikiTreeGuideColor ?? null,
+      },
     });
 
     return NextResponse.json({ ok: true });

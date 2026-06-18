@@ -44,7 +44,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { headHtml, bodyHtml } = await getGlobalSettings();
+  const { headHtml, bodyHtml, wikiTreeGuideColor } = await getGlobalSettings();
   const head = parseTelemetrySnippet(headHtml);
   const body = parseTelemetrySnippet(bodyHtml);
   const headNodes = head.nodes;
@@ -52,6 +52,9 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {wikiTreeGuideColor ? (
+          <style>{`:root { --wiki-tree-guide-color: ${wikiTreeGuideColor}; }`}</style>
+        ) : null}
         {headNodes.map((n, i) =>
           n.kind === "script" ? (
             <script key={`h-s-${i}`} {...toReactAttrs(n.attrs)} dangerouslySetInnerHTML={{ __html: n.content }} />

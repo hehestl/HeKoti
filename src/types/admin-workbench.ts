@@ -1,4 +1,4 @@
-export type AdminActivityTab = "posts" | "ai" | "settings" | "tech";
+export type AdminActivityTab = "posts" | "ai" | "settings" | "tech" | "architecture" | "trash";
 
 export type AdminPageRow = {
   id: string;
@@ -8,6 +8,8 @@ export type AdminPageRow = {
   isPublished: boolean;
   navOrder: number;
   lang: string;
+  icon: string | null;
+  isCategory: boolean;
 };
 
 export type AdminOpenTab = {

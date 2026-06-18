@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { normalizePath } from "@/lib/slug";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
@@ -31,6 +32,7 @@ export async function findPageCounterpart(
   const byLink = await prisma.page.findFirst({
     where: {
       lang: targetLang,
+      ...activePageWhere,
       OR: [{ originalId: canonical }, { id: canonical }, { originalId: source.id }],
     },
     select: { id: true, path: true, title: true, lang: true },
@@ -38,8 +40,8 @@ export async function findPageCounterpart(
   if (byLink) return byLink;
 
   const targetPath = counterpartPath(source.path, source.lang, targetLang);
-  const byPath = await prisma.page.findUnique({
-    where: { path: targetPath },
+  const byPath = await prisma.page.findFirst({
+    where: { lang: targetLang, path: targetPath, ...activePageWhere },
     select: { id: true, path: true, title: true, lang: true },
   });
   return byPath;

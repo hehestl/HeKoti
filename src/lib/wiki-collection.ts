@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 import { buildPathTree, type PathTreeNode } from "@/lib/page-tree";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
@@ -10,6 +11,8 @@ export type WikiTreePage = {
   navOrder?: number;
   excerpt?: string | null;
   updatedAt?: Date;
+  icon?: string | null;
+  isCategory?: boolean;
 };
 
 export function humanizeSegment(segment: string): string {
@@ -239,7 +242,7 @@ export function formatWikiDate(date: Date, lang: string): string {
 
 async function loadLangPages(lang: string): Promise<WikiTreePage[]> {
   return prisma.page.findMany({
-    where: { lang, isPublished: true },
+    where: { lang, isPublished: true, ...activePageWhere },
     orderBy: [{ navOrder: "asc" }, { title: "asc" }],
     take: 600,
     select: {
@@ -249,6 +252,8 @@ async function loadLangPages(lang: string): Promise<WikiTreePage[]> {
       navOrder: true,
       excerpt: true,
       updatedAt: true,
+      icon: true,
+      isCategory: true,
     },
   });
 }

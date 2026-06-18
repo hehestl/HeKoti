@@ -10,6 +10,11 @@
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-19
+
+- Wiki: PKM flip/clamp без layout shift; пункт «Удалить» всегда виден
+- Wiki: soft delete 3 дня, каскад с единым deletedAt, selective restore, корзина
+- Wiki: вкладка «Архитектура» — MD-DSL дерева, server-side sync, AI перевод названий
 - UI: маскот на всех страницах (включая админку), клик — на главную
 - UI: «Разработано и создано» в подвале — ссылка на главную
 - Admin: VS Code-like workbench (activity bar, explorer, tabs, split preview)
@@ -18,6 +23,10 @@
 - Admin: Monaco из бандла (без CDN jsdelivr) — совместимость с CSP
 - Security: CSRF cookie на 403; apiFetch bootstrap через `/api/health`
 - Admin: маскот в activity bar (ссылка на главную); футер и плавающий маскот скрыты; тема — в левой панели
+- Wiki: блок «Как вам статья?» — по центру
+- Admin: VS Code explorer — toolbar, DnD без grip, indent guides, категории isCategory, иконки, refresh
+- Admin: цвет линий дерева wikiTreeGuideColor в GlobalSettings
+- Admin: PKM по маскоту (admin) — админка и версия
 
 ## [0.2.0] — 2026-06-19
 

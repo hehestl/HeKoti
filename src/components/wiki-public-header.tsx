@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
+import { HekotiMascotMenu } from "@/components/hekoti-mascot-menu";
 import { HelpCenterSearchForm } from "@/components/help-center-search-form";
 import { LanguageSwitch, LanguageSwitchFallback } from "@/components/language-switch";
 
@@ -16,6 +16,10 @@ export function WikiPublicHeader({
   languageAria,
   variant,
   initialSearchQuery = "",
+  isAdmin = false,
+  appVersion,
+  adminLabel,
+  versionLabel,
 }: {
   lang: string;
   langs: LangOption[];
@@ -23,14 +27,22 @@ export function WikiPublicHeader({
   languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
+  isAdmin?: boolean;
+  appVersion?: string;
+  adminLabel: string;
+  versionLabel: string;
 }) {
   return (
     <header className="wiki-public-header">
       <div className="wiki-public-header-inner">
-        <HekotiMascotLink
+        <HekotiMascotMenu
           lang={lang}
+          isAdmin={isAdmin}
+          appVersion={appVersion}
           className="wiki-public-header-mascot"
           priority={variant === "home"}
+          adminLabel={adminLabel}
+          versionLabel={versionLabel}
         />
         <div className="wiki-public-header-search">
           <HelpCenterSearchForm

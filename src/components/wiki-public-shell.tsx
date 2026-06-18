@@ -9,6 +9,10 @@ export function WikiPublicShell({
   languageAria,
   variant,
   initialSearchQuery,
+  isAdmin,
+  appVersion,
+  adminLabel,
+  versionLabel,
   children,
 }: {
   lang: string;
@@ -17,6 +21,10 @@ export function WikiPublicShell({
   languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
+  isAdmin?: boolean;
+  appVersion?: string;
+  adminLabel: string;
+  versionLabel: string;
   children: React.ReactNode;
 }) {
   return (
@@ -28,6 +36,10 @@ export function WikiPublicShell({
         languageAria={languageAria}
         variant={variant}
         initialSearchQuery={initialSearchQuery}
+        isAdmin={isAdmin}
+        appVersion={appVersion}
+        adminLabel={adminLabel}
+        versionLabel={versionLabel}
       />
       <div className="wiki-public-content">{children}</div>
     </>

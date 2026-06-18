@@ -7,6 +7,7 @@ type Action =
   | { type: "setPagesForLang"; lang: string; pages: AdminPageRow[] }
   | { type: "upsertPage"; page: AdminPageRow }
   | { type: "removePage"; id: string; lang: string }
+  | { type: "removePages"; ids: string[]; lang: string }
   | { type: "patchPage"; id: string; lang: string; patch: Partial<AdminPageRow> };
 
 function pagesReducer(state: AdminPagesByLang, action: Action): AdminPagesByLang {
@@ -22,6 +23,11 @@ function pagesReducer(state: AdminPagesByLang, action: Action): AdminPagesByLang
     case "removePage": {
       const list = state[action.lang] ?? [];
       return { ...state, [action.lang]: list.filter((p) => p.id !== action.id) };
+    }
+    case "removePages": {
+      const idSet = new Set(action.ids);
+      const list = state[action.lang] ?? [];
+      return { ...state, [action.lang]: list.filter((p) => !idSet.has(p.id)) };
     }
     case "patchPage": {
       const list = state[action.lang] ?? [];
@@ -40,6 +46,7 @@ type AdminPagesContextValue = {
   setPagesForLang: (lang: string, pages: AdminPageRow[]) => void;
   upsertPage: (page: AdminPageRow) => void;
   removePage: (id: string, lang: string) => void;
+  removePages: (ids: string[], lang: string) => void;
   patchPageLocal: (id: string, lang: string, patch: Partial<AdminPageRow>) => void;
   getPage: (id: string, lang: string) => AdminPageRow | undefined;
 };
@@ -71,6 +78,10 @@ export function AdminPagesProvider({
     dispatch({ type: "patchPage", id, lang, patch });
   }, []);
 
+  const removePages = useCallback((ids: string[], lang: string) => {
+    dispatch({ type: "removePages", ids, lang });
+  }, []);
+
   const getPage = useCallback(
     (id: string, lang: string) => pagesByLang[lang]?.find((p) => p.id === id),
     [pagesByLang],
@@ -82,10 +93,11 @@ export function AdminPagesProvider({
       setPagesForLang,
       upsertPage,
       removePage,
+      removePages,
       patchPageLocal,
       getPage,
     }),
-    [pagesByLang, setPagesForLang, upsertPage, removePage, patchPageLocal, getPage],
+    [pagesByLang, setPagesForLang, upsertPage, removePage, removePages, patchPageLocal, getPage],
   );
 
   return <AdminPagesContext.Provider value={value}>{children}</AdminPagesContext.Provider>;

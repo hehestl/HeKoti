@@ -21,7 +21,8 @@ import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { wikiPublicHref } from "@/lib/wiki-path";
-import type { AdminPageRow } from "@/types/admin-workbench";
+import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
+import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 
 const inputStyle: CSSProperties = {
   border: "1px solid var(--line)",
@@ -71,7 +72,8 @@ export function AdminPostsEditorProvider({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { pagesByLang, getPage, upsertPage, removePage: removePageFromStore, patchPageLocal } = useAdminPages();
+  const { pagesByLang, getPage, upsertPage, removePages, patchPageLocal, setPagesForLang } =
+    useAdminPages();
   const wb = dict.admin.workbench;
 
   const tabs = useAdminOpenTabs({
@@ -82,10 +84,17 @@ export function AdminPostsEditorProvider({
   });
 
   const [isPending, startTransition] = useTransition();
-  const [createModal, setCreateModal] = useState<{ lang: string; parentParts: string[] } | null>(null);
+  const [createModal, setCreateModal] = useState<{ lang: string; parentParts: string[]; isCategory?: boolean } | null>(
+    null,
+  );
   const [createTitle, setCreateTitle] = useState("");
   const [renameModal, setRenameModal] = useState<{ id: string; lang: string; title: string } | null>(null);
-  const [deleteModal, setDeleteModal] = useState<{ id: string; lang: string; title: string } | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{
+    id: string;
+    lang: string;
+    title: string;
+    childCount: number;
+  } | null>(null);
 
   const setStatus = useCallback(
     (text: string, tone: "neutral" | "error" = "neutral") => onStatusChange(text, tone),
@@ -120,7 +129,15 @@ export function AdminPostsEditorProvider({
     async (
       id: string,
       lang: string,
-      patch: { title?: string; contentMd?: string; isPublished?: boolean; navOrder?: number; parentPathParts?: string[] },
+      patch: {
+        title?: string;
+        contentMd?: string;
+        isPublished?: boolean;
+        isCategory?: boolean;
+        icon?: string | null;
+        navOrder?: number;
+        parentPathParts?: string[];
+      },
     ) => {
       const res = await apiFetch(`/api/pages/${id}`, {
         method: "PATCH",
@@ -169,11 +186,24 @@ export function AdminPostsEditorProvider({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [saveActive]);
 
-  const createWithParent = async (lang: string, parentPathParts: string[], title: string) => {
+  const createWithParent = async (
+    lang: string,
+    parentPathParts: string[],
+    title: string,
+    isCategory = false,
+  ) => {
     const response = await apiFetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ lang, title, contentMd: "", isPublished: false, parentPathParts }),
+      body: JSON.stringify({
+        lang,
+        title,
+        contentMd: "",
+        isPublished: false,
+        isCategory,
+        icon: isCategory ? "folder" : null,
+        parentPathParts,
+      }),
     });
     if (!response.ok) {
       const body = (await response.json().catch(() => ({}))) as { message?: string };
@@ -181,10 +211,17 @@ export function AdminPostsEditorProvider({
       return;
     }
     const data = (await response.json()) as AdminPageRow;
-    const row = { ...data, lang };
+    const row: AdminPageRow = {
+      ...data,
+      lang,
+      icon: data.icon ?? null,
+      isCategory: data.isCategory ?? isCategory,
+    };
     upsertPage(row);
-    tabs.openPageTab(row);
-    syncActivePathUrl(row);
+    if (!isCategory) {
+      tabs.openPageTab(row);
+      syncActivePathUrl(row);
+    }
     setStatus(dict.admin.posts.saved);
   };
 
@@ -192,7 +229,7 @@ export function AdminPostsEditorProvider({
     if (!createModal) return;
     const title = createTitle.trim();
     if (!title) return;
-    await createWithParent(createModal.lang, createModal.parentParts, title);
+    await createWithParent(createModal.lang, createModal.parentParts, title, createModal.isCategory === true);
     setCreateModal(null);
     setCreateTitle("");
   };
@@ -211,59 +248,64 @@ export function AdminPostsEditorProvider({
     setRenameModal(null);
   };
 
+  const countDescendants = useCallback(
+    (path: string, lang: string) =>
+      pagesForLang(lang).filter((p) => p.path !== path && p.path.startsWith(`${path}/`)).length,
+    [pagesForLang],
+  );
+
   const submitDelete = async () => {
     if (!deleteModal) return;
     const res = await apiFetch(`/api/pages/${deleteModal.id}`, { method: "DELETE" });
-    const body = (await res.json()) as { ok?: boolean; message?: string };
+    const body = (await res.json()) as { ok?: boolean; deletedIds?: string[]; message?: string };
     if (!res.ok || !body.ok) {
       setStatus(body.message ?? dict.admin.posts.deleteFailed, "error");
       return;
     }
-    removePageFromStore(deleteModal.id, deleteModal.lang);
-    tabs.closeTab(deleteModal.id, deleteModal.lang, true);
+    const deletedIds = body.deletedIds?.length ? body.deletedIds : [deleteModal.id];
+    removePages(deletedIds, deleteModal.lang);
+    for (const id of deletedIds) {
+      tabs.closeTab(id, deleteModal.lang, true);
+    }
     setStatus(dict.admin.posts.deleted);
     setDeleteModal(null);
   };
 
-  const movePageByDrop = async (
+  const applyMove = async (
     fromId: string,
-    targetId: string,
     lang: string,
+    newParentParts: string[],
+    targetPageId: string | null,
     mode: "before" | "after" | "inside",
   ) => {
     const pages = pagesForLang(lang);
     const from = pages.find((p) => p.id === fromId);
-    const target = pages.find((p) => p.id === targetId);
-    if (!from || !target || fromId === targetId) return;
-    if (hasChildren(from.path, lang)) {
+    if (!from) return;
+    if (hasChildren(from.path, lang) || (from.isCategory && hasChildren(from.path, lang))) {
       setStatus(dict.admin.posts.cantMoveWithChildren, "error");
       return;
     }
 
-    const targetParent = getParentParts(target.path, lang);
-    const targetInside = pathSegmentsAfterLang(target.path, lang);
-    const newParentParts = mode === "inside" ? targetInside : targetParent;
     const fromSlug = pathSegmentsAfterLang(from.path, lang).slice(-1)[0] ?? "";
     const nextPath = `/${lang}${newParentParts.length ? `/${newParentParts.join("/")}` : ""}/${fromSlug}`;
 
     const siblingIds = pages
       .filter((p) => getParentParts(p.path, lang).join("/") === newParentParts.join("/"))
       .map((p) => p.id);
-    const targetIndex = siblingIds.indexOf(targetId);
-    const insertAt =
-      mode === "inside"
-        ? siblingIds.length
-        : targetIndex >= 0
-          ? mode === "before"
-            ? targetIndex
-            : targetIndex + 1
-          : siblingIds.length;
-    siblingIds.splice(insertAt, 0, fromId);
+
+    let insertAt = siblingIds.length;
+    if (targetPageId && mode !== "inside") {
+      const targetIndex = siblingIds.indexOf(targetPageId);
+      if (targetIndex >= 0) insertAt = mode === "before" ? targetIndex : targetIndex + 1;
+    }
+
+    const ordered = siblingIds.filter((id) => id !== fromId);
+    ordered.splice(insertAt, 0, fromId);
 
     setStatus(dict.admin.posts.saving);
     try {
       await Promise.all(
-        siblingIds.map((id, i) => {
+        ordered.map((id, i) => {
           const patch: { navOrder: number; parentPathParts?: string[] } = { navOrder: i * 10 };
           if (id === fromId) patch.parentPathParts = newParentParts;
           return patchPageApi(id, lang, patch);
@@ -276,6 +318,35 @@ export function AdminPostsEditorProvider({
     } catch (e) {
       setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
     }
+  };
+
+  const movePageByDrop: AdminExplorerActions["onMoveByDrop"] = async (fromId, lang, target) => {
+    const pages = pagesForLang(lang);
+    const from = pages.find((p) => p.id === fromId);
+    if (!from) return;
+    if (hasChildren(from.path, lang)) {
+      setStatus(dict.admin.posts.cantMoveWithChildren, "error");
+      return;
+    }
+
+    if (target.kind === "root") {
+      await applyMove(fromId, lang, [], null, "after");
+      return;
+    }
+
+    if (target.kind === "folder") {
+      const parentParts = pathSegmentsAfterLang(target.pathKey, lang);
+      await applyMove(fromId, lang, parentParts, null, "inside");
+      return;
+    }
+
+    const targetPage = pages.find((p) => p.id === target.targetId);
+    if (!targetPage || fromId === target.targetId) return;
+
+    const targetParent = getParentParts(targetPage.path, lang);
+    const targetInside = pathSegmentsAfterLang(targetPage.path, lang);
+    const newParentParts = target.mode === "inside" ? targetInside : targetParent;
+    await applyMove(fromId, lang, newParentParts, target.targetId, target.mode);
   };
 
   const liftUp = async (id: string, lang: string) => {
@@ -356,7 +427,14 @@ export function AdminPostsEditorProvider({
       },
       onDelete: (id, lang) => {
         const page = getPage(id, lang);
-        if (page) setDeleteModal({ id, lang, title: page.title });
+        if (page) {
+          setDeleteModal({
+            id,
+            lang,
+            title: page.title,
+            childCount: countDescendants(page.path, lang),
+          });
+        }
       },
       onTogglePublish: async (id, lang) => {
         const page = getPage(id, lang);
@@ -386,8 +464,56 @@ export function AdminPostsEditorProvider({
         setCreateTitle("");
       },
       onCreateAtRoot: (lang) => {
-        setCreateModal({ lang, parentParts: [] });
+        setCreateModal({ lang, parentParts: [], isCategory: false });
         setCreateTitle("");
+      },
+      onCreateCategory: (lang, parentParts) => {
+        setCreateModal({ lang, parentParts, isCategory: true });
+        setCreateTitle("");
+      },
+      onRefresh: async (scope) => {
+        setStatus(dict.admin.workbench.refreshing);
+        try {
+          const url = scope === "all" ? "/api/admin/pages?all=1" : `/api/admin/pages?lang=${encodeURIComponent(scope)}`;
+          const res = await apiFetch(url);
+          if (!res.ok) throw new Error(dict.admin.posts.failed);
+          const data = (await res.json()) as AdminPageRow[] | AdminPagesByLang;
+          if (scope === "all" && data && typeof data === "object" && !Array.isArray(data)) {
+            for (const [lang, rows] of Object.entries(data)) {
+              setPagesForLang(
+                lang,
+                rows.map((r) => ({
+                  ...r,
+                  lang,
+                  icon: r.icon ?? null,
+                  isCategory: r.isCategory ?? false,
+                })),
+              );
+            }
+          } else if (Array.isArray(data)) {
+            setPagesForLang(
+              scope,
+              data.map((r) => ({
+                ...r,
+                lang: scope,
+                icon: r.icon ?? null,
+                isCategory: r.isCategory ?? false,
+              })),
+            );
+          }
+          setStatus(dict.admin.workbench.refreshed);
+        } catch (e) {
+          setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
+        }
+      },
+      onChangeIcon: async (id, lang, icon) => {
+        patchPageLocal(id, lang, { icon });
+        try {
+          await patchPageApi(id, lang, { icon });
+          setStatus(dict.admin.posts.saved);
+        } catch (e) {
+          setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
+        }
       },
       onLiftUp: liftUp,
       onLocalizeBranch: localizeBranch,
@@ -396,7 +522,7 @@ export function AdminPostsEditorProvider({
         window.open(wikiPublicHref(page.lang, page.path), "_blank", "noopener,noreferrer");
       },
     }),
-    [dict.admin.posts, getPage, liftUp, localizeAll, localizeBranch, movePageByDrop, patchPageApi, patchPageLocal, setStatus, syncActivePathUrl, tabs],
+    [dict.admin.posts, dict.admin.workbench, enabledLanguages, getPage, liftUp, localizeAll, localizeBranch, movePageByDrop, patchPageApi, patchPageLocal, setPagesForLang, setStatus, syncActivePathUrl, tabs],
   );
 
   const active = tabs.activePage;
@@ -460,7 +586,7 @@ export function AdminPostsEditorProvider({
       )}
       {createModal ? (
         <ModalCard
-          title={dict.admin.posts.pageTitle}
+          title={createModal.isCategory ? dict.admin.workbench.createCategory : dict.admin.posts.pageTitle}
           cancelLabel={dict.common.cancel}
           onCancel={() => {
             setCreateModal(null);
@@ -509,7 +635,13 @@ export function AdminPostsEditorProvider({
           onSubmit={() => void submitDelete()}
           submitLabel={dict.admin.posts.delete}
         >
-          <p style={{ margin: 0 }}>{dict.admin.posts.deleteConfirm.replace("{title}", deleteModal.title)}</p>
+          <p style={{ margin: 0 }}>
+            {deleteModal.childCount > 0
+              ? dict.admin.posts.deleteConfirmCascade
+                  .replace("{title}", deleteModal.title)
+                  .replace("{count}", String(deleteModal.childCount))
+              : dict.admin.posts.deleteConfirm.replace("{title}", deleteModal.title)}
+          </p>
         </ModalCard>
       ) : null}
     </div>

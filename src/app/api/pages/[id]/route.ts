@@ -4,11 +4,16 @@ import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache"
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+import { activePageWhere } from "@/lib/page-query";
+import { softDeletePageCascade } from "@/lib/page-trash";
 import { normalizePath } from "@/lib/slug";
+import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
   contentMd: z.string().optional(),
   isPublished: z.boolean().optional(),
+  isCategory: z.boolean().optional(),
+  icon: z.string().min(1).max(32).nullable().optional(),
   navOrder: z.number().int().optional(),
   parentPathParts: z.array(z.string()).optional(),
 });
@@ -21,17 +26,22 @@ export async function PATCH(
     const { id } = await params;
     const user = await requireAdminUser();
     const payload = updateSchema.parse(await request.json());
+    if (payload.icon != null && payload.icon !== "" && !isWikiIconKey(payload.icon)) {
+      return NextResponse.json({ ok: false, message: "Invalid icon key." }, { status: 400 });
+    }
     if (
       payload.title === undefined &&
       payload.contentMd === undefined &&
       payload.isPublished === undefined &&
+      payload.isCategory === undefined &&
+      payload.icon === undefined &&
       payload.navOrder === undefined &&
       payload.parentPathParts === undefined
     ) {
       return NextResponse.json({ ok: false, message: "Nothing to update." }, { status: 400 });
     }
 
-    const existing = await prisma.page.findUnique({ where: { id } });
+    const existing = await prisma.page.findFirst({ where: { id, ...activePageWhere } });
     if (!existing) {
       return NextResponse.json({ ok: false, message: "Page not found." }, { status: 404 });
     }
@@ -39,7 +49,11 @@ export async function PATCH(
     let nextPath: string | undefined;
     if (payload.parentPathParts) {
       const childCount = await prisma.page.count({
-        where: { lang: existing.lang, path: { startsWith: `${existing.path}/` } },
+        where: {
+          lang: existing.lang,
+          path: { startsWith: `${existing.path}/` },
+          ...activePageWhere,
+        },
       });
       if (childCount > 0) {
         return NextResponse.json({ ok: false, message: "Сначала переместите вложенные страницы." }, { status: 400 });
@@ -53,6 +67,8 @@ export async function PATCH(
         ...(payload.title !== undefined ? { title: payload.title } : {}),
         ...(payload.contentMd !== undefined ? { contentMd: payload.contentMd } : {}),
         ...(payload.isPublished !== undefined ? { isPublished: payload.isPublished } : {}),
+        ...(payload.isCategory !== undefined ? { isCategory: payload.isCategory } : {}),
+        ...(payload.icon !== undefined ? { icon: payload.icon } : {}),
         ...(payload.navOrder !== undefined ? { navOrder: payload.navOrder } : {}),
         ...(nextPath !== undefined ? { path: nextPath } : {}),
       },
@@ -85,29 +101,24 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await requireAdminUser();
     const { id } = await params;
 
-    const page = await prisma.page.findUnique({ where: { id } });
-    if (!page) {
-      return NextResponse.json({ ok: false, message: "Page not found." }, { status: 404 });
-    }
-
-    const childCount = await prisma.page.count({
-      where: { path: { startsWith: `${page.path}/` } },
+    const result = await softDeletePageCascade(id);
+    await emitOutgoingWebhook("page.deleted", {
+      pageId: id,
+      path: result.page.path,
+      soft: true,
+      deletedIds: result.deletedIds,
+      deletedAt: result.deletedAt.toISOString(),
     });
-    if (childCount > 0) {
-      return NextResponse.json(
-        { ok: false, message: "Сначала удалите вложенные страницы." },
-        { status: 400 },
-      );
-    }
-
-    await prisma.page.delete({ where: { id } });
-    await invalidateWikiLangCache(page.lang);
-    await invalidateSearchLangCache(page.lang);
-    await emitOutgoingWebhook("page.deleted", { pageId: id, path: page.path });
-    return NextResponse.json({ ok: true, path: page.path });
+    return NextResponse.json({
+      ok: true,
+      path: result.page.path,
+      deletedIds: result.deletedIds,
+      deletedAt: result.deletedAt.toISOString(),
+      purgeAt: result.purgeAt.toISOString(),
+    });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Delete failed";
-    const status = msg === "Unauthorized." ? 401 : 400;
+    const status = msg === "Unauthorized." ? 401 : msg === "Page not found." ? 404 : 400;
     return NextResponse.json({ ok: false, message: msg }, { status });
   }
 }

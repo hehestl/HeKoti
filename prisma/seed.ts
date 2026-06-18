@@ -113,26 +113,32 @@ Pages live under a language prefix, for example \`/en/about\`. Revisions are sto
     ];
 
     for (const row of samples) {
-      const page = await prisma.page.upsert({
-        where: { path: row.path },
-        update: {
-          title: row.title,
-          slug: row.slug,
-          lang: row.lang,
-          contentMd: row.contentMd,
-          excerpt: row.excerpt ?? null,
-          isPublished: true,
-        },
-        create: {
-          title: row.title,
-          slug: row.slug,
-          lang: row.lang,
-          path: row.path,
-          contentMd: row.contentMd,
-          excerpt: row.excerpt ?? null,
-          isPublished: true,
-        },
+      const existing = await prisma.page.findFirst({
+        where: { lang: row.lang, path: row.path, deletedAt: null },
       });
+      const page = existing
+        ? await prisma.page.update({
+            where: { id: existing.id },
+            data: {
+              title: row.title,
+              slug: row.slug,
+              lang: row.lang,
+              contentMd: row.contentMd,
+              excerpt: row.excerpt ?? null,
+              isPublished: true,
+            },
+          })
+        : await prisma.page.create({
+            data: {
+              title: row.title,
+              slug: row.slug,
+              lang: row.lang,
+              path: row.path,
+              contentMd: row.contentMd,
+              excerpt: row.excerpt ?? null,
+              isPublished: true,
+            },
+          });
       await ensurePageRevision(prisma, page.id, admin.id, row.title, row.contentMd);
     }
 

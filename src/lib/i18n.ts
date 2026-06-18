@@ -42,6 +42,7 @@ export async function getGlobalSettings() {
     headHtml: "",
     bodyHtml: "",
     enabledLanguages: langs,
+    wikiTreeGuideColor: null as string | null,
   };
   try {
     const settings = await prisma.globalSettings.findUnique({ where: { id: "default" } });
@@ -51,9 +52,10 @@ export async function getGlobalSettings() {
         settings.defaultLanguage && langs.includes(settings.defaultLanguage)
           ? settings.defaultLanguage
           : fallback.defaultLanguage,
-      headHtml: (settings as { headHtml?: string }).headHtml ?? "",
-      bodyHtml: (settings as { bodyHtml?: string }).bodyHtml ?? "",
+      headHtml: settings.headHtml ?? "",
+      bodyHtml: settings.bodyHtml ?? "",
       enabledLanguages: langs,
+      wikiTreeGuideColor: settings.wikiTreeGuideColor ?? null,
     };
   } catch {
     return fallback;

@@ -7,9 +7,17 @@ import { useState } from "react";
 import type { Dictionary } from "@/lib/i18n";
 import { WikiPageCell } from "@/components/wiki-page-row";
 import { TreeChevronButton, TreeChevronSpacer, TreeDepthSpacer } from "@/components/page-tree-shared";
-import { ExternalLink, FileText, Folder } from "lucide-react";
+import { ExternalLink, Folder } from "lucide-react";
+import { TreePageIcon } from "@/components/page-tree-shared";
 
-export type WikiTreePageBrief = { id: string; title: string; path: string; navOrder?: number };
+export type WikiTreePageBrief = {
+  id: string;
+  title: string;
+  path: string;
+  navOrder?: number;
+  icon?: string | null;
+  isCategory?: boolean;
+};
 
 type Node = PathTreeNode<WikiTreePageBrief>;
 
@@ -123,7 +131,11 @@ function WikiTreeNode({
                 </a>
               </span>
             ) : (
-              <FileText size={14} aria-hidden strokeWidth={2} className="repo-tree-node-icon" />
+              <TreePageIcon
+                icon={page.icon ?? null}
+                isCategory={page.isCategory === true}
+                size={14}
+              />
             )}
           </div>
         ) : (

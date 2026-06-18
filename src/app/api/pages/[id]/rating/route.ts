@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PageReaction } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { activePageWhere } from "@/lib/page-query";
 
 const reactionSchema = z.object({
   reaction: z.nativeEnum(PageReaction),
@@ -51,7 +52,7 @@ async function loadAggregates(pageId: string): Promise<Aggregates> {
 
 async function findPublishedPage(id: string) {
   return prisma.page.findFirst({
-    where: { id, isPublished: true },
+    where: { id, isPublished: true, ...activePageWhere },
     select: { id: true },
   });
 }

@@ -42,7 +42,7 @@ export function AdminWorkbench({
 }) {
   return (
     <div className="admin-workbench">
-      <AdminActivityBar activity={activity} onActivityChange={onActivityChange} lang={uiLang} dict={dict} />
+      <AdminActivityBar activity={activity} onActivityChange={onActivityChange} lang={uiLang} appVersion={version} dict={dict} />
       <aside className="admin-workbench-sidebar">{sidebar}</aside>
       <div className="admin-workbench-main">{main}</div>
       <AdminStatusBar
