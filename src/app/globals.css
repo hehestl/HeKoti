@@ -2221,6 +2221,16 @@ select {
   gap: 6px;
   font-size: 13px;
   color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-architecture-mirror input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .admin-architecture-editor {

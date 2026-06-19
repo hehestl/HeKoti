@@ -1,6 +1,7 @@
 import {
   Book,
   Code,
+  Coins,
   FileText,
   Folder,
   Hammer,
@@ -17,6 +18,7 @@ export const WIKI_ICON_PRESETS = {
   file: FileText,
   book: Book,
   code: Code,
+  coins: Coins,
   shield: Shield,
   help: HelpCircle,
   layers: Layers,
@@ -34,7 +36,7 @@ export function isWikiIconKey(value: string): value is WikiIconKey {
 }
 
 export function resolveWikiIconComponent(icon: string | null | undefined, isCategory: boolean): LucideIcon {
-  if (isCategory) return Folder;
   if (icon && isWikiIconKey(icon)) return WIKI_ICON_PRESETS[icon];
+  if (isCategory) return Folder;
   return FileText;
 }

@@ -11,6 +11,27 @@ const MonacoEditor = dynamic(() => import("@/components/admin-monaco"), { ssr: f
 
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
+const ARCH_LANG_KEY = "admin-architecture-lang";
+const ARCH_MIRROR_KEY = "admin-architecture-mirror";
+
+function loadStoredLang(enabledLanguages: string[]): string {
+  try {
+    const stored = localStorage.getItem(ARCH_LANG_KEY);
+    if (stored && enabledLanguages.includes(stored)) return stored;
+  } catch {
+    /* ignore */
+  }
+  return enabledLanguages[0] ?? "en";
+}
+
+function loadStoredMirror(): boolean {
+  try {
+    return localStorage.getItem(ARCH_MIRROR_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
 function findLangRootPage(pages: AdminPageRow[], lang: string): AdminPageRow | undefined {
   const roots = pages.filter((p) => pathSegmentsAfterLang(p.path, lang).length === 1);
   if (roots.length === 0) return pages[0];
@@ -30,11 +51,40 @@ export function AdminArchitectureView({
 }) {
   const ar = dict.admin.architecture;
   const { pagesByLang, setPagesForLang } = useAdminPages();
-  const [lang, setLang] = useState(enabledLanguages[0] ?? "en");
+  const [lang, setLang] = useState(() => loadStoredLang(enabledLanguages));
   const [markdown, setMarkdown] = useState("");
-  const [mirrorStructure, setMirrorStructure] = useState(true);
+  const [mirrorStructure, setMirrorStructure] = useState(() => loadStoredMirror());
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (enabledLanguages.includes(lang)) return;
+    const fallback = enabledLanguages[0] ?? "en";
+    setLang(fallback);
+    try {
+      localStorage.setItem(ARCH_LANG_KEY, fallback);
+    } catch {
+      /* ignore */
+    }
+  }, [enabledLanguages, lang]);
+
+  const handleLangChange = (next: string) => {
+    setLang(next);
+    try {
+      localStorage.setItem(ARCH_LANG_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleMirrorChange = (checked: boolean) => {
+    setMirrorStructure(checked);
+    try {
+      localStorage.setItem(ARCH_MIRROR_KEY, checked ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
 
   const loadFromWiki = useCallback(async () => {
     setLoading(true);
@@ -136,7 +186,7 @@ export function AdminArchitectureView({
       <div className="admin-architecture-toolbar">
         <label className="admin-architecture-lang">
           <span>{ar.langLabel}</span>
-          <select value={lang} onChange={(e) => setLang(e.target.value)} disabled={isPending || loading}>
+          <select value={lang} onChange={(e) => handleLangChange(e.target.value)} disabled={isPending || loading}>
             {enabledLanguages.map((l) => (
               <option key={l} value={l}>
                 {l.toUpperCase()}
@@ -157,7 +207,7 @@ export function AdminArchitectureView({
           <input
             type="checkbox"
             checked={mirrorStructure}
-            onChange={(e) => setMirrorStructure(e.target.checked)}
+            onChange={(e) => handleMirrorChange(e.target.checked)}
             disabled={isPending}
           />
           {ar.mirrorStructure}
