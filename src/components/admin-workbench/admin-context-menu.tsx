@@ -4,6 +4,31 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
 const VIEWPORT_OFFSET = 8;
+const CURSOR_OFFSET = 4;
+
+function clampMenuPosition(
+  x: number,
+  y: number,
+  menuRect: DOMRect,
+): { x: number; y: number } {
+  const maxLeft = window.innerWidth - menuRect.width - VIEWPORT_OFFSET;
+  const maxTop = window.innerHeight - menuRect.height - VIEWPORT_OFFSET;
+
+  let targetX = x + CURSOR_OFFSET;
+  if (targetX + menuRect.width > window.innerWidth - VIEWPORT_OFFSET) {
+    targetX = x - menuRect.width - CURSOR_OFFSET;
+  }
+  targetX = Math.max(VIEWPORT_OFFSET, Math.min(targetX, maxLeft));
+
+  // Не flip «над» курсором — прижимаем к низу viewport, остаёмся «рядом» с точкой клика по Y.
+  let targetY = y;
+  if (targetY + menuRect.height > maxTop + VIEWPORT_OFFSET) {
+    targetY = maxTop;
+  }
+  targetY = Math.max(VIEWPORT_OFFSET, Math.min(targetY, maxTop));
+
+  return { x: targetX, y: targetY };
+}
 
 export function AdminContextMenu({
   x,
@@ -26,17 +51,9 @@ export function AdminContextMenu({
     if (!el) return;
 
     const menuRect = el.getBoundingClientRect();
-    let targetX = x;
-    let targetY = y;
+    const next = clampMenuPosition(x, y, menuRect);
 
-    if (targetY + menuRect.height > window.innerHeight) {
-      targetY = y - menuRect.height;
-    }
-
-    targetX = Math.max(VIEWPORT_OFFSET, Math.min(targetX, window.innerWidth - menuRect.width - VIEWPORT_OFFSET));
-    targetY = Math.max(VIEWPORT_OFFSET, Math.min(targetY, window.innerHeight - menuRect.height - VIEWPORT_OFFSET));
-
-    setCoords({ x: targetX, y: targetY });
+    setCoords(next);
     setVisible(true);
   }, [x, y, items]);
 

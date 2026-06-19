@@ -84,19 +84,21 @@ export function AdminActivityBar({
       <div className="admin-activity-items">
         {mainItems.map(({ id, icon }) => renderBtn(id, icon))}
       </div>
-      <div className="admin-activity-bottom-items">
-        {bottomItems.map(({ id, icon }) => renderBtn(id, icon))}
+      <div className="admin-activity-footer">
+        <div className="admin-activity-bottom-items">
+          {bottomItems.map(({ id, icon }) => renderBtn(id, icon))}
+        </div>
+        <ThemeModeToggle
+          layout="vertical"
+          className="admin-activity-theme"
+          labels={{
+            light: dict.common.themeLight,
+            dark: dict.common.themeDark,
+            system: dict.common.themeSystem,
+            groupAria: dict.common.themeModeAria,
+          }}
+        />
       </div>
-      <ThemeModeToggle
-        layout="vertical"
-        className="admin-activity-theme"
-        labels={{
-          light: dict.common.themeLight,
-          dark: dict.common.themeDark,
-          system: dict.common.themeSystem,
-          groupAria: dict.common.themeModeAria,
-        }}
-      />
     </nav>
   );
 }
