@@ -5,6 +5,7 @@ import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 export interface ArchNode {
   title: string;
   isCategory: boolean;
+  slug?: string;
   comment?: string;
   depth: number;
 }
@@ -34,6 +35,40 @@ export type ArchOp =
 
 const TREE_LINE = /^([│\s]*)[├└]──\s+([^#\n]+?)(?:\s+#\s*(.*))?$/;
 
+/**
+ * Разбирает заголовок строки дерева Architecture.
+ * @example parseArchLineTitle("Roadmap [roadmap]") → { title: "Roadmap", slug: "roadmap", isCategory: true }
+ * @example parseArchLineTitle("Article [art].md") → { title: "Article", slug: "art", isCategory: false }
+ * @example parseArchLineTitle("Title [ROADMAP]") → slug: "roadmap" (lowercase)
+ * @example parseArchLineTitle("Title []") → slug undefined, title as-is
+ */
+export function parseArchLineTitle(rawTitleWithMeta: string): {
+  title: string;
+  isCategory: boolean;
+  slug?: string;
+} {
+  let text = rawTitleWithMeta.trim();
+  let isCategory = true;
+
+  if (text.endsWith(".md")) {
+    isCategory = false;
+    text = text.slice(0, -3).trim();
+  }
+
+  const slugRegex = /\s+\[([a-z0-9-]+)\]\s*$/i;
+  const slugMatch = text.match(slugRegex);
+
+  if (slugMatch?.[1]) {
+    const slug = slugMatch[1].toLowerCase();
+    const title = text.replace(slugRegex, "").trim();
+    if (title.length > 0) {
+      return { title, isCategory, slug };
+    }
+  }
+
+  return { title: text, isCategory };
+}
+
 export function parseArchitectureMarkdown(md: string): ArchNode[] {
   const lines = md.split("\n");
   const result: ArchNode[] = [];
@@ -51,23 +86,18 @@ export function parseArchitectureMarkdown(md: string): ArchNode[] {
 
     const fill = match[1] ?? "";
     const depth = (fill.match(/│/g) ?? []).length;
-    let rawTitle = match[2].trim();
+    const lineTitle = match[2].trim();
     const comment = match[3]?.trim();
+    const { title, isCategory, slug } = parseArchLineTitle(lineTitle);
 
-    let isCategory = true;
-    if (rawTitle.endsWith(".md")) {
-      isCategory = false;
-      rawTitle = rawTitle.slice(0, -3).trim();
-    }
-
-    if (!rawTitle) continue;
-    result.push({ title: rawTitle, isCategory, comment, depth });
+    if (!title) continue;
+    result.push({ title, isCategory, slug, comment, depth });
   }
 
   return result;
 }
 
-function flattenTreeNodes<T extends { path: string; title: string; isCategory?: boolean }>(
+function flattenTreeNodes<T extends { path: string; title: string; slug?: string; isCategory?: boolean }>(
   nodes: PathTreeNode<T>[],
   lang: string,
   depth = 0,
@@ -93,6 +123,7 @@ export function serializeArchitectureTree(
     id: string;
     path: string;
     title: string;
+    slug?: string;
     isCategory?: boolean;
     navOrder?: number;
   }>,
@@ -108,7 +139,10 @@ export function serializeArchitectureTree(
     const indent = "│   ".repeat(row.depth);
     const prefix = index === flat.length - 1 ? "└── " : "├── ";
     const suffix = row.page.isCategory ? "" : ".md";
-    md += `${indent}${prefix}${row.page.title}${suffix}\n`;
+    const pageSlug = row.page.slug ?? pathSegmentsAfterLang(row.page.path, lang).at(-1) ?? toSlug(row.page.title);
+    const autoSlug = toSlug(row.page.title);
+    const slugPart = pageSlug && pageSlug !== autoSlug ? ` [${pageSlug}]` : "";
+    md += `${indent}${prefix}${row.page.title}${slugPart}${suffix}\n`;
   });
 
   md += "```\n";
@@ -121,7 +155,7 @@ function buildDesiredPaths(nodes: ArchNode[], lang: string): Map<string, Omit<Ar
 
   for (const node of nodes) {
     while (stack.length > node.depth) stack.pop();
-    const slug = toSlug(node.title);
+    const slug = node.slug ?? toSlug(node.title);
     const parentParts = [...stack];
     const path = normalizePath(lang, [...parentParts, slug]);
     map.set(path, {

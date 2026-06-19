@@ -10,7 +10,10 @@
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-06-19
+
 - Admin: компактный Explorer sidebar — единый скролл, overlay-actions, app-shell 100dvh
+- Architecture: поддержка явного slug в markdown-дереве через `[slug]` (Markdown-DSL)
 
 ## [0.3.1] — 2026-06-19
 

@@ -142,7 +142,8 @@
       "aiRunning": "AI translating titles…",
       "aiFailed": "AI title translation failed.",
       "aiDone": "Titles updated: {updated}, created: {created}.",
-      "noRootPage": "No pages in this language to localize."
+      "noRootPage": "No pages in this language to localize.",
+      "slugHint": "Syntax: Title [my-slug] (or .md for articles). No brackets = auto slug. Existing page slug changes only via Explorer."
     },
     "accountSettings": "Account Settings",
     "globalSettings": "Global Settings",

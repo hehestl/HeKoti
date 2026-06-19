@@ -163,6 +163,7 @@ export function AdminArchitectureView({
           {ar.mirrorStructure}
         </label>
       </div>
+      <p className="admin-architecture-hint">{ar.slugHint}</p>
       <div className="admin-architecture-editor">
         {loading ? (
           <p className="admin-architecture-loading">{dict.common.loading}</p>
