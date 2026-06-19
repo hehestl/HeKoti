@@ -41,8 +41,17 @@ type DropState =
   | { kind: "folder"; pathKey: string; lang: string; mode: "inside" }
   | { kind: "root"; lang: string };
 
+function buildDefaultOpenBranches(enabled: string[], pagesByLang: AdminPagesByLang): Record<string, Set<string>> {
+  const initial: Record<string, Set<string>> = {};
+  for (const lang of enabled) {
+    const pages = pagesByLang[lang] ?? [];
+    const tree = buildPathTree(pages, lang);
+    initial[lang] = pathKeysWithChildren(tree);
+  }
+  return initial;
+}
+
 function loadExpandedLangs(enabled: string[]): Set<string> {
-  if (typeof window === "undefined") return new Set(enabled);
   try {
     const raw = localStorage.getItem(EXPLORER_LANGS_KEY);
     if (!raw) return new Set(enabled);
@@ -54,7 +63,6 @@ function loadExpandedLangs(enabled: string[]): Set<string> {
 }
 
 function loadOpenBranches(): Record<string, string[]> {
-  if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(EXPLORER_BRANCHES_KEY);
     if (!raw) return {};
@@ -119,12 +127,12 @@ function ExplorerHeaderActions({
   );
   return (
     <div className="admin-explorer-actions">
-      {btn(wb.createArticle, onNewArticle, <FilePlus size={16} strokeWidth={1.75} aria-hidden />)}
-      {btn(wb.createCategory, onNewCategory, <FolderPlus size={16} strokeWidth={1.75} aria-hidden />)}
-      {btn(wb.refresh, onRefresh, <RefreshCw size={16} strokeWidth={1.75} aria-hidden />)}
-      {btn(wb.collapseAll, onCollapseAll, <FoldVertical size={16} strokeWidth={1.75} aria-hidden />)}
+      {btn(wb.createArticle, onNewArticle, <FilePlus size={14} strokeWidth={1.75} aria-hidden />)}
+      {btn(wb.createCategory, onNewCategory, <FolderPlus size={14} strokeWidth={1.75} aria-hidden />)}
+      {btn(wb.refresh, onRefresh, <RefreshCw size={14} strokeWidth={1.75} aria-hidden />)}
+      {btn(wb.collapseAll, onCollapseAll, <FoldVertical size={14} strokeWidth={1.75} aria-hidden />)}
       {onExpandAll
-        ? btn(wb.expandAll, onExpandAll, <UnfoldVertical size={16} strokeWidth={1.75} aria-hidden />)
+        ? btn(wb.expandAll, onExpandAll, <UnfoldVertical size={14} strokeWidth={1.75} aria-hidden />)
         : null}
     </div>
   );
@@ -142,17 +150,10 @@ export function AdminExplorer({
   actions: AdminExplorerActions;
 }) {
   const wb = dict.admin.workbench;
-  const [expandedLangs, setExpandedLangs] = useState(() => loadExpandedLangs(enabledLanguages));
-  const [openBranchesByLang, setOpenBranchesByLang] = useState<Record<string, Set<string>>>(() => {
-    const stored = loadOpenBranches();
-    const initial: Record<string, Set<string>> = {};
-    for (const lang of enabledLanguages) {
-      const pages = pagesByLang[lang] ?? [];
-      const tree = buildPathTree(pages, lang);
-      initial[lang] = new Set(stored[lang] ?? [...pathKeysWithChildren(tree)]);
-    }
-    return initial;
-  });
+  const [expandedLangs, setExpandedLangs] = useState(() => new Set(enabledLanguages));
+  const [openBranchesByLang, setOpenBranchesByLang] = useState<Record<string, Set<string>>>(() =>
+    buildDefaultOpenBranches(enabledLanguages, pagesByLang),
+  );
   const [dragOver, setDragOver] = useState<DropState>(null);
   const [rowMenu, setRowMenu] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const [sectionMenu, setSectionMenu] = useState<null | { lang: string; x: number; y: number }>(null);
@@ -169,6 +170,20 @@ export function AdminExplorer({
       return merged;
     });
   }, []);
+
+  useEffect(() => {
+    setExpandedLangs(loadExpandedLangs(enabledLanguages));
+    const stored = loadOpenBranches();
+    setOpenBranchesByLang(() => {
+      const next: Record<string, Set<string>> = {};
+      for (const lang of enabledLanguages) {
+        const pages = pagesByLang[lang] ?? [];
+        const tree = buildPathTree(pages, lang);
+        next[lang] = new Set(stored[lang] ?? [...pathKeysWithChildren(tree)]);
+      }
+      return next;
+    });
+  }, [enabledLanguages, pagesByLang]);
 
   useEffect(() => {
     for (const lang of enabledLanguages) {
@@ -261,6 +276,7 @@ export function AdminExplorer({
           }}
         />
       </div>
+      <div className="admin-explorer-scroll repo-sidebar-scroll-subtle">
       {enabledLanguages.map((lang) => {
         const pages = pagesByLang[lang] ?? [];
         const expanded = expandedLangs.has(lang);
@@ -297,7 +313,7 @@ export function AdminExplorer({
             </div>
             {expanded ? (
               <div
-                className="admin-explorer-lang-body admin-path-tree-scroll"
+                className="admin-explorer-lang-body"
                 onContextMenu={(e) => {
                   if ((e.target as HTMLElement).closest(".admin-tree-row")) return;
                   e.preventDefault();
@@ -350,6 +366,7 @@ export function AdminExplorer({
           </section>
         );
       })}
+      </div>
       {rowMenu ? (() => {
         const page = (pagesByLang[rowMenu.lang] ?? []).find((p) => p.id === rowMenu.id);
         if (!page) return null;

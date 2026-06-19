@@ -10,6 +10,8 @@
 
 ## [Unreleased]
 
+- Admin: компактный Explorer sidebar — единый скролл, overlay-actions, app-shell 100dvh
+
 ## [0.3.1] — 2026-06-19
 
 - Admin: PKM — меню справа от клика, прижатие к низу экрана вместо flip «над» строкой

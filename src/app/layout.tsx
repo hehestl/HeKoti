@@ -67,7 +67,7 @@ export default async function RootLayout({
           ),
         )}
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AppThemeProvider>{children}</AppThemeProvider>
         {bodyNodes.map((n, i) =>
           n.kind === "script" ? (

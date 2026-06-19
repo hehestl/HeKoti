@@ -1420,8 +1420,9 @@ select {
   --admin-sidebar-bg: color-mix(in srgb, var(--fg) 5%, var(--panel));
   padding: 0;
   margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .admin-workbench {
@@ -1431,8 +1432,9 @@ select {
   grid-template-areas:
     "activity sidebar main"
     "activity status status";
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 0;
@@ -1539,9 +1541,11 @@ select {
 
 .admin-workbench-sidebar {
   grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
   background: var(--admin-sidebar-bg);
   border-right: 1px solid var(--line);
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -1598,25 +1602,48 @@ select {
 }
 
 .admin-explorer {
-  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 4px 0;
+}
+
+.admin-explorer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.admin-explorer-lang-section {
+  margin: 0;
 }
 
 .admin-explorer-title {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   padding: 0;
+  padding-right: 40px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-explorer-header-row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 8px;
-  padding: 4px 8px;
-  min-height: 32px;
+  padding: 2px 6px;
+  min-height: 22px;
+  height: 22px;
   user-select: none;
 }
 
@@ -1630,26 +1657,37 @@ select {
 }
 
 .admin-explorer-actions {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 2px;
   opacity: 0;
-  transition: opacity 0.15s ease-in-out;
-  flex-shrink: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-in-out;
+  padding-left: 16px;
+  background: linear-gradient(to right, transparent, var(--admin-sidebar-bg) 16px);
 }
 
-.admin-explorer-header-row:hover .admin-explorer-actions {
+.admin-explorer-header-row:hover .admin-explorer-actions,
+.admin-explorer-header-row:focus-within .admin-explorer-actions,
+.admin-explorer-actions:focus-within {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .admin-explorer-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -1658,6 +1696,11 @@ select {
 .admin-explorer-action-btn:hover {
   background: color-mix(in srgb, var(--fg) 8%, transparent);
   color: var(--fg);
+}
+
+.admin-explorer-action-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .tree-indent-guides {
@@ -1768,8 +1811,10 @@ select {
 .admin-explorer-lang-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
+  min-width: 0;
+  min-height: 22px;
   border: none;
   background: transparent;
   color: var(--fg);
@@ -1777,9 +1822,16 @@ select {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 6px 10px;
+  padding: 2px 6px;
+  padding-right: 40px;
   cursor: pointer;
   text-align: left;
+}
+
+.admin-explorer-lang-header span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-explorer-lang-header:hover {
@@ -1801,9 +1853,9 @@ select {
 }
 
 .admin-explorer-lang-body {
-  padding: 0 4px 8px 8px;
-  max-height: 50vh;
-  overflow: auto;
+  padding: 0 4px 2px 6px;
+  max-height: none;
+  overflow: visible;
 }
 
 .admin-sidebar-panel {
