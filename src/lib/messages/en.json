@@ -210,6 +210,7 @@
       "changeIcon": "Change icon",
       "clearIcon": "Clear icon",
       "cantMoveWithChildren": "Move is blocked: the page has nested pages.",
+      "cantMoveIntoDescendant": "Cannot move a page into its own descendant.",
       "upLevel": "↑ Up",
       "upLevelTitle": "Move page one level up (Shift+Alt+↑)",
       "cantMoveRoot": "Already at top level.",

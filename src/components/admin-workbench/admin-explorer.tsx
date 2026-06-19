@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import {
-  TREE_CHEVRON_BTN_SIZE,
+  ADMIN_TREE_CHEVRON_BTN_SIZE,
   TreeChevronButton,
   TreeChevronSpacer,
   TreeIndentGuides,
@@ -630,17 +630,18 @@ function AdminTreeBranch({
 
   return (
     <div className="admin-tree-branch">
-      <div className="admin-tree-branch-line" style={{ minHeight: TREE_CHEVRON_BTN_SIZE, position: "relative" }}>
+      <div className="admin-tree-branch-line">
         <TreeIndentGuides depth={depth} isLast={isLast} />
         <span style={{ width: depth * 12, flexShrink: 0 }} aria-hidden />
         {expandable ? (
           <TreeChevronButton
             expanded={expanded}
+            size={ADMIN_TREE_CHEVRON_BTN_SIZE}
             onToggle={() => toggleBranch(node.pathKey)}
             ariaLabel={expanded ? dict.admin.wiki.treeCollapseBranch : dict.admin.wiki.treeExpandBranch}
           />
         ) : (
-          <TreeChevronSpacer />
+          <TreeChevronSpacer size={ADMIN_TREE_CHEVRON_BTN_SIZE} />
         )}
         {labelRow}
       </div>

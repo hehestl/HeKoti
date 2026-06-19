@@ -6,6 +6,7 @@ import { resolvePageIcon } from "@/lib/page-icon";
 
 export const TREE_INDENT_PX = 12;
 export const TREE_CHEVRON_BTN_SIZE = 28;
+export const ADMIN_TREE_CHEVRON_BTN_SIZE = 22;
 
 const chevronBtn: CSSProperties = {
   display: "inline-flex",
@@ -47,15 +48,22 @@ export function TreeChevronButton({
   expanded,
   onToggle,
   ariaLabel,
+  size = TREE_CHEVRON_BTN_SIZE,
 }: {
   expanded: boolean;
   onToggle: () => void;
   ariaLabel: string;
+  size?: number;
 }) {
   return (
     <button
       type="button"
-      style={chevronBtn}
+      style={{
+        ...chevronBtn,
+        width: size,
+        minWidth: size,
+        height: size,
+      }}
       aria-expanded={expanded}
       aria-label={ariaLabel}
       draggable={false}
@@ -69,10 +77,10 @@ export function TreeChevronButton({
   );
 }
 
-export function TreeChevronSpacer() {
+export function TreeChevronSpacer({ size = TREE_CHEVRON_BTN_SIZE }: { size?: number } = {}) {
   return (
     <span
-      style={{ width: TREE_CHEVRON_BTN_SIZE, minWidth: TREE_CHEVRON_BTN_SIZE, flexShrink: 0 }}
+      style={{ width: size, minWidth: size, flexShrink: 0 }}
       aria-hidden
     />
   );

@@ -1747,6 +1747,14 @@ select {
 
 .admin-tree-branch-line {
   position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+}
+
+.admin-explorer .admin-tree-branch-line > button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .admin-tree-row-container {

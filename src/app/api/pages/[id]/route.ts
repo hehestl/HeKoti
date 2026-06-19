@@ -6,7 +6,7 @@ import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { activePageWhere } from "@/lib/page-query";
 import { softDeletePageCascade } from "@/lib/page-trash";
-import { normalizePath } from "@/lib/slug";
+import { planPageBranchMove } from "@/lib/page-move";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -48,17 +48,71 @@ export async function PATCH(
 
     let nextPath: string | undefined;
     if (payload.parentPathParts) {
-      const childCount = await prisma.page.count({
+      const descendants = await prisma.page.findMany({
         where: {
           lang: existing.lang,
           path: { startsWith: `${existing.path}/` },
           ...activePageWhere,
         },
+        select: { id: true, path: true },
       });
-      if (childCount > 0) {
-        return NextResponse.json({ ok: false, message: "Сначала переместите вложенные страницы." }, { status: 400 });
+
+      let plan;
+      try {
+        plan = planPageBranchMove(
+          { id: existing.id, path: existing.path },
+          payload.parentPathParts,
+          existing.lang,
+          existing.slug,
+          descendants,
+        );
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "";
+        if (code === "MOVE_INTO_DESCENDANT") {
+          return NextResponse.json(
+            { ok: false, message: "Нельзя переместить страницу во вложенную." },
+            { status: 400 },
+          );
+        }
+        if (code === "MOVE_PATH_COLLISION") {
+          return NextResponse.json({ ok: false, message: "Конфликт путей при перемещении." }, { status: 400 });
+        }
+        throw error;
       }
-      nextPath = normalizePath(existing.lang, [...payload.parentPathParts, existing.slug]);
+
+      if (plan.newPath !== plan.oldPath) {
+        const movingIds = plan.updates.map((u) => u.id);
+        for (const row of plan.updates) {
+          const occupant = await prisma.page.findFirst({
+            where: {
+              lang: existing.lang,
+              path: row.path,
+              ...activePageWhere,
+              id: { notIn: movingIds },
+            },
+          });
+          if (occupant) {
+            return NextResponse.json(
+              { ok: false, message: `Путь занят: «${occupant.title}».` },
+              { status: 400 },
+            );
+          }
+        }
+
+        const childUpdates = plan.updates.filter((u) => u.id !== existing.id);
+        childUpdates.sort((a, b) => {
+          const aOld = descendants.find((d) => d.id === a.id)?.path ?? "";
+          const bOld = descendants.find((d) => d.id === b.id)?.path ?? "";
+          return bOld.length - aOld.length;
+        });
+
+        await prisma.$transaction([
+          prisma.page.update({ where: { id: existing.id }, data: { path: plan.newPath } }),
+          ...childUpdates.map((u) => prisma.page.update({ where: { id: u.id }, data: { path: u.path } })),
+        ]);
+      }
+
+      nextPath = plan.newPath;
     }
 
     const updated = await prisma.page.update({

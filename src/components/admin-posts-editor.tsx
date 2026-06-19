@@ -19,6 +19,7 @@ import { useAdminPages } from "@/components/admin-workbench/admin-pages-provider
 import { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
 import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
+import { isMoveIntoDescendant, nextPagePath } from "@/lib/page-move";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { wikiPublicHref } from "@/lib/wiki-path";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
@@ -112,6 +113,24 @@ export function AdminPostsEditorProvider({
     (path: string, lang: string) =>
       pagesForLang(lang).some((p) => p.path !== path && p.path.startsWith(`${path}/`)),
     [pagesForLang],
+  );
+
+  const refreshPagesForLang = useCallback(
+    async (lang: string) => {
+      const res = await apiFetch(`/api/admin/pages?lang=${encodeURIComponent(lang)}`);
+      if (!res.ok) return;
+      const rows = (await res.json()) as AdminPageRow[];
+      setPagesForLang(
+        lang,
+        rows.map((r) => ({
+          ...r,
+          lang,
+          icon: r.icon ?? null,
+          isCategory: r.isCategory ?? false,
+        })),
+      );
+    },
+    [setPagesForLang],
   );
 
   const syncActivePathUrl = useCallback(
@@ -281,13 +300,13 @@ export function AdminPostsEditorProvider({
     const pages = pagesForLang(lang);
     const from = pages.find((p) => p.id === fromId);
     if (!from) return;
-    if (hasChildren(from.path, lang) || (from.isCategory && hasChildren(from.path, lang))) {
-      setStatus(dict.admin.posts.cantMoveWithChildren, "error");
-      return;
-    }
 
     const fromSlug = pathSegmentsAfterLang(from.path, lang).slice(-1)[0] ?? "";
-    const nextPath = `/${lang}${newParentParts.length ? `/${newParentParts.join("/")}` : ""}/${fromSlug}`;
+    const targetPath = nextPagePath(lang, newParentParts, fromSlug);
+    if (isMoveIntoDescendant(from.path, targetPath)) {
+      setStatus(dict.admin.posts.cantMoveIntoDescendant, "error");
+      return;
+    }
 
     const siblingIds = pages
       .filter((p) => getParentParts(p.path, lang).join("/") === newParentParts.join("/"))
@@ -303,6 +322,7 @@ export function AdminPostsEditorProvider({
     ordered.splice(insertAt, 0, fromId);
 
     setStatus(dict.admin.posts.saving);
+    const pathChanged = from.path !== targetPath;
     try {
       await Promise.all(
         ordered.map((id, i) => {
@@ -311,8 +331,8 @@ export function AdminPostsEditorProvider({
           return patchPageApi(id, lang, patch);
         }),
       );
-      if (from.path !== nextPath) {
-        patchPageLocal(fromId, lang, { path: nextPath });
+      if (pathChanged) {
+        await refreshPagesForLang(lang);
       }
       setStatus(dict.admin.posts.saved);
     } catch (e) {
@@ -324,10 +344,6 @@ export function AdminPostsEditorProvider({
     const pages = pagesForLang(lang);
     const from = pages.find((p) => p.id === fromId);
     if (!from) return;
-    if (hasChildren(from.path, lang)) {
-      setStatus(dict.admin.posts.cantMoveWithChildren, "error");
-      return;
-    }
 
     if (target.kind === "root") {
       await applyMove(fromId, lang, [], null, "after");
@@ -352,22 +368,25 @@ export function AdminPostsEditorProvider({
   const liftUp = async (id: string, lang: string) => {
     const page = getPage(id, lang);
     if (!page) return;
-    if (hasChildren(page.path, lang)) {
-      setStatus(dict.admin.posts.cantMoveWithChildren, "error");
-      return;
-    }
     const parentParts = getParentParts(page.path, lang);
     if (parentParts.length === 0) {
       setStatus(dict.admin.posts.cantMoveRoot, "error");
       return;
     }
     const newParentParts = parentParts.slice(0, -1);
+    const fromSlug = pathSegmentsAfterLang(page.path, lang).slice(-1)[0] ?? "";
+    const targetPath = nextPagePath(lang, newParentParts, fromSlug);
+    if (isMoveIntoDescendant(page.path, targetPath)) {
+      setStatus(dict.admin.posts.cantMoveIntoDescendant, "error");
+      return;
+    }
     const maxNav = pagesForLang(lang)
       .filter((p) => getParentParts(p.path, lang).join("/") === newParentParts.join("/"))
       .reduce((m, p) => Math.max(m, p.navOrder), 0);
     setStatus(dict.admin.posts.saving);
     try {
       await patchPageApi(id, lang, { parentPathParts: newParentParts, navOrder: maxNav + 10 });
+      await refreshPagesForLang(lang);
       setStatus(dict.admin.posts.saved);
     } catch (e) {
       setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
