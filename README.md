@@ -29,16 +29,16 @@ flowchart TB
   Vhekotiuploads([hekoti_uploads]) x-. /app/public/uploads .-x hekotiapp[hekoti-app]
   hekotiapp --> hekotipostgres
   hekotiapp --> hekotiredis
-  hekotipostgres -.- default[/default/]
-  hekotiredis -.- default
-  hekotilanguagetool[hekoti-languagetool] -.- default
-  hekotiapp -.- default
+  hekotipostgres -.- hhnetwork[/hh-network/]
+  hekotiredis -.- hhnetwork
+  hekotilanguagetool[hekoti-languagetool] -.- hhnetwork
+  hekotiapp -.- hhnetwork
   hekotiapp -.- proxynetwork[/proxy-network/]
 
   classDef volumes fill:#fdfae4,stroke:#867a22
   class Vhekotipgdata,Vhekotiredisdata,Vhekotiuploads volumes
   classDef nets fill:#fbfff7,stroke:#8bc34a
-  class default,proxynetwork nets
+  class hhnetwork,proxynetwork nets
 ```
 <!-- COMPOSE_MERMAID_AUTO_END -->
 
