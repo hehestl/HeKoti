@@ -6,6 +6,7 @@ export type EditableWikiPage = {
   path: string;
   systemKey: string | null;
   isPublished: boolean;
+  showToc: boolean;
 };
 
 export type WikiInlineEditLabels = {

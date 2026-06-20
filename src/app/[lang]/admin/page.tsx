@@ -50,6 +50,7 @@ export default async function AdminPage({
     path: true,
     contentMd: true,
     isPublished: true,
+    showToc: true,
     navOrder: true,
     icon: true,
     slug: true,
@@ -71,6 +72,7 @@ export default async function AdminPage({
         lang: pageLang,
         icon: r.icon ?? null,
         isCategory: r.isCategory ?? false,
+        showToc: r.showToc ?? true,
         scope: r.scope,
         systemKey: r.systemKey,
       }));
@@ -91,6 +93,7 @@ export default async function AdminPage({
       lang: adminLanguage,
       icon: r.icon ?? null,
       isCategory: r.isCategory ?? false,
+      showToc: r.showToc ?? true,
       scope: r.scope,
       systemKey: r.systemKey,
     })),

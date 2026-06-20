@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { Lock } from "lucide-react";
 import {
   ADMIN_TREE_CHEVRON_BTN_SIZE,
@@ -32,6 +33,7 @@ export function AdminPathTree({
   nodes,
   lang,
   activeId,
+  selectedIds,
   dragOver,
   setDragOver,
   openBranches,
@@ -45,12 +47,13 @@ export function AdminPathTree({
   nodes: PathTreeNode<AdminPageRow>[];
   lang: string;
   activeId: string;
+  selectedIds: Set<string>;
   dragOver: ExplorerDropState;
   setDragOver: (v: ExplorerDropState) => void;
   openBranches: Set<string>;
   toggleBranch: (pathKey: string) => void;
   dict: Dictionary;
-  onSelect: (id: string) => void;
+  onSelect: (page: AdminPageRow, e: MouseEvent) => void;
   onContextMenu: (page: AdminPageRow, x: number, y: number) => void;
   onMoveByDrop: ExplorerMoveByDrop;
   variant?: "posts" | "notes";
@@ -65,6 +68,7 @@ export function AdminPathTree({
           depth={0}
           isLast={index === nodes.length - 1}
           activeId={activeId}
+          selectedIds={selectedIds}
           dragOver={dragOver}
           setDragOver={setDragOver}
           openBranches={openBranches}
@@ -86,6 +90,7 @@ function AdminTreeBranch({
   depth,
   isLast,
   activeId,
+  selectedIds,
   dragOver,
   setDragOver,
   openBranches,
@@ -101,12 +106,13 @@ function AdminTreeBranch({
   depth: number;
   isLast: boolean;
   activeId: string;
+  selectedIds: Set<string>;
   dragOver: ExplorerDropState;
   setDragOver: (v: ExplorerDropState) => void;
   openBranches: Set<string>;
   toggleBranch: (pathKey: string) => void;
   dict: Dictionary;
-  onSelect: (id: string) => void;
+  onSelect: (page: AdminPageRow, e: MouseEvent) => void;
   onContextMenu: (page: AdminPageRow, x: number, y: number) => void;
   onMoveByDrop: ExplorerMoveByDrop;
   variant?: "posts" | "notes";
@@ -160,12 +166,15 @@ function AdminTreeBranch({
     }
   };
 
+  const isRowSelected = page ? selectedIds.has(`${lang}:${page.id}`) : false;
+
   const labelRow = page ? (
     <div
-      className={`admin-tree-row-container admin-tree-row-inner ${page.id === activeId ? "admin-tree-row-active" : ""} ${rowDropClass}`}
+      className={`admin-tree-row-container admin-tree-row-inner ${page.id === activeId ? "admin-tree-row-active" : ""}${isRowSelected ? " admin-tree-row-selected" : ""} ${rowDropClass}`}
       draggable
       onContextMenu={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         onContextMenu(page, e.clientX, e.clientY);
       }}
       onDragStart={(e) => {
@@ -185,7 +194,13 @@ function AdminTreeBranch({
         setDragOver(null);
       }}
     >
-      <button type="button" className="admin-tree-label-btn" draggable={false} onClick={() => onSelect(page.id)} title={page.path}>
+      <button
+        type="button"
+        className="admin-tree-label-btn"
+        draggable={false}
+        onClick={(e) => onSelect(page, e)}
+        title={page.path}
+      >
         {!isNotes && !page.isPublished ? <span className="admin-tree-draft-dot" aria-hidden /> : null}
         {page.systemKey ? <Lock size={12} aria-hidden className="admin-tree-system-lock" /> : null}
         <TreePageIcon icon={page.icon} isCategory={page.isCategory} />
@@ -239,6 +254,7 @@ function AdminTreeBranch({
               depth={depth + 1}
               isLast={index === node.children.length - 1}
               activeId={activeId}
+              selectedIds={selectedIds}
               dragOver={dragOver}
               setDragOver={setDragOver}
               openBranches={openBranches}

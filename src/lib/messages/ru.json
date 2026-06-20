@@ -61,7 +61,9 @@
     "ratingThanks": "Спасибо за оценку!",
     "ratingBroken": "Не помогла",
     "ratingNeutral": "Нормально",
-    "ratingLoved": "Отлично"
+    "ratingLoved": "Отлично",
+    "tocNav": "На этой странице",
+    "tocNavToggle": "Оглавление"
   },
   "search": {
     "resultsTitle": "Результаты поиска «{q}»",
@@ -114,6 +116,12 @@
       "preview": "Preview",
       "previewShow": "Показать preview",
       "previewHide": "Скрыть preview",
+      "tocNav": "Оглавление",
+      "tocNavOn": "Навигация по заголовкам включена",
+      "tocNavOff": "Навигация по заголовкам выключена",
+      "exportPdf": "Экспорт PDF",
+      "exportCsv": "Экспорт CSV",
+      "exportMarkdown": "Экспорт Markdown",
       "previewTitle": "Просмотр",
       "previewLoading": "Рендер…",
       "openInNewTab": "Открыть на сайте",
@@ -123,7 +131,14 @@
       "settingsGlobal": "Глобальные",
       "settingsTotp": "2FA / TOTP",
       "settingsAccount": "Аккаунт",
-      "techSidebarTitle": "Тех. данные"
+      "techSidebarTitle": "Тех. данные",
+      "selectionCount": "Выбрано: {count}",
+      "selectionClear": "Снять выделение",
+      "bulkPublish": "Опубликовать выбранные",
+      "bulkUnpublish": "Снять с публикации",
+      "bulkExpand": "Развернуть ветки",
+      "bulkCollapse": "Свернуть ветки",
+      "selectionHint": "Shift — диапазон · Ctrl/Cmd — добавить"
     },
     "trash": {
       "retentionBanner": "Удалённые страницы хранятся в корзине 3 дня, затем удаляются навсегда.",
@@ -327,6 +342,8 @@
       "date": "Дата",
       "dateTime": "Дата и время",
       "help": "/post в тексте (с пробелом или с новой строки): /post h2 или /post h1/h2 — заменяется ссылкой при рендере вики. Правый клик — те же действия.",
+      "blockMenuFilter": "Фильтр…",
+      "blockMenuClose": "Закрыть меню",
       "contextMenu": {
         "bold": "Жирный",
         "italic": "Курсив",

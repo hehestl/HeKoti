@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
 const VIEWPORT_OFFSET = 8;
@@ -35,11 +35,15 @@ export function AdminContextMenu({
   y,
   items,
   onClose,
+  dismissOnScroll = true,
+  header,
 }: {
   x: number;
   y: number;
   items: AdminContextMenuItem[];
   onClose: () => void;
+  dismissOnScroll?: boolean;
+  header?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [coords, setCoords] = useState({ x: -9999, y: -9999 });
@@ -58,26 +62,40 @@ export function AdminContextMenu({
   }, [x, y, items]);
 
   useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (ref.current?.contains(e.target as Node)) return;
-      onClose();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    const onScroll = (e: Event) => {
-      if (ref.current?.contains(e.target as Node)) return;
-      onClose();
-    };
-    window.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("scroll", onScroll, true);
+    let cleanup: (() => void) | undefined;
+    const raf = window.requestAnimationFrame(() => {
+      const onMouseDown = (e: MouseEvent) => {
+        if (ref.current?.contains(e.target as Node)) return;
+        onClose();
+      };
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") onClose();
+      };
+      const onScroll = (e: Event) => {
+        if (!dismissOnScroll) return;
+        if (ref.current?.contains(e.target as Node)) return;
+        const target = e.target;
+        if (target instanceof Element && target.closest(".monaco-scrollable-element")) return;
+        onClose();
+      };
+      window.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("keydown", onKeyDown);
+      if (dismissOnScroll) {
+        window.addEventListener("scroll", onScroll, true);
+      }
+      cleanup = () => {
+        window.removeEventListener("mousedown", onMouseDown);
+        window.removeEventListener("keydown", onKeyDown);
+        if (dismissOnScroll) {
+          window.removeEventListener("scroll", onScroll, true);
+        }
+      };
+    });
     return () => {
-      window.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("scroll", onScroll, true);
+      window.cancelAnimationFrame(raf);
+      cleanup?.();
     };
-  }, [onClose]);
+  }, [dismissOnScroll, onClose]);
 
   return (
     <div
@@ -93,6 +111,7 @@ export function AdminContextMenu({
       onClick={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
     >
+      {header}
       {items.map((item) =>
         item.separator ? (
           <div key={item.id} className="admin-context-menu-sep" role="separator" />

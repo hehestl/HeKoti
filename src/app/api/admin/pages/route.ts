@@ -12,6 +12,7 @@ const PAGE_SELECT = {
   path: true,
   contentMd: true,
   isPublished: true,
+  showToc: true,
   navOrder: true,
   icon: true,
   isCategory: true,

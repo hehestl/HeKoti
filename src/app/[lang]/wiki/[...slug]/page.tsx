@@ -85,6 +85,7 @@ function toEditablePage(
     path: string;
     systemKey: string | null;
     isPublished: boolean;
+    showToc: boolean;
   },
   lang: string,
 ): EditableWikiPage {
@@ -96,6 +97,7 @@ function toEditablePage(
     path: page.path,
     systemKey: page.systemKey,
     isPublished: page.isPublished,
+    showToc: page.showToc,
   };
 }
 

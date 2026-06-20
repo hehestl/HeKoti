@@ -3,8 +3,8 @@
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
 import type { Dictionary } from "@/lib/i18n";
-import { buildAdminExplorerRowMenuItems } from "@/lib/admin-explorer-row-menu";
-import type { AdminContextMenuItem, AdminPagesByLang } from "@/types/admin-workbench";
+import { buildAdminExplorerBulkMenuItems, buildAdminExplorerRowMenuItems } from "@/lib/admin-explorer-row-menu";
+import type { AdminContextMenuItem, AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 import { WIKI_ICON_PRESETS } from "@/lib/wiki-icon-presets";
 
@@ -14,7 +14,10 @@ export function AdminExplorerRowMenu({
   dict,
   isNotes,
   actions,
+  selected,
   onClose,
+  onExpandSelected,
+  onCollapseSelected,
   onOpenIconPicker,
 }: {
   rowMenu: { id: string; lang: string; x: number; y: number };
@@ -22,22 +25,36 @@ export function AdminExplorerRowMenu({
   dict: Dictionary;
   isNotes: boolean;
   actions: AdminExplorerActions;
+  selected: Set<string>;
   onClose: () => void;
+  onExpandSelected: (pages: AdminPageRow[]) => void;
+  onCollapseSelected: (pages: AdminPageRow[]) => void;
   onOpenIconPicker: (id: string, lang: string, x: number, y: number) => void;
 }) {
   const page = (pagesByLang[rowMenu.lang] ?? []).find((p) => p.id === rowMenu.id);
   if (!page) return null;
+
+  const bulk = buildAdminExplorerBulkMenuItems(selected, pagesByLang, {
+    dict,
+    isNotes,
+    actions,
+    onExpandSelected,
+    onCollapseSelected,
+  });
+  const rowItems = buildAdminExplorerRowMenuItems(page, rowMenu.x, rowMenu.y, {
+    dict,
+    isNotes,
+    pagesByLang,
+    actions,
+    onOpenIconPicker,
+  });
+  const items = bulk.length > 0 ? [...bulk, { id: "bulk-sep2", label: "", separator: true }, ...rowItems] : rowItems;
+
   return (
     <AdminContextMenu
       x={rowMenu.x}
       y={rowMenu.y}
-      items={buildAdminExplorerRowMenuItems(page, rowMenu.x, rowMenu.y, {
-        dict,
-        isNotes,
-        pagesByLang,
-        actions,
-        onOpenIconPicker,
-      })}
+      items={items}
       onClose={onClose}
     />
   );

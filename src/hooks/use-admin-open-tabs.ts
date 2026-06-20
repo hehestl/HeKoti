@@ -61,7 +61,12 @@ export function useAdminOpenTabs({
       if (!draft) return false;
       const merged = { ...page, ...draft };
       const snap = savedSnapshots[key];
-      const payload = JSON.stringify({ title: merged.title, contentMd: merged.contentMd, isPublished: merged.isPublished });
+      const payload = JSON.stringify({
+        title: merged.title,
+        contentMd: merged.contentMd,
+        isPublished: merged.isPublished,
+        showToc: merged.showToc,
+      });
       return snap ? snap !== payload : true;
     },
     [drafts, getPage, savedSnapshots],
@@ -75,7 +80,12 @@ export function useAdminOpenTabs({
           ? prev
           : {
               ...prev,
-              [key]: JSON.stringify({ title: page.title, contentMd: page.contentMd, isPublished: page.isPublished }),
+              [key]: JSON.stringify({
+                title: page.title,
+                contentMd: page.contentMd,
+                isPublished: page.isPublished,
+                showToc: page.showToc,
+              }),
             },
       );
       setOpenTabs((prev) => {
@@ -171,7 +181,7 @@ export function useAdminOpenTabs({
   }, []);
 
   const markSaved = useCallback(
-    (pageId: string, lang: string, page: Pick<AdminPageRow, "title" | "contentMd" | "isPublished">) => {
+    (pageId: string, lang: string, page: Pick<AdminPageRow, "title" | "contentMd" | "isPublished" | "showToc">) => {
       const key = tabKey(pageId, lang);
       setDrafts((prev) => {
         const next = { ...prev };
@@ -180,7 +190,12 @@ export function useAdminOpenTabs({
       });
       setSavedSnapshots((prev) => ({
         ...prev,
-        [key]: JSON.stringify({ title: page.title, contentMd: page.contentMd, isPublished: page.isPublished }),
+        [key]: JSON.stringify({
+          title: page.title,
+          contentMd: page.contentMd,
+          isPublished: page.isPublished,
+          showToc: page.showToc,
+        }),
       }));
     },
     [],

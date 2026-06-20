@@ -59,6 +59,7 @@ model Page {
   icon         String?
   isCategory   Boolean        @default(false)
   isPublished  Boolean        @default(false)
+  showToc      Boolean        @default(true)
   scope        PageScope      @default(WIKI)
   systemKey    String?
   parentId     String?

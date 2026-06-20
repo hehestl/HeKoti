@@ -7,6 +7,7 @@ export type AdminPageRow = {
   path: string;
   contentMd: string;
   isPublished: boolean;
+  showToc: boolean;
   navOrder: number;
   lang: string;
   icon: string | null;

@@ -13,6 +13,7 @@ import { AdminTrashView } from "@/components/admin-trash-view";
 import { AdminArchitectureView } from "@/components/admin-architecture-view";
 import { AdminPagesProvider } from "@/components/admin-workbench/admin-pages-provider";
 import { AdminWorkbench } from "@/components/admin-workbench/admin-workbench";
+import { useAdminPostsEditorOptional } from "@/components/admin-posts-editor";
 import { AdminActivitySidebar } from "@/components/admin-workbench/admin-activity-sidebar";
 import { useAdminWorkbenchUi } from "@/hooks/use-admin-workbench-ui";
 import type { AdminActivityTab, AdminPagesByLang } from "@/types/admin-workbench";
@@ -80,6 +81,8 @@ function AdminWorkbenchInner({
   initialAdminLanguage: string;
   messageLocales: string[];
 }) {
+  const postsEditor = useAdminPostsEditorOptional();
+
   const sidebar =
     tab === "posts" || tab === "notes" ? (
       <AdminEditorExplorer />
@@ -149,6 +152,7 @@ function AdminWorkbenchInner({
       version={tech.version}
       previewVisible={workbenchUi.previewVisible}
       onTogglePreview={workbenchUi.togglePreview}
+      pageExtras={postsEditor?.statusBarExtras ?? null}
     />
   );
 }

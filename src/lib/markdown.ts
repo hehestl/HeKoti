@@ -2,6 +2,11 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import { expandPostWikiLinks } from "@/lib/wiki-link-expand";
 import { getWikiLinkPages } from "@/lib/wiki-link-index";
+import {
+  extractWikiHeadingsCached,
+  injectHeadingIds,
+  type WikiHeading,
+} from "@/lib/wiki-headings";
 
 const EXTRA_TAGS = [
   "img",
@@ -32,9 +37,15 @@ export function renderMarkdown(markdown: string) {
   });
 }
 
-/** Renders wiki markdown: resolves `/post slug` to internal links, then HTML. */
+/** Renders wiki markdown: resolves `/post slug` to internal links, then HTML with heading ids. */
 export async function renderWikiHtml(markdown: string, lang: string) {
+  const headings = extractWikiHeadingsCached(markdown);
   const pages = await getWikiLinkPages(lang);
   const expanded = expandPostWikiLinks(markdown, lang, pages);
-  return renderMarkdown(expanded);
+  const html = injectHeadingIds(renderMarkdown(expanded), headings);
+  return html;
+}
+
+export function getWikiHeadings(markdown: string): WikiHeading[] {
+  return extractWikiHeadingsCached(markdown);
 }

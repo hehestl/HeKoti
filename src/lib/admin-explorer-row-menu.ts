@@ -2,6 +2,63 @@ import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import type { AdminContextMenuItem, AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
+import { resolveSelectedPages } from "@/lib/admin-explorer-selection";
+
+export function buildAdminExplorerBulkMenuItems(
+  selected: Set<string>,
+  pagesByLang: AdminPagesByLang,
+  opts: {
+    dict: Dictionary;
+    isNotes: boolean;
+    actions: AdminExplorerActions;
+    onExpandSelected: (pages: AdminPageRow[]) => void;
+    onCollapseSelected: (pages: AdminPageRow[]) => void;
+  },
+): AdminContextMenuItem[] {
+  const pages = resolveSelectedPages(selected, pagesByLang);
+  if (pages.length < 2) return [];
+
+  const wb = opts.dict.admin.workbench;
+  const items: AdminContextMenuItem[] = [
+    {
+      id: "bulk-count",
+      label: wb.selectionCount.replace("{count}", String(pages.length)),
+      disabled: true,
+    },
+    { id: "bulk-sep0", label: "", separator: true },
+  ];
+
+  if (!opts.isNotes && opts.actions.onBulkSetPublished) {
+    items.push(
+      {
+        id: "bulk-publish",
+        label: wb.bulkPublish,
+        onClick: () => void opts.actions.onBulkSetPublished!(pages, true),
+      },
+      {
+        id: "bulk-unpublish",
+        label: wb.bulkUnpublish,
+        onClick: () => void opts.actions.onBulkSetPublished!(pages, false),
+      },
+      { id: "bulk-sep1", label: "", separator: true },
+    );
+  }
+
+  items.push(
+    {
+      id: "bulk-expand",
+      label: wb.bulkExpand,
+      onClick: () => opts.onExpandSelected(pages),
+    },
+    {
+      id: "bulk-collapse",
+      label: wb.bulkCollapse,
+      onClick: () => opts.onCollapseSelected(pages),
+    },
+  );
+
+  return items;
+}
 
 export function buildAdminExplorerRowMenuItems(
   page: AdminPageRow,

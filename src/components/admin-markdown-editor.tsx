@@ -9,12 +9,14 @@ import type * as monaco from "monaco-editor";
 import {
   insertAtCursor,
   insertSnippetBlock,
+  setBlockTypeAtLine,
   setHeadingLevel,
   toggleLinePrefix,
   wrapSelection,
 } from "@/lib/monaco-md-helpers";
 import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
 import type { Dictionary } from "@/lib/i18n";
+import { AdminBlockMenu, type BlockMenuType } from "@/components/admin-block-menu";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 const MonacoEditor = dynamic(() => import("@/components/admin-monaco"), { ssr: false });
@@ -50,7 +52,9 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   const edRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monRef = useRef<typeof monaco | null>(null);
   const skipChangeRef = useRef(false);
+  const blockLineRef = useRef(1);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
+  const [blockMenu, setBlockMenu] = useState<{ x: number; y: number; line: number } | null>(null);
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
   const [measuredHeight, setMeasuredHeight] = useState(120);
   const { resolvedTheme } = useTheme();
@@ -92,11 +96,88 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     skipChangeRef.current = false;
   }, [value]);
 
+  const closeCtx = useCallback(() => setCtx(null), []);
+  const closeBlockMenu = useCallback(() => setBlockMenu(null), []);
+
   const withEd = useCallback((fn: (ed: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => void) => {
     const ed = edRef.current;
     const m = monRef.current;
     if (ed && m) fn(ed, m);
   }, []);
+
+  const openBlockMenu = useCallback((line: number, x: number, y: number) => {
+    blockLineRef.current = line;
+    setCtx(null);
+    setBlockMenu({ x, y, line });
+  }, []);
+
+  const applyBlockType = useCallback(
+    (type: BlockMenuType) => {
+      withEd((ed, m) => setBlockTypeAtLine(ed, m, blockLineRef.current, type));
+      closeBlockMenu();
+    },
+    [closeBlockMenu, withEd],
+  );
+
+  const monacoOptions = useMemo(
+    () => ({
+      minimap: { enabled: false },
+      fontSize: 14,
+      wordWrap: "on" as const,
+      scrollBeyondLastLine: false,
+      contextmenu: false,
+      automaticLayout: true,
+      lineNumbersMinChars: 3,
+      lineNumbers: (lineNumber: number) => `${lineNumber} +`,
+    }),
+    [],
+  );
+
+  const handleMonacoMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => {
+      edRef.current = editor;
+      monRef.current = m;
+      if (editor.getValue() !== value) {
+        skipChangeRef.current = true;
+        editor.setValue(value);
+        skipChangeRef.current = false;
+      }
+      requestAnimationFrame(() => editor.layout());
+      editor.onContextMenu((e) => {
+        e.event.preventDefault();
+        e.event.stopPropagation();
+        setBlockMenu(null);
+        setCtx({ x: e.event.browserEvent.clientX, y: e.event.browserEvent.clientY });
+      });
+      editor.onMouseDown((e) => {
+        if (e.target.type !== m.editor.MouseTargetType.GUTTER_LINE_NUMBERS || !e.target.position) return;
+        e.event.preventDefault();
+        e.event.stopPropagation();
+        openBlockMenu(
+          e.target.position.lineNumber,
+          e.event.browserEvent.clientX,
+          e.event.browserEvent.clientY,
+        );
+      });
+      editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Period, () => {
+        const pos = editor.getPosition();
+        if (!pos) return;
+        const coords = editor.getScrolledVisiblePosition(pos);
+        const host = hostRef.current?.getBoundingClientRect();
+        if (!coords || !host) return;
+        openBlockMenu(pos.lineNumber, host.left + coords.left, host.top + coords.top);
+      });
+      editor.addCommand(m.KeyMod.Alt | m.KeyMod.Shift | m.KeyCode.KeyB, () => {
+        const pos = editor.getPosition();
+        if (!pos) return;
+        const coords = editor.getScrolledVisiblePosition(pos);
+        const host = hostRef.current?.getBoundingClientRect();
+        if (!coords || !host) return;
+        openBlockMenu(pos.lineNumber, host.left + coords.left, host.top + coords.top);
+      });
+    },
+    [openBlockMenu, value],
+  );
 
   const insertWikiPost = useCallback(() => {
     setLinkModal({ mode: "post", slug: "h2", error: "" });
@@ -263,32 +344,31 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
             if (skipChangeRef.current) return;
             onChange(v ?? "");
           }}
-          onMount={(editor, m) => {
-            edRef.current = editor;
-            monRef.current = m;
-            if (editor.getValue() !== value) {
-              skipChangeRef.current = true;
-              editor.setValue(value);
-              skipChangeRef.current = false;
-            }
-            requestAnimationFrame(() => editor.layout());
-            editor.onContextMenu((e) => {
-              e.event.preventDefault();
-              e.event.stopPropagation();
-              setCtx({ x: e.event.browserEvent.clientX, y: e.event.browserEvent.clientY });
-            });
-          }}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            wordWrap: "on",
-            scrollBeyondLastLine: false,
-            contextmenu: false,
-            automaticLayout: true,
-          }}
+          onMount={handleMonacoMount}
+          options={monacoOptions}
         />
       </div>
-      {ctx ? <AdminContextMenu x={ctx.x} y={ctx.y} items={contextMenuItems} onClose={() => setCtx(null)} /> : null}
+      {ctx ? (
+        <AdminContextMenu
+          x={ctx.x}
+          y={ctx.y}
+          items={contextMenuItems}
+          onClose={closeCtx}
+          dismissOnScroll={false}
+        />
+      ) : null}
+      {blockMenu ? (
+        <AdminBlockMenu
+          x={blockMenu.x}
+          y={blockMenu.y}
+          labels={{
+            filterPlaceholder: dict.admin.editor.blockMenuFilter,
+            close: dict.admin.editor.blockMenuClose,
+          }}
+          onPick={applyBlockType}
+          onClose={closeBlockMenu}
+        />
+      ) : null}
       {linkModal ? (
         <div
           role="dialog"

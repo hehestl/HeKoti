@@ -19,10 +19,16 @@ import {
   persistOpenBranches,
 } from "@/lib/admin-explorer-storage";
 import {
+  collectVisibleTreePages,
+  expandablePathKeysForPages,
+  resolveSelectedPages,
+} from "@/lib/admin-explorer-selection";
+import {
   buildPathTree,
   collectPathKeys,
   pathKeysWithChildren,
 } from "@/lib/page-tree";
+import { useAdminExplorerSelection } from "@/hooks/use-admin-explorer-selection";
 import type { Dictionary } from "@/lib/i18n";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 
@@ -50,6 +56,7 @@ export function AdminExplorer({
   const [rowMenu, setRowMenu] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const [sectionMenu, setSectionMenu] = useState<null | { lang: string; x: number; y: number }>(null);
   const [iconPicker, setIconPicker] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
+  const selection = useAdminExplorerSelection();
 
   const pruneBranches = useCallback((lang: string, pages: AdminPageRow[]) => {
     const tree = buildPathTree(pages, lang);
@@ -127,9 +134,70 @@ export function AdminExplorer({
 
   const activeId = actions.activePageId ?? "";
   const wb = dict.admin.workbench;
+  const selectedPages = resolveSelectedPages(selection.selected, pagesByLang);
+
+  const expandBranchesForPages = (pages: AdminPageRow[]) => {
+    const byLang = new Map<string, AdminPageRow[]>();
+    for (const p of pages) {
+      const list = byLang.get(p.lang) ?? [];
+      list.push(p);
+      byLang.set(p.lang, list);
+    }
+    for (const [lang, langPages] of byLang) {
+      const all = pagesByLang[lang] ?? [];
+      const keys = expandablePathKeysForPages(langPages, all);
+      const next = new Set(openBranchesByLang[lang] ?? []);
+      for (const k of keys) next.add(k);
+      setBranchesForLang(lang, next);
+    }
+  };
+
+  const collapseBranchesForPages = (pages: AdminPageRow[]) => {
+    const byLang = new Map<string, AdminPageRow[]>();
+    for (const p of pages) {
+      const list = byLang.get(p.lang) ?? [];
+      list.push(p);
+      byLang.set(p.lang, list);
+    }
+    for (const [lang, langPages] of byLang) {
+      const all = pagesByLang[lang] ?? [];
+      const keys = expandablePathKeysForPages(langPages, all);
+      const next = new Set(openBranchesByLang[lang] ?? []);
+      for (const k of keys) next.delete(k);
+      setBranchesForLang(lang, next);
+    }
+  };
 
   return (
     <div className={`admin-explorer${isNotes ? " admin-notes-mode" : ""}`}>
+      {selection.selectedCount >= 2 ? (
+        <div className="admin-explorer-selection-bar">
+          <span className="admin-explorer-selection-count">
+            {wb.selectionCount.replace("{count}", String(selection.selectedCount))}
+          </span>
+          <div className="admin-explorer-selection-actions">
+            {!isNotes && actions.onBulkSetPublished ? (
+              <>
+                <button type="button" className="admin-explorer-selection-btn" onClick={() => void actions.onBulkSetPublished?.(selectedPages, true)}>
+                  {wb.bulkPublish}
+                </button>
+                <button type="button" className="admin-explorer-selection-btn" onClick={() => void actions.onBulkSetPublished?.(selectedPages, false)}>
+                  {wb.bulkUnpublish}
+                </button>
+              </>
+            ) : null}
+            <button type="button" className="admin-explorer-selection-btn" onClick={() => expandBranchesForPages(selectedPages)}>
+              {wb.bulkExpand}
+            </button>
+            <button type="button" className="admin-explorer-selection-btn" onClick={() => collapseBranchesForPages(selectedPages)}>
+              {wb.bulkCollapse}
+            </button>
+            <button type="button" className="admin-explorer-selection-btn admin-explorer-selection-btn-muted" onClick={selection.clearSelection}>
+              {wb.selectionClear}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="admin-explorer-header-row">
         <div className="admin-explorer-title">{wb.explorerTitle}</div>
         <ExplorerHeaderActions
@@ -160,6 +228,7 @@ export function AdminExplorer({
                   onClick={() => toggleLang(lang)}
                   onContextMenu={(e) => {
                     e.preventDefault();
+                    setRowMenu(null);
                     setSectionMenu({ lang, x: e.clientX, y: e.clientY });
                   }}
                 >
@@ -184,8 +253,11 @@ export function AdminExplorer({
                 <div
                   className="admin-explorer-lang-body"
                   onContextMenu={(e) => {
-                    if ((e.target as HTMLElement).closest(".admin-tree-row")) return;
+                    if ((e.target as HTMLElement).closest(".admin-tree-row-container, .admin-tree-branch-line, .admin-path-tree")) {
+                      return;
+                    }
                     e.preventDefault();
+                    setRowMenu(null);
                     setSectionMenu({ lang, x: e.clientX, y: e.clientY });
                   }}
                   onDragOver={(e) => {
@@ -212,6 +284,7 @@ export function AdminExplorer({
                       nodes={tree}
                       lang={lang}
                       activeId={actions.activePageLang === lang ? activeId : ""}
+                      selectedIds={selection.selected}
                       dragOver={dragOver}
                       setDragOver={setDragOver}
                       openBranches={openBranches}
@@ -222,11 +295,16 @@ export function AdminExplorer({
                         setBranchesForLang(lang, next);
                       }}
                       dict={dict}
-                      onSelect={(id) => {
-                        const page = pages.find((p) => p.id === id);
-                        if (page) actions.onSelectPage(page);
+                      onSelect={(page, e) => {
+                        const visible = collectVisibleTreePages(tree, openBranches);
+                        const { openTab } = selection.handleRowClick(page, e, visible);
+                        if (openTab) actions.onSelectPage(page);
                       }}
-                      onContextMenu={(page, x, y) => setRowMenu({ id: page.id, lang, x, y })}
+                      onContextMenu={(page, x, y) => {
+                        if (!selection.isSelected(lang, page.id)) selection.selectSingle(page);
+                        setSectionMenu(null);
+                        setRowMenu({ id: page.id, lang, x, y });
+                      }}
                       onMoveByDrop={actions.onMoveByDrop}
                       variant={variant}
                     />
@@ -244,7 +322,10 @@ export function AdminExplorer({
           dict={dict}
           isNotes={isNotes}
           actions={actions}
+          selected={selection.selected}
           onClose={() => setRowMenu(null)}
+          onExpandSelected={expandBranchesForPages}
+          onCollapseSelected={collapseBranchesForPages}
           onOpenIconPicker={(id, lang, x, y) => {
             setRowMenu(null);
             setIconPicker({ id, lang, x, y });

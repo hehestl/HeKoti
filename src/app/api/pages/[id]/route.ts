@@ -17,6 +17,7 @@ const updateSchema = z.object({
   slug: z.string().min(1).optional(),
   contentMd: z.string().optional(),
   isPublished: z.boolean().optional(),
+  showToc: z.boolean().optional(),
   isCategory: z.boolean().optional(),
   icon: z.string().min(1).max(32).nullable().optional(),
   navOrder: z.number().int().optional(),
@@ -47,6 +48,7 @@ export async function PATCH(
       payload.slug === undefined &&
       payload.contentMd === undefined &&
       payload.isPublished === undefined &&
+      payload.showToc === undefined &&
       payload.isCategory === undefined &&
       payload.icon === undefined &&
       payload.navOrder === undefined &&
@@ -244,6 +246,7 @@ export async function PATCH(
         ...(payload.title !== undefined && !titleInSlugTxn ? { title: payload.title } : {}),
         ...(payload.contentMd !== undefined ? { contentMd: payload.contentMd } : {}),
         ...(payload.isPublished !== undefined ? { isPublished: payload.isPublished } : {}),
+        ...(payload.showToc !== undefined ? { showToc: payload.showToc } : {}),
         ...(payload.isCategory !== undefined ? { isCategory: payload.isCategory } : {}),
         ...(payload.icon !== undefined ? { icon: payload.icon } : {}),
         ...(payload.navOrder !== undefined ? { navOrder: payload.navOrder } : {}),

@@ -1431,6 +1431,118 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
   max-width: 900px;
 }
 
+.wiki-article-with-toc {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (min-width: 1280px) {
+  .wiki-article-with-toc {
+    grid-template-columns: 1fr 240px;
+    align-items: start;
+  }
+}
+
+.wiki-article-main {
+  max-width: 900px;
+  min-width: 0;
+}
+
+.wiki-article-toc {
+  min-width: 0;
+}
+
+.wiki-article-toc-mobile-toggle {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+@media (min-width: 1280px) {
+  .wiki-article-toc-mobile-toggle {
+    display: none;
+  }
+}
+
+.wiki-article-toc-panel {
+  display: none;
+}
+
+.wiki-article-toc-panel.is-open {
+  display: block;
+}
+
+@media (min-width: 1280px) {
+  .wiki-article-toc-panel {
+    display: block;
+  }
+}
+
+.wiki-article-toc-nav {
+  position: sticky;
+  top: 72px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--accent) 6%);
+}
+
+.wiki-article-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wiki-article-toc-link {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  padding-left: 8px;
+}
+
+.wiki-article-toc-link:hover,
+.wiki-article-toc-link.is-active {
+  color: var(--fg);
+  border-left-color: var(--accent);
+}
+
+.wiki-article-toc-level-1 .wiki-article-toc-link {
+  font-weight: 600;
+}
+
+.wiki-article-toc-level-2 .wiki-article-toc-link {
+  padding-left: 16px;
+}
+
+.wiki-article-toc-level-3 .wiki-article-toc-link {
+  padding-left: 24px;
+  font-size: 12px;
+}
+
+.wiki-article-toc-level-4 .wiki-article-toc-link {
+  padding-left: 32px;
+  font-size: 12px;
+}
+
 .wiki-article-title {
   margin-top: 0;
 }
@@ -1847,6 +1959,28 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
   gap: 10px;
 }
 
+.admin-status-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 6px;
+  border-right: 1px solid var(--line);
+}
+
+.admin-block-menu-filter {
+  padding: 8px 8px 4px;
+}
+
+.admin-block-menu-filter input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
 .admin-status-btn {
   display: inline-flex;
   align-items: center;
@@ -1874,6 +2008,45 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
   flex: 1;
   min-height: 0;
   padding: 4px 0;
+}
+
+.admin-explorer-selection-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  flex-shrink: 0;
+}
+
+.admin-explorer-selection-count {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.admin-explorer-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.admin-explorer-selection-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: inherit;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.admin-explorer-selection-btn:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.admin-explorer-selection-btn-muted {
+  opacity: 0.75;
 }
 
 .admin-explorer-scroll {
@@ -2351,6 +2524,16 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
 .admin-tree-row-active {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   outline: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.admin-tree-row-selected {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+}
+
+.admin-tree-row-active.admin-tree-row-selected {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
 }
 
 .admin-tree-row-drag {

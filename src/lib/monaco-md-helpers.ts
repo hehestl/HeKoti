@@ -1,5 +1,55 @@
 import type * as monaco from "monaco-editor";
 
+export type BlockLineType = "text" | "h1" | "h2" | "h3" | "h4" | "bullet" | "numbered" | "todo";
+
+function stripBlockPrefix(line: string): string {
+  return line
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/^[-*+]\s+\[[ xX]\]\s+/, "")
+    .replace(/^[-*+]\s+/, "")
+    .replace(/^\d+\.\s+/, "")
+    .trimStart();
+}
+
+function prefixForType(type: BlockLineType): string {
+  switch (type) {
+    case "h1":
+      return "# ";
+    case "h2":
+      return "## ";
+    case "h3":
+      return "### ";
+    case "h4":
+      return "#### ";
+    case "bullet":
+      return "- ";
+    case "numbered":
+      return "1. ";
+    case "todo":
+      return "- [ ] ";
+    default:
+      return "";
+  }
+}
+
+export function setBlockTypeAtLine(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  Mon: typeof monaco,
+  lineNumber: number,
+  type: BlockLineType,
+) {
+  const model = editor.getModel();
+  if (!model) return;
+
+  const line = model.getLineContent(lineNumber);
+  const stripped = stripBlockPrefix(line);
+  const next = type === "text" ? stripped : `${prefixForType(type)}${stripped}`;
+  const range = new Mon.Range(lineNumber, 1, lineNumber, line.length + 1);
+  editor.executeEdits("md-block-type", [{ range, text: next, forceMoveMarkers: true }]);
+  editor.setPosition({ lineNumber, column: next.length + 1 });
+  editor.focus();
+}
+
 export function wrapSelection(
   editor: monaco.editor.IStandaloneCodeEditor,
   Mon: typeof monaco,
@@ -53,7 +103,7 @@ export function toggleLinePrefix(
 export function setHeadingLevel(
   editor: monaco.editor.IStandaloneCodeEditor,
   Mon: typeof monaco,
-  level: 2 | 3 | 4,
+  level: 1 | 2 | 3 | 4,
 ) {
   const model = editor.getModel();
   const sel = editor.getSelection();

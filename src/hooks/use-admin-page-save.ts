@@ -7,7 +7,7 @@ type OpenTabsApi = {
   activeTabId: string;
   getDraftPage: (pageId: string, lang: string) => AdminPageRow | undefined;
   isDirty: (pageId: string, lang: string) => boolean;
-  markSaved: (pageId: string, lang: string, page: Pick<AdminPageRow, "title" | "contentMd" | "isPublished">) => void;
+  markSaved: (pageId: string, lang: string, page: Pick<AdminPageRow, "title" | "contentMd" | "isPublished" | "showToc">) => void;
 };
 
 type PatchPageApi = (
@@ -17,6 +17,7 @@ type PatchPageApi = (
     title?: string;
     contentMd?: string;
     isPublished?: boolean;
+    showToc?: boolean;
   },
 ) => Promise<AdminPageRow>;
 
@@ -47,6 +48,7 @@ export function useAdminPageSave({
           title: page.title,
           contentMd: page.contentMd,
           isPublished: isNotes ? false : page.isPublished,
+          showToc: page.showToc,
         });
         tabs.markSaved(saved.id, saved.lang, saved);
         setStatus(isNotes ? dict.admin.notes.idle : dict.admin.posts.saved);
@@ -74,7 +76,7 @@ export function useAdminPageSave({
       void savePage(id, lang, { silent: true });
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, [active?.id, active?.lang, active?.title, active?.contentMd, active, savePage, tabs]);
+  }, [active?.id, active?.lang, active?.title, active?.contentMd, active?.showToc, active, savePage, tabs]);
 
   const prevActiveTabRef = useRef(tabs.activeTabId);
   useEffect(() => {

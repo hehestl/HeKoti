@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import type { AdminActivityTab } from "@/types/admin-workbench";
 import { AdminActivityBar } from "@/components/admin-workbench/admin-activity-bar";
-import { AdminStatusBar } from "@/components/admin-workbench/admin-status-bar";
+import { AdminStatusBar, type AdminStatusBarExtras } from "@/components/admin-workbench/admin-status-bar";
 
 export function AdminWorkbench({
   activity,
@@ -16,6 +16,7 @@ export function AdminWorkbench({
   version,
   previewVisible,
   onTogglePreview,
+  pageExtras,
 }: {
   activity: AdminActivityTab;
   onActivityChange: (tab: AdminActivityTab) => void;
@@ -39,6 +40,7 @@ export function AdminWorkbench({
   version: string;
   previewVisible: boolean;
   onTogglePreview: () => void;
+  pageExtras?: AdminStatusBarExtras | null;
 }) {
   return (
     <div className="admin-workbench">
@@ -52,6 +54,7 @@ export function AdminWorkbench({
         previewVisible={previewVisible}
         onTogglePreview={onTogglePreview}
         dict={dict.admin.workbench}
+        pageExtras={pageExtras}
       />
     </div>
   );

@@ -20,6 +20,7 @@ type PatchPageApi = (
     slug?: string;
     contentMd?: string;
     isPublished?: boolean;
+    showToc?: boolean;
     isCategory?: boolean;
     icon?: string | null;
     navOrder?: number;
@@ -126,6 +127,7 @@ export function useAdminPostsPageOps({
       lang,
       icon: data.icon ?? null,
       isCategory: data.isCategory ?? isCategory,
+      showToc: data.showToc ?? true,
       scope: data.scope ?? (isNotes ? "NOTES" : "WIKI"),
       systemKey: data.systemKey ?? null,
     };
@@ -393,6 +395,24 @@ export function useAdminPostsPageOps({
               setStatus(dict.admin.posts.saved);
             } catch (e) {
               patchPageLocal(id, lang, { isPublished: page.isPublished });
+              setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
+            }
+          },
+      onBulkSetPublished: isNotes
+        ? undefined
+        : async (pages, publish) => {
+            const targets = pages.filter((p) => !p.systemKey && p.isPublished !== publish);
+            if (targets.length === 0) return;
+            for (const p of targets) patchPageLocal(p.id, p.lang, { isPublished: publish });
+            setStatus(dict.admin.posts.saving);
+            try {
+              await Promise.all(targets.map((p) => patchPageApi(p.id, p.lang, { isPublished: publish })));
+              setStatus(dict.admin.posts.saved);
+            } catch (e) {
+              for (const p of targets) {
+                const orig = getPage(p.id, p.lang);
+                if (orig) patchPageLocal(p.id, p.lang, { isPublished: orig.isPublished });
+              }
               setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
             }
           },

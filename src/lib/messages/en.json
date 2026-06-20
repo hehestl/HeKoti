@@ -61,7 +61,9 @@
     "ratingThanks": "Thanks for your feedback",
     "ratingBroken": "Did not help",
     "ratingNeutral": "Okay",
-    "ratingLoved": "Loved it"
+    "ratingLoved": "Loved it",
+    "tocNav": "On this page",
+    "tocNavToggle": "Table of contents"
   },
   "search": {
     "resultsTitle": "Search results for “{q}”",
@@ -114,6 +116,12 @@
       "preview": "Preview",
       "previewShow": "Show preview",
       "previewHide": "Hide preview",
+      "tocNav": "TOC",
+      "tocNavOn": "Heading navigation enabled",
+      "tocNavOff": "Heading navigation disabled",
+      "exportPdf": "Export PDF",
+      "exportCsv": "Export CSV",
+      "exportMarkdown": "Export Markdown",
       "previewTitle": "Preview",
       "previewLoading": "Rendering…",
       "openInNewTab": "Open on site",
@@ -123,7 +131,14 @@
       "settingsGlobal": "Global",
       "settingsTotp": "2FA / TOTP",
       "settingsAccount": "Account",
-      "techSidebarTitle": "Tech"
+      "techSidebarTitle": "Tech",
+      "selectionCount": "{count} selected",
+      "selectionClear": "Clear selection",
+      "bulkPublish": "Publish selected",
+      "bulkUnpublish": "Unpublish selected",
+      "bulkExpand": "Expand branches",
+      "bulkCollapse": "Collapse branches",
+      "selectionHint": "Shift+click range · Ctrl/Cmd+click toggle"
     },
     "trash": {
       "retentionBanner": "Deleted pages stay in Trash for 3 days, then are removed permanently.",
@@ -327,6 +342,8 @@
       "date": "Date",
       "dateTime": "Date & Time",
       "help": "/post in text (with space or after newline): /post h2 or /post h1/h2 — replaced with link when rendering wiki. Right click for same actions.",
+      "blockMenuFilter": "Type to filter…",
+      "blockMenuClose": "Close menu",
       "contextMenu": {
         "bold": "Bold",
         "italic": "Italic",

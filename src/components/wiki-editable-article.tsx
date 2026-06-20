@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
+import { WikiArticleToc } from "@/components/wiki-article-toc";
 import type { EditableWikiPage } from "@/components/wiki-inline-edit-types";
 import { useWikiInlineEdit } from "@/components/wiki-inline-edit-context";
 import type { Dictionary } from "@/lib/i18n";
+import { extractWikiHeadingsCached, shouldShowWikiToc } from "@/lib/wiki-headings";
 
 export function WikiEditableArticle({
   variant,
@@ -72,19 +74,17 @@ export function WikiEditableArticle({
   const displayPage = editablePage ?? page;
   const title = isEditing && draft ? draft.title : displayPage.title;
   const showDraftBadge = isAdmin && !displayPage.isPublished;
+  const contentForToc = isEditing && draft ? draft.contentMd : displayPage.contentMd;
+  const headings = useMemo(() => extractWikiHeadingsCached(contentForToc), [contentForToc]);
+  const tocVisible = shouldShowWikiToc(displayPage.showToc, headings);
 
-  if (!isEditing || !draft) {
-    if (variant === "catalog-body") {
-      return (
-        <div
-          className="wiki-collection-body wiki-article-body"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      );
-    }
+  const articleBody = (bodyHtml: string) => (
+    <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+  );
 
-    return (
-      <article className="wiki-article">
+  const articleShell = (bodyHtml: string, extra?: ReactNode) => {
+    const main = (
+      <>
         {showTitle ? (
           <h1 className="wiki-article-title">
             {title}
@@ -96,10 +96,38 @@ export function WikiEditableArticle({
             {dateLabel}
           </time>
         ) : null}
-        <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: html }} />
-        {footer}
-      </article>
+        {articleBody(bodyHtml)}
+        {extra}
+      </>
     );
+
+    if (!tocVisible) {
+      return <article className="wiki-article">{main}</article>;
+    }
+
+    return (
+      <div className="wiki-article-with-toc">
+        <article className="wiki-article wiki-article-main">{main}</article>
+        <WikiArticleToc
+          headings={headings}
+          ariaLabel={dict.article.tocNav}
+          toggleLabel={dict.article.tocNavToggle}
+        />
+      </div>
+    );
+  };
+
+  if (!isEditing || !draft) {
+    if (variant === "catalog-body") {
+      return (
+        <div
+          className="wiki-collection-body wiki-article-body"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }
+
+    return articleShell(html, footer);
   }
 
   const body = (

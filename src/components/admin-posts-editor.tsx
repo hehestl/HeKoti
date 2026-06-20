@@ -13,11 +13,13 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminExplorer } from "@/components/admin-workbench/admin-explorer";
 import { AdminPostsEditorMain } from "@/components/admin-posts-editor-main";
+import { buildStatusBarExtras, type AdminStatusBarExtras } from "@/components/admin-workbench/admin-status-bar";
 import { useAdminPages } from "@/components/admin-workbench/admin-pages-provider";
 import { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
 import { useAdminPageSave } from "@/hooks/use-admin-page-save";
 import { useAdminPostsPageOps } from "@/hooks/use-admin-posts-page-ops";
 import { apiFetch } from "@/lib/api-fetch";
+import { exportArticleCsv, exportArticleMarkdown, exportArticlePdf } from "@/lib/article-export";
 import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import type { AdminPageRow, AdminPagesByLang, AdminPagesStore } from "@/types/admin-workbench";
@@ -25,6 +27,7 @@ import type { AdminPageRow, AdminPagesByLang, AdminPagesStore } from "@/types/ad
 type PostsEditorContextValue = {
   explorer: ReactNode;
   main: ReactNode;
+  statusBarExtras: AdminStatusBarExtras | null;
 };
 
 const PostsEditorContext = createContext<PostsEditorContextValue | null>(null);
@@ -113,6 +116,7 @@ export function AdminPostsEditorProvider({
           isCategory: r.isCategory ?? false,
           scope: r.scope ?? (isNotes ? "NOTES" : "WIKI"),
           systemKey: r.systemKey ?? null,
+          showToc: r.showToc ?? true,
         })),
       );
     },
@@ -139,6 +143,7 @@ export function AdminPostsEditorProvider({
         slug?: string;
         contentMd?: string;
         isPublished?: boolean;
+        showToc?: boolean;
         isCategory?: boolean;
         icon?: string | null;
         navOrder?: number;
@@ -156,7 +161,7 @@ export function AdminPostsEditorProvider({
         err.code = body.error;
         throw err;
       }
-      const row = { ...body, lang };
+      const row = { ...body, lang, showToc: body.showToc ?? true };
       patchPageLocal(id, lang, row);
       return row;
     },
@@ -258,9 +263,42 @@ export function AdminPostsEditorProvider({
     />
   );
 
+  const statusBarExtras = useMemo(() => {
+    const draft = active ? tabs.getDraftPage(active.id, active.lang) : undefined;
+    if (!draft) return null;
+
+    const exportRow = {
+      title: draft.title,
+      lang: draft.lang,
+      path: draft.path,
+      slug: draft.slug,
+      isPublished: draft.isPublished,
+      contentMd: draft.contentMd,
+    };
+
+    return buildStatusBarExtras(
+      draft,
+      {
+        patchShowToc: (value) => tabs.patchDraft(draft.id, draft.lang, { showToc: value }),
+        onExportPdf: () => {
+          void exportArticlePdf(exportRow, draft.lang).catch((e) =>
+            setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error"),
+          );
+        },
+        onExportCsv: () => exportArticleCsv(exportRow),
+        onExportMarkdown: () => exportArticleMarkdown(exportRow),
+      },
+      isNotes,
+    );
+  }, [active, dict.admin.posts.failed, isNotes, setStatus, tabs]);
+
   return (
-    <PostsEditorContext.Provider value={{ explorer, main }}>{children}</PostsEditorContext.Provider>
+    <PostsEditorContext.Provider value={{ explorer, main, statusBarExtras }}>{children}</PostsEditorContext.Provider>
   );
+}
+
+export function useAdminPostsEditorOptional() {
+  return useContext(PostsEditorContext);
 }
 
 export function useAdminPostsEditor() {

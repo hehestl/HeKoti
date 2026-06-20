@@ -6,6 +6,7 @@ export type AdminExplorerActions = {
   onRename: (id: string, lang: string) => void;
   onDelete: (id: string, lang: string) => void;
   onTogglePublish?: (id: string, lang: string) => void;
+  onBulkSetPublished?: (pages: AdminPageRow[], publish: boolean) => void;
   onMoveByDrop: (
     fromId: string,
     lang: string,
