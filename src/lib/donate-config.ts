@@ -16,13 +16,14 @@ export type {
   DonateLink,
 } from "@/lib/donate-config-shared";
 
+export { donateConfigEquals } from "@/lib/donate-config-shared";
+
 export {
   cryptoWalletSchema,
-  donateConfigEquals,
   donateConfigPatchSchema,
   donateContactSchema,
   donateLinkSchema,
-} from "@/lib/donate-config-shared";
+} from "@/lib/donate-config-schemas";
 
 function parseJsonArray<T>(input: string, fallback: T[]): T[] {
   const trimmed = input.trim();

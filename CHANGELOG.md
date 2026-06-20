@@ -16,6 +16,7 @@
 - Donate: inline-edit через меню маскота (fix выбора контекста и старт редактирования)
 - Footer: ссылка «Донат» с главной — полная навигация (fix съеденного клика)
 - Home: React #419 — Suspense для LanguageSwitch в RSC, гидрация typewriter/edit UI
+- Home: CSP eval — Zod вынесен из client bundle (donate-config), lazy DonateInlineEditProvider
 
 ## [0.4.3] — 2026-06-21
 

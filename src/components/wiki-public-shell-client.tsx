@@ -1,7 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-import { DonateInlineEditProvider } from "@/components/donate-inline-edit-context";
 import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-types";
 import { HomeInlineEditProvider } from "@/components/home-inline-edit-context";
 import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
@@ -10,6 +10,14 @@ import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
 import { WikiPublicHeader, type WikiPublicHeaderVariant } from "@/components/wiki-public-header";
 import type { DonateConfig } from "@/lib/donate-config-shared";
+
+const DonateInlineEditProvider = dynamic(
+  () =>
+    import("@/components/donate-inline-edit-context").then((mod) => ({
+      default: mod.DonateInlineEditProvider,
+    })),
+  { ssr: true },
+);
 
 export function WikiPublicShellClient({
   lang,
