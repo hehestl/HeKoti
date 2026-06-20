@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-vi.mock("isomorphic-mermaid", () => ({
+vi.mock("mermaid", () => ({
   default: {
     initialize: vi.fn(),
     render: vi.fn(async () => ({
@@ -9,7 +9,7 @@ vi.mock("isomorphic-mermaid", () => ({
   },
 }));
 
-import mermaid from "isomorphic-mermaid";
+import mermaid from "mermaid";
 import { describe, expect, it, beforeEach } from "vitest";
 import { renderMermaidFigure } from "@/lib/mermaid-render";
 

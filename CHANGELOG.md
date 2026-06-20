@@ -20,6 +20,9 @@
 
 ### Fixed
 
+- Wiki: Mermaid server render без `isomorphic-mermaid` (svgdom + DOMPurify patch + fake `location` + restore `globalThis.window`; fix 500/unhealthy)
+- Wiki: `clearSsrWindowPollution` в layout/health — сброс «битого» `window` после isomorphic-mermaid
+- Docker: healthcheck через `scripts/docker-healthcheck.cjs` (http + timeout); `exec env HOSTNAME=0.0.0.0` при старте
 - Wiki: inline-edit на публичной статье — draft не сбрасывается при входе в режим редактирования (stale cleanup useEffect)
 - Monaco: inline bootstrap в `<head>` + `/monaco-workers/` same-origin (прод ещё тянул jsdelivr CDN — CORS/worker-src)
 - Admin Explorer: убрано дублирующее ПКМ-меню секции языка при клике по строкам дерева (остаётся только меню строки; меню секции — по заголовку RU/EN)

@@ -7,6 +7,7 @@ import {
   injectHeadingIds,
   type WikiHeading,
 } from "@/lib/wiki-headings";
+import { clearSsrWindowPollution } from "@/lib/node-globals-guard";
 import { renderMermaidFigure } from "@/lib/mermaid-render";
 import { wrapPastedSvgFigure } from "@/lib/svg-sanitize";
 import {
@@ -143,6 +144,7 @@ export function renderMarkdown(markdown: string) {
 
 /** Renders wiki markdown: resolves `/post slug` to internal links, then HTML with heading ids. */
 export async function renderWikiHtml(markdown: string, lang: string) {
+  clearSsrWindowPollution();
   const headings = extractWikiHeadingsCached(markdown);
   const { markdown: mdWithPlaceholders, blocks } = extractDiagramBlocks(markdown);
   const pages = await getWikiLinkPages(lang);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { getGlobalSettings } from "@/lib/i18n";
+import { clearSsrWindowPollution } from "@/lib/node-globals-guard";
 import { MONACO_WORKERS_INLINE_SCRIPT } from "@/lib/monaco-workers-core";
 import { parseTelemetrySnippet } from "@/lib/telemetry-snippets";
 
@@ -45,6 +46,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  clearSsrWindowPollution();
   const { headHtml, bodyHtml, wikiTreeGuideColor } = await getGlobalSettings();
   const head = parseTelemetrySnippet(headHtml);
   const body = parseTelemetrySnippet(bodyHtml);

@@ -1,7 +1,7 @@
-import "./mermaid-polyfill";
 import { createHash } from "node:crypto";
-import mermaid from "isomorphic-mermaid";
+import mermaid from "mermaid";
 import { getCached, setCached } from "@/lib/cache";
+import { withMermaidDom } from "@/lib/mermaid-server-env";
 import {
   sanitizeDiagramSvg,
   wrapDiagramError,
@@ -9,7 +9,7 @@ import {
   type DiagramFigureMeta,
 } from "@/lib/svg-sanitize";
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 
 function cacheKey(source: string, alt?: string): string {
   const normalized = source.trim();
@@ -18,16 +18,19 @@ function cacheKey(source: string, alt?: string): string {
 }
 
 async function renderWithTheme(source: string, theme: "default" | "dark"): Promise<string> {
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: "strict",
-    htmlLabels: false,
-    logLevel: "error",
-    theme,
+  return withMermaidDom(async () => {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      htmlLabels: false,
+      flowchart: { htmlLabels: false },
+      logLevel: "error",
+      theme,
+    });
+    const id = `hekoti-${createHash("sha256").update(`${source}:${theme}`).digest("hex").slice(0, 16)}`;
+    const { svg } = await mermaid.render(id, source);
+    return sanitizeDiagramSvg(svg);
   });
-  const id = `hekoti-${createHash("sha256").update(`${source}:${theme}`).digest("hex").slice(0, 16)}`;
-  const { svg } = await mermaid.render(id, source);
-  return sanitizeDiagramSvg(svg);
 }
 
 export async function renderMermaidFigure(
@@ -42,10 +45,8 @@ export async function renderMermaidFigure(
   if (cached) return cached;
 
   try {
-    const [lightSvg, darkSvg] = await Promise.all([
-      renderWithTheme(normalized, "default"),
-      renderWithTheme(normalized, "dark"),
-    ]);
+    const lightSvg = await renderWithTheme(normalized, "default");
+    const darkSvg = await renderWithTheme(normalized, "dark");
     const html = wrapDiagramFigure(lightSvg, darkSvg, { ...meta, source: normalized, dualTheme: true });
     await setCached(key, html);
     return html;

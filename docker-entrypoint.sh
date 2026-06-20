@@ -31,7 +31,7 @@ fi
 
 if [ "${HEKOTI_SKIP_MIGRATE:-0}" = "1" ]; then
   echo "HEKOTI_SKIP_MIGRATE=1: skipping prisma migrate deploy"
-  exec node server.js
+  exec env HOSTNAME=0.0.0.0 PORT="${PORT:-3310}" node server.js
 fi
 
 if [ ! -f prisma/schema.prisma ]; then
@@ -60,4 +60,5 @@ node ./node_modules/prisma/build/index.js migrate deploy
 echo "Ensuring admin user (scripts/ensure-admin.ts)..."
 node ./node_modules/tsx/dist/cli.mjs ./scripts/ensure-admin.ts
 
-exec node server.js
+echo "Starting Next.js (HOSTNAME=0.0.0.0 PORT=${PORT:-3310})..."
+exec env HOSTNAME=0.0.0.0 PORT="${PORT:-3310}" node server.js

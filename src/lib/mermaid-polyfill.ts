@@ -1,4 +1,4 @@
-/** Polyfills required by mermaid@11 in Node before isomorphic-mermaid loads. */
+/** Polyfills required by mermaid@11 in Node before mermaid loads. */
 if (typeof globalThis.CSSStyleSheet === "undefined") {
   globalThis.CSSStyleSheet = class CSSStyleSheet {
     cssRules: unknown[] = [];

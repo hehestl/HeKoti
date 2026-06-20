@@ -59,9 +59,7 @@ docker compose up -d --force-recreate hekoti-app
 echo "==> waiting for health (up to 120s)"
 i=0
 while [ "$i" -lt 24 ]; do
-  if docker compose exec -T hekoti-app node -e \
-    "fetch('http://127.0.0.1:'+(process.env.PORT||'3310')+'/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
-    2>/dev/null; then
+  if docker compose exec -T hekoti-app node /app/scripts/docker-healthcheck.cjs 2>/dev/null; then
     echo "health: ok"
     break
   fi
