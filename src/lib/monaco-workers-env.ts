@@ -1,6 +1,4 @@
-/** Monaco — same-origin workers; must load before @monaco-editor/react mounts. */
-import { loader } from "@monaco-editor/react";
-import * as monaco from "monaco-editor";
+/** Monaco workers — must run before any `monaco-editor` import (ESM hoist-safe). */
 
 const WORKERS_BASE = "/monaco-workers";
 
@@ -46,6 +44,4 @@ if (typeof window !== "undefined") {
       return workerAbsUrl(label);
     },
   };
-
-  loader.config({ monaco });
 }

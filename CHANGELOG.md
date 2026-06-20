@@ -12,7 +12,8 @@
 
 ### Fixed
 
-- Monaco: workers с same-origin `/monaco-workers/` (CSP `worker-src 'self'` блокировал jsdelivr); ранняя инициализация `monaco-setup` до монтирования редактора; workers в git и проверка в Docker build
+- Monaco: workers с same-origin `/monaco-workers/` (CSP `worker-src 'self'` блокировал jsdelivr); прямой `monaco.editor.create` без `@monaco-editor/loader` (CDN в `script-src` тоже запрещён); `monaco-workers-env` до импорта monaco; workers в git и проверка в Docker build
+- Wiki inline edit: `registerPage` не сбрасывает baseline/draft во время редактирования
 
 ## [0.4.0] — 2026-06-21
 

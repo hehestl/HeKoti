@@ -69,9 +69,14 @@ export function WikiInlineEditProvider({
 
   const registerPage = useCallback((page: EditableWikiPage) => {
     registeredIdRef.current = page.id;
-    setEditablePage(page);
-    setBaseline(page);
-    if (!isEditing) setDraft(null);
+    if (!isEditing) {
+      setEditablePage(page);
+      setBaseline(page);
+      setDraft(null);
+      return;
+    }
+    setEditablePage((prev) => (prev?.id === page.id ? prev : page));
+    setBaseline((prev) => (prev?.id === page.id ? prev : page));
   }, [isEditing]);
 
   const unregisterPage = useCallback(() => {
