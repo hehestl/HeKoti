@@ -20,5 +20,18 @@ export async function getWikiShellProps(inputLang: string) {
     appVersion: isAdmin ? getAppVersion() : undefined,
     adminLabel: dict.admin.workbench.mascotAdmin ?? dict.common.administration,
     versionLabel: dict.admin.workbench.mascotVersion ?? "Version",
+    inlineEditLabels: {
+      mascotEdit: dict.admin.workbench.mascotEdit,
+      mascotExitEdit: dict.admin.workbench.mascotExitEdit,
+      save: dict.admin.workbench.inlineEditSave,
+      cancel: dict.admin.workbench.inlineEditCancel,
+      saved: dict.admin.workbench.inlineEditSaved,
+      saving: dict.admin.workbench.inlineEditSaving,
+      failed: dict.admin.workbench.inlineEditFailed,
+      draftBadge: dict.admin.workbench.inlineEditDraftBadge,
+      publish: dict.admin.workbench.publish,
+      unpublish: dict.admin.workbench.unpublish,
+      dirtyConfirm: dict.admin.workbench.dirtyConfirm,
+    },
   };
 }

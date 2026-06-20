@@ -10,16 +10,21 @@
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-21
+
 ### Added
 
 - Ops: `.agentrules` — taxonomy social/chat, paths Профиль B, ports ui 3310→3100
+- Ops: `npm run check:hh-standards` — проверка `.agentrules` и compose
 - Admin: вкладка «Заметки» — внутреннее дерево без публикации в вики (`PageScope.NOTES`)
 - Admin: системные заметки `hekoti-welcome` и `hekoti-support` (неудаляемые)
 
 ### Changed
 
+- Wiki: inline-редактирование с ПКМ маскота — title, Markdown, publish (админ)
 - Docker: сеть `hh-network`, logging rotation, `hh-hekoti-lt`, bind `127.0.0.1:3310`
 - Ops: HH Standards — `hh-project-standards.md`, синхронизация `infra-taxonomy`, README paths
+- Admin: split `admin-posts-editor.tsx` и `admin-explorer.tsx` — hooks и subcomponents (<300 строк)
 
 ### Fixed
 

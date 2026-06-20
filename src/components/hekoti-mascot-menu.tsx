@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
+import { useWikiInlineEditOptional } from "@/components/wiki-inline-edit-context";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
 export function HekotiMascotMenu({
@@ -18,6 +19,8 @@ export function HekotiMascotMenu({
   openSiteLabel,
   adminLabel,
   versionLabel,
+  editLabel,
+  exitEditLabel,
 }: {
   lang: string;
   isAdmin: boolean;
@@ -30,8 +33,11 @@ export function HekotiMascotMenu({
   openSiteLabel?: string;
   adminLabel: string;
   versionLabel: string;
+  editLabel?: string;
+  exitEditLabel?: string;
 }) {
   const router = useRouter();
+  const inlineEdit = useWikiInlineEditOptional();
   const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
 
   const onContextMenu = useCallback(
@@ -51,6 +57,22 @@ export function HekotiMascotMenu({
   if (showOpenSite) {
     items.push({ id: "site", label: openSiteLabel ?? "Site", onClick: () => router.push(`/${lang}`) });
     items.push({ id: "sep0", label: "", separator: true });
+  }
+  if (inlineEdit?.canEdit && editLabel && exitEditLabel) {
+    if (inlineEdit.isEditing) {
+      items.push({
+        id: "exit-edit",
+        label: exitEditLabel,
+        onClick: () => inlineEdit.cancelEdit(),
+      });
+    } else {
+      items.push({
+        id: "edit",
+        label: editLabel,
+        onClick: () => inlineEdit.startEdit(),
+      });
+    }
+    items.push({ id: "sep-edit", label: "", separator: true });
   }
   items.push({ id: "admin", label: adminLabel, onClick: () => router.push(`/${lang}/admin`) });
   if (appVersion) {

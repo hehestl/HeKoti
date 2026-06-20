@@ -20,6 +20,8 @@ export function WikiPublicHeader({
   appVersion,
   adminLabel,
   versionLabel,
+  editLabel,
+  exitEditLabel,
 }: {
   lang: string;
   langs: LangOption[];
@@ -31,6 +33,8 @@ export function WikiPublicHeader({
   appVersion?: string;
   adminLabel: string;
   versionLabel: string;
+  editLabel?: string;
+  exitEditLabel?: string;
 }) {
   return (
     <header className="wiki-public-header">
@@ -43,6 +47,8 @@ export function WikiPublicHeader({
           priority={variant === "home"}
           adminLabel={adminLabel}
           versionLabel={versionLabel}
+          editLabel={editLabel}
+          exitEditLabel={exitEditLabel}
         />
         <div className="wiki-public-header-search">
           <HelpCenterSearchForm

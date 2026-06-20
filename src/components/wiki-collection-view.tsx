@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ChevronRight, FileText, Folder } from "lucide-react";
+import { WikiEditableArticle } from "@/components/wiki-editable-article";
+import type { EditableWikiPage } from "@/components/wiki-inline-edit-types";
 import type { PathTreeNode } from "@/lib/page-tree";
+import type { Dictionary } from "@/lib/i18n";
 import { env } from "@/lib/env";
 import {
   buildCatalogJsonLd,
@@ -20,6 +23,8 @@ export function WikiCollectionView({
   dict,
   bodyHtml,
   pagePath,
+  editablePage,
+  fullDict,
 }: {
   node: PathTreeNode<WikiTreePage>;
   lang: string;
@@ -33,6 +38,8 @@ export function WikiCollectionView({
   };
   bodyHtml?: string;
   pagePath: string;
+  editablePage?: EditableWikiPage;
+  fullDict?: Dictionary;
 }) {
   const title = collectionTitle(node);
   const description = collectionDescription(node, dict.defaultDescription, excerptByPath);
@@ -54,7 +61,16 @@ export function WikiCollectionView({
         {description ? <p className="wiki-collection-desc">{description}</p> : null}
       </header>
 
-      {bodyHtml ? (
+      {bodyHtml && editablePage && fullDict ? (
+        <WikiEditableArticle
+          variant="catalog-body"
+          page={editablePage}
+          lang={lang}
+          html={bodyHtml}
+          dict={fullDict}
+          showTitle={false}
+        />
+      ) : bodyHtml ? (
         <div
           className="wiki-collection-body wiki-article-body"
           dangerouslySetInnerHTML={{ __html: bodyHtml }}

@@ -91,6 +91,14 @@
       "expandAll": "Развернуть всё",
       "mascotAdmin": "Админка",
       "mascotVersion": "Версия",
+      "mascotEdit": "Редактировать",
+      "mascotExitEdit": "Выйти из редактирования",
+      "inlineEditSave": "Сохранить",
+      "inlineEditCancel": "Отмена",
+      "inlineEditSaved": "Сохранено",
+      "inlineEditSaving": "Сохранение…",
+      "inlineEditFailed": "Не удалось сохранить",
+      "inlineEditDraftBadge": "Черновик",
       "openPage": "Открыть",
       "publish": "Опубликовать",
       "unpublish": "Снять с публикации",
@@ -261,7 +269,8 @@
       "noSource": "В других языках исходной страницы не найдено.",
       "treeExpandBranch": "Развернуть",
       "treeCollapseBranch": "Свернуть",
-      "pagesTreeAria": "Дерево опубликованных страниц"
+      "pagesTreeAria": "Дерево опубликованных страниц",
+      "resizeSidebar": "Изменить ширину панели страниц"
     },
     "notes": {
       "idle": "Внутренние заметки",

@@ -1,5 +1,6 @@
 import { WikiPageRow } from "@/components/wiki-page-row";
 import { WikiPageTree, type WikiTreePageBrief } from "@/components/wiki-page-tree";
+import { WikiRepoLayoutShell } from "@/components/wiki-repo-layout-shell";
 import { prisma } from "@/lib/db";
 import { wikiPageWhere } from "@/lib/page-query";
 import { getDictionary } from "@/lib/i18n";
@@ -58,11 +59,10 @@ export async function WikiRepositoryLayout({
   const pathTree = buildPathTree(listPages satisfies WikiTreePageBrief[], lang);
 
   return (
-    <div className="repo-layout">
-      <aside className="repo-sidebar repo-sidebar-wiki">
-        <div className="repo-sidebar-head">
-          {searchMode ? dict.admin.wiki.search.replace("{q}", qTrim) : dict.admin.wiki.pages}
-        </div>
+    <WikiRepoLayoutShell
+      sidebarHead={searchMode ? dict.admin.wiki.search.replace("{q}", qTrim) : dict.admin.wiki.pages}
+      resizeLabel={dict.admin.wiki.resizeSidebar}
+      sidebar={
         <div className="repo-sidebar-scroll repo-sidebar-scroll-subtle">
           {searchMode ? (
             <ul className="repo-page-list">
@@ -94,9 +94,9 @@ export async function WikiRepositoryLayout({
             />
           )}
         </div>
-      </aside>
-
-      <main className="repo-main">{children}</main>
-    </div>
+      }
+    >
+      {children}
+    </WikiRepoLayoutShell>
   );
 }

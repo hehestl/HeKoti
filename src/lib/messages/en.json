@@ -91,6 +91,14 @@
       "expandAll": "Expand all",
       "mascotAdmin": "Admin",
       "mascotVersion": "Version",
+      "mascotEdit": "Edit page",
+      "mascotExitEdit": "Exit editing",
+      "inlineEditSave": "Save",
+      "inlineEditCancel": "Cancel",
+      "inlineEditSaved": "Saved",
+      "inlineEditSaving": "Saving…",
+      "inlineEditFailed": "Save failed",
+      "inlineEditDraftBadge": "Draft",
       "openPage": "Open",
       "publish": "Publish",
       "unpublish": "Unpublish",
@@ -261,7 +269,8 @@
       "noSource": "No source page found in other languages.",
       "treeExpandBranch": "Expand",
       "treeCollapseBranch": "Collapse",
-      "pagesTreeAria": "Published pages tree"
+      "pagesTreeAria": "Published pages tree",
+      "resizeSidebar": "Resize pages sidebar"
     },
     "notes": {
       "idle": "Internal notes",

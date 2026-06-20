@@ -1,4 +1,6 @@
-import { WikiPublicHeader, type WikiPublicHeaderVariant } from "@/components/wiki-public-header";
+import { WikiPublicShellClient } from "@/components/wiki-public-shell-client";
+import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
+import type { WikiPublicHeaderVariant } from "@/components/wiki-public-header";
 
 type LangOption = { code: string; label: string };
 
@@ -13,6 +15,7 @@ export function WikiPublicShell({
   appVersion,
   adminLabel,
   versionLabel,
+  inlineEditLabels,
   children,
 }: {
   lang: string;
@@ -25,23 +28,24 @@ export function WikiPublicShell({
   appVersion?: string;
   adminLabel: string;
   versionLabel: string;
+  inlineEditLabels: WikiInlineEditLabels;
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <WikiPublicHeader
-        lang={lang}
-        langs={langs}
-        searchPlaceholder={searchPlaceholder}
-        languageAria={languageAria}
-        variant={variant}
-        initialSearchQuery={initialSearchQuery}
-        isAdmin={isAdmin}
-        appVersion={appVersion}
-        adminLabel={adminLabel}
-        versionLabel={versionLabel}
-      />
-      <div className="wiki-public-content">{children}</div>
-    </>
+    <WikiPublicShellClient
+      lang={lang}
+      langs={langs}
+      searchPlaceholder={searchPlaceholder}
+      languageAria={languageAria}
+      variant={variant}
+      initialSearchQuery={initialSearchQuery}
+      isAdmin={isAdmin}
+      appVersion={appVersion}
+      adminLabel={adminLabel}
+      versionLabel={versionLabel}
+      inlineEditLabels={inlineEditLabels}
+    >
+      {children}
+    </WikiPublicShellClient>
   );
 }

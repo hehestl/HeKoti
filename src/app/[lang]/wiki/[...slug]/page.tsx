@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
+import type { EditableWikiPage } from "@/components/wiki-inline-edit-types";
 import { WikiArticleFooter } from "@/components/wiki-article-footer";
+import { WikiEditableArticle } from "@/components/wiki-editable-article";
 import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiClonePageForm } from "@/components/wiki-clone-page-form";
 import { WikiCollectionView } from "@/components/wiki-collection-view";
@@ -72,6 +75,28 @@ async function loadArticleHtml(
   const html = await renderWikiHtml(page.contentMd, lang);
   await setCached(cacheKey, JSON.stringify({ title, html }));
   return { title, html };
+}
+
+function toEditablePage(
+  page: {
+    id: string;
+    title: string;
+    contentMd: string;
+    path: string;
+    systemKey: string | null;
+    isPublished: boolean;
+  },
+  lang: string,
+): EditableWikiPage {
+  return {
+    id: page.id,
+    lang,
+    title: page.title,
+    contentMd: page.contentMd,
+    path: page.path,
+    systemKey: page.systemKey,
+    isPublished: page.isPublished,
+  };
 }
 
 export async function generateMetadata({
@@ -150,10 +175,8 @@ export default async function WikiPage({
   if (nodeType === "catalog" && node) {
     const shell = await getWikiShellProps(lang);
     const crumbs = breadcrumbChain(node, lang, tree, dict.collection.allCollections);
-    const bodyHtml =
-      page && hasPublishedPage(page) && page.contentMd.trim()
-        ? await loadCatalogBodyHtml(lang, slug, page)
-        : undefined;
+    const canShowBody = page && (hasPublishedPage(page) || isAdmin) && page.contentMd.trim();
+    const bodyHtml = canShowBody ? await loadCatalogBodyHtml(lang, slug, page) : undefined;
 
     return (
       <WikiPublicShell {...shell} variant={bodyHtml ? "compact" : "home"}>
@@ -165,12 +188,14 @@ export default async function WikiPage({
           dict={dict.collection}
           bodyHtml={bodyHtml}
           pagePath={pagePath}
+          editablePage={canShowBody && isAdmin ? toEditablePage(page, lang) : undefined}
+          fullDict={isAdmin ? dict : undefined}
         />
       </WikiPublicShell>
     );
   }
 
-  if (nodeType === "article" && page && hasPublishedPage(page)) {
+  if (nodeType === "article" && page && (hasPublishedPage(page) || isAdmin)) {
     const { title, html } = await loadArticleHtml(lang, slug, page);
     const shell = await getWikiShellProps(lang);
     const crumbs = breadcrumbChainForPage(path, title, lang, tree, dict.collection.allCollections);
@@ -182,23 +207,29 @@ export default async function WikiPage({
     return (
       <WikiPublicShell {...shell} variant="compact">
         <WikiBreadcrumbs items={crumbs} pagePath={pagePath} />
-        <article className="wiki-article">
-          <h1 className="wiki-article-title">{title}</h1>
-          <time className="wiki-article-date" dateTime={page.updatedAt.toISOString()}>
-            {dateLabel}
-          </time>
-          <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: html }} />
-          <WikiArticleFooter
-            page={{ id: page.id, path: page.path }}
-            lang={lang}
-            tree={tree}
-            user={user}
-            dict={dict.article}
-          />
-        </article>
+        <WikiEditableArticle
+          variant="article"
+          page={toEditablePage(page, lang)}
+          lang={lang}
+          html={html}
+          dateLabel={dateLabel}
+          updatedAt={page.updatedAt.toISOString()}
+          dict={dict}
+          footer={
+            <WikiArticleFooter
+              page={{ id: page.id, path: page.path }}
+              lang={lang}
+              tree={tree}
+              user={user}
+              dict={dict.article}
+            />
+          }
+        />
       </WikiPublicShell>
     );
   }
+
+  if (page && !hasPublishedPage(page) && !isAdmin) return notFound();
 
   if (!isAdmin) return notFound();
 
@@ -218,15 +249,16 @@ export default async function WikiPage({
 
   return (
     <WikiRepositoryLayout lang={lang} activeWikiPath={path} isAdmin mode="admin">
-      <article style={{ maxWidth: 900 }}>
-        <h1 style={{ marginTop: 0 }}>{dict.admin.wiki.missingTitle}</h1>
-        <p style={{ color: "var(--muted)", marginTop: 8, lineHeight: 1.6 }}>
-          {dict.admin.wiki.missingDesc.replace("{path}", pagePath)}
-        </p>
+      <article className="wiki-missing-page">
+        <div className="wiki-missing-page-mascot">
+          <HekotiMascotLink lang={lang} className="wiki-missing-mascot" imageSize={72} />
+        </div>
+        <h1>{dict.admin.wiki.missingTitle}</h1>
+        <p className="wiki-missing-page-desc">{dict.admin.wiki.missingDesc.replace("{path}", pagePath)}</p>
 
-        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-          <div style={{ fontWeight: 700 }}>{dict.admin.wiki.availableIn}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="wiki-missing-page-body">
+          <div className="wiki-missing-page-label">{dict.admin.wiki.availableIn}</div>
+          <div className="wiki-missing-page-langs">
             {enabledLanguages
               .filter((l) => l !== lang)
               .map((l) => {
@@ -238,15 +270,7 @@ export default async function WikiPage({
                     key={l}
                     href={href}
                     prefetch={false}
-                    style={{
-                      border: "1px solid var(--line)",
-                      borderRadius: 999,
-                      padding: "6px 10px",
-                      background: "var(--panel)",
-                      color: "var(--accent)",
-                      fontWeight: 700,
-                      fontSize: 13,
-                    }}
+                    className="wiki-missing-page-lang-link"
                   >
                     {l.toUpperCase()}: {hit.title}
                   </Link>
@@ -262,7 +286,7 @@ export default async function WikiPage({
               note={dict.admin.wiki.createNote}
             />
           ) : (
-            <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>{dict.admin.wiki.noSource}</div>
+            <div className="wiki-missing-page-no-source">{dict.admin.wiki.noSource}</div>
           )}
         </div>
       </article>
