@@ -33,6 +33,7 @@ export async function softDeletePageCascade(pageId: string) {
     where: { id: pageId, ...activePageWhere },
   });
   if (!target) throw new Error("Page not found.");
+  if (target.systemKey) throw new Error("SYSTEM_PAGE_PROTECTED");
 
   const now = new Date();
   const deletedIds = await prisma.$transaction(async (tx) => {

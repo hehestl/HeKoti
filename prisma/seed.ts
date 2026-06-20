@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import pg from "pg";
 
+import { ensureSystemNotes } from "../src/lib/system-notes";
+
 /** Local dev: load `.env` when `dotenv` is installed. Docker/Compose injects env — no `dotenv` in the runtime image. */
 async function loadDotenvOptional() {
   await import("dotenv/config").catch(() => {});
@@ -141,6 +143,9 @@ Pages live under a language prefix, for example \`/en/about\`. Revisions are sto
           });
       await ensurePageRevision(prisma, page.id, admin.id, row.title, row.contentMd);
     }
+
+    await ensureSystemNotes("en");
+    await ensureSystemNotes("ru");
 
     const channel = await prisma.agentChannel.upsert({
       where: { key: "demo" },

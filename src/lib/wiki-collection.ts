@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { activePageWhere } from "@/lib/page-query";
+import { activePageWhere, wikiPageWhere } from "@/lib/page-query";
 import { buildPathTree, type PathTreeNode } from "@/lib/page-tree";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
@@ -242,7 +242,7 @@ export function formatWikiDate(date: Date, lang: string): string {
 
 async function loadLangPages(lang: string): Promise<WikiTreePage[]> {
   return prisma.page.findMany({
-    where: { lang, isPublished: true, ...activePageWhere },
+    where: { lang, isPublished: true, ...wikiPageWhere },
     orderBy: [{ navOrder: "asc" }, { title: "asc" }],
     take: 600,
     select: {

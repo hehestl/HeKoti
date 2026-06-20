@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { invalidateSearchLangCache, invalidateWikiLangCache } from "@/lib/cache";
-import { activePageWhere } from "@/lib/page-query";
+import { wikiPageWhere } from "@/lib/page-query";
 import { counterpartPath, findPageCounterpart } from "@/lib/page-counterparts";
 import { softDeletePageCascade } from "@/lib/page-trash";
 import { getEnabledLanguages } from "@/lib/site-config";
@@ -17,7 +17,7 @@ import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 
 async function loadActivePages(lang: string): Promise<ArchPageRef[]> {
   return prisma.page.findMany({
-    where: { lang, ...activePageWhere },
+    where: { lang, ...wikiPageWhere },
     select: {
       id: true,
       path: true,
@@ -41,13 +41,13 @@ async function applyCreate(
   for (const targetLang of langsToCreate) {
     const path = targetLang === op.lang ? op.path : counterpartPath(op.path, op.lang, targetLang);
     const existing = await prisma.page.findFirst({
-      where: { lang: targetLang, path, ...activePageWhere },
+      where: { lang: targetLang, path, ...wikiPageWhere },
     });
     if (existing) continue;
 
     await prisma.$transaction(async (tx) => {
       const existingSameLang = await tx.page.findMany({
-        where: { lang: targetLang, ...activePageWhere },
+        where: { lang: targetLang, ...wikiPageWhere },
         select: { path: true, navOrder: true },
       });
       const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, targetLang));
@@ -59,7 +59,7 @@ async function applyCreate(
         targetLang === op.lang
           ? null
           : await tx.page.findFirst({
-              where: { lang: op.lang, path: op.path, ...activePageWhere },
+              where: { lang: op.lang, path: op.path, ...wikiPageWhere },
             });
 
       const row = await tx.page.create({

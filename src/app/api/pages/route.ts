@@ -8,7 +8,8 @@ import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
-import { activePageWhere } from "@/lib/page-query";
+import { activePageWhere, wikiPageWhere } from "@/lib/page-query";
+import type { PageScope } from "@prisma/client";
 
 const createSchema = z.object({
   lang: z.string().min(2).max(8),
@@ -19,7 +20,13 @@ const createSchema = z.object({
   isCategory: z.boolean().default(false),
   icon: z.string().min(1).max(32).optional().nullable(),
   slug: z.string().min(1).optional(),
+  scope: z.enum(["WIKI", "NOTES"]).default("WIKI"),
 });
+
+function normalizeNotesParentParts(parts: string[]): string[] {
+  if (parts.length === 0 || parts[0] !== "notes") return ["notes", ...parts.filter((p) => p !== "notes")];
+  return parts;
+}
 
 const cloneSchema = z.object({
   sourcePath: z.string().min(4),
@@ -46,7 +53,7 @@ export async function GET(request: Request) {
     where: {
       lang,
       isPublished: true,
-      ...activePageWhere,
+      ...wikiPageWhere,
       ...buildSearchWhere(terms),
     },
     orderBy: { updatedAt: "desc" },
@@ -66,14 +73,14 @@ export async function POST(request: Request) {
       const payload = cloneSchema.parse(raw);
       const sourcePath = String(payload.sourcePath);
       const targetLang = String(payload.targetLang);
-      const source = await prisma.page.findFirst({ where: { path: sourcePath, ...activePageWhere } });
+      const source = await prisma.page.findFirst({ where: { path: sourcePath, ...wikiPageWhere } });
       if (!source) {
         return NextResponse.json({ ok: false, message: "Source page not found." }, { status: 404 });
       }
 
       const tail = sourcePath.replace(/^\/[^/]+/, "");
       const targetPath = `/${targetLang}${tail}`;
-      const existing = await prisma.page.findFirst({ where: { lang: targetLang, path: targetPath, ...activePageWhere } });
+      const existing = await prisma.page.findFirst({ where: { lang: targetLang, path: targetPath, ...wikiPageWhere } });
       if (existing) {
         const redirectTo = payload.redirectTo || `/${targetLang}/admin?tab=posts&activePath=${encodeURIComponent(existing.path)}`;
         if (isFormRequest(request)) {
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
       const originalId = source.originalId ?? source.id;
       const page = await prisma.$transaction(async (tx) => {
         const existingSameLang = await tx.page.findMany({
-          where: { lang: targetLang, ...activePageWhere },
+          where: { lang: targetLang, ...wikiPageWhere },
           select: { path: true, navOrder: true },
         });
         const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, targetPath, targetLang));
@@ -131,12 +138,18 @@ export async function POST(request: Request) {
     if (payload.icon != null && payload.icon !== "" && !isWikiIconKey(payload.icon)) {
       return NextResponse.json({ ok: false, message: "Invalid icon key." }, { status: 400 });
     }
+    const scope = payload.scope as PageScope;
+    const isNotes = scope === "NOTES";
+    const parentPathParts = isNotes
+      ? normalizeNotesParentParts(payload.parentPathParts)
+      : payload.parentPathParts;
     const slug = payload.slug ? String(payload.slug) : toSlug(payload.title);
-    const path = normalizePath(payload.lang, [...payload.parentPathParts, slug]);
+    const path = normalizePath(payload.lang, [...parentPathParts, slug]);
+    const scopeWhere = isNotes ? { scope: "NOTES" as const, deletedAt: null } : wikiPageWhere;
 
     const page = await prisma.$transaction(async (tx) => {
       const existingSameLang = await tx.page.findMany({
-        where: { lang: payload.lang, ...activePageWhere },
+        where: { lang: payload.lang, ...scopeWhere },
         select: { path: true, navOrder: true },
       });
       const siblingPaths = new Set(getSiblingGroupPaths(existingSameLang, path, payload.lang));
@@ -147,11 +160,12 @@ export async function POST(request: Request) {
           slug,
           lang: payload.lang,
           contentMd: payload.contentMd,
-          isPublished: payload.isPublished,
+          isPublished: isNotes ? false : payload.isPublished,
           isCategory: payload.isCategory,
           icon: payload.icon ?? null,
           path,
           navOrder: maxNav + 10,
+          scope,
         },
       });
       await tx.pageRevision.create({
@@ -166,7 +180,9 @@ export async function POST(request: Request) {
     });
     await invalidateWikiLangCache(payload.lang);
     await invalidateSearchLangCache(payload.lang);
-    await emitOutgoingWebhook("page.created", { pageId: page.id, path: page.path, published: page.isPublished });
+    if (!isNotes) {
+      await emitOutgoingWebhook("page.created", { pageId: page.id, path: page.path, published: page.isPublished });
+    }
     return NextResponse.json(page);
   } catch (error) {
     return NextResponse.json(

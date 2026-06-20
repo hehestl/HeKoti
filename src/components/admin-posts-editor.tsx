@@ -23,6 +23,7 @@ import { isMoveIntoDescendant, nextPagePath } from "@/lib/page-move";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { wikiPublicHref } from "@/lib/wiki-path";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
+import { normalizePath, validateSlugInput } from "@/lib/slug";
 import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 
 const inputStyle: CSSProperties = {
@@ -48,6 +49,15 @@ type PostsEditorContextValue = {
 
 const PostsEditorContext = createContext<PostsEditorContextValue | null>(null);
 
+export type AdminPagesStore = {
+  pagesByLang: AdminPagesByLang;
+  setPagesForLang: (lang: string, pages: AdminPageRow[]) => void;
+  upsertPage: (page: AdminPageRow) => void;
+  removePages: (ids: string[], lang: string) => void;
+  patchPageLocal: (id: string, lang: string, patch: Partial<AdminPageRow>) => void;
+  getPage: (id: string, lang: string) => AdminPageRow | undefined;
+};
+
 export function AdminPostsEditorProvider({
   uiLang,
   enabledLanguages,
@@ -58,6 +68,8 @@ export function AdminPostsEditorProvider({
   previewVisible,
   splitRatio,
   onSplitRatioChange,
+  variant = "posts",
+  pagesStore: pagesStoreProp,
   children,
 }: {
   uiLang: string;
@@ -69,12 +81,18 @@ export function AdminPostsEditorProvider({
   previewVisible: boolean;
   splitRatio: number;
   onSplitRatioChange: (ratio: number) => void;
+  variant?: "posts" | "notes";
+  pagesStore?: AdminPagesStore;
   children: ReactNode;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { pagesByLang, getPage, upsertPage, removePages, patchPageLocal, setPagesForLang } =
-    useAdminPages();
+  const wikiStore = useAdminPages();
+  const store = pagesStoreProp ?? wikiStore;
+  const { pagesByLang, getPage, upsertPage, removePages, patchPageLocal, setPagesForLang } = store;
+  const isNotes = variant === "notes";
+  const explorerLanguages = isNotes ? [uiLang] : enabledLanguages;
+  const scopeQuery = isNotes ? "&scope=notes" : "";
   const wb = dict.admin.workbench;
 
   const tabs = useAdminOpenTabs({
@@ -82,6 +100,7 @@ export function AdminPostsEditorProvider({
     getPage,
     initialActivePath,
     dirtyConfirm: wb.dirtyConfirm,
+    storageKey: isNotes ? "admin-open-tabs-notes" : "admin-open-tabs",
   });
 
   const [isPending, startTransition] = useTransition();
@@ -89,7 +108,12 @@ export function AdminPostsEditorProvider({
     null,
   );
   const [createTitle, setCreateTitle] = useState("");
-  const [renameModal, setRenameModal] = useState<{ id: string; lang: string; title: string } | null>(null);
+  const [renameModal, setRenameModal] = useState<{
+    id: string;
+    lang: string;
+    title: string;
+    slug: string;
+  } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
     id: string;
     lang: string;
@@ -117,7 +141,7 @@ export function AdminPostsEditorProvider({
 
   const refreshPagesForLang = useCallback(
     async (lang: string) => {
-      const res = await apiFetch(`/api/admin/pages?lang=${encodeURIComponent(lang)}`);
+      const res = await apiFetch(`/api/admin/pages?lang=${encodeURIComponent(lang)}${scopeQuery}`);
       if (!res.ok) return;
       const rows = (await res.json()) as AdminPageRow[];
       setPagesForLang(
@@ -127,21 +151,23 @@ export function AdminPostsEditorProvider({
           lang,
           icon: r.icon ?? null,
           isCategory: r.isCategory ?? false,
+          scope: r.scope ?? (isNotes ? "NOTES" : "WIKI"),
+          systemKey: r.systemKey ?? null,
         })),
       );
     },
-    [setPagesForLang],
+    [isNotes, scopeQuery, setPagesForLang],
   );
 
   const syncActivePathUrl = useCallback(
     (page?: AdminPageRow) => {
       if (!page) return;
       const params = new URLSearchParams(searchParams.toString());
-      params.set("tab", "posts");
+      params.set("tab", variant);
       params.set("activePath", page.path);
       router.replace(`/${uiLang}/admin?${params.toString()}`, { scroll: false });
     },
-    [router, searchParams, uiLang],
+    [router, searchParams, uiLang, variant],
   );
 
   const patchPageApi = useCallback(
@@ -150,6 +176,7 @@ export function AdminPostsEditorProvider({
       lang: string,
       patch: {
         title?: string;
+        slug?: string;
         contentMd?: string;
         isPublished?: boolean;
         isCategory?: boolean;
@@ -163,8 +190,12 @@ export function AdminPostsEditorProvider({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(patch),
       });
-      const body = (await res.json()) as AdminPageRow & { message?: string };
-      if (!res.ok) throw new Error(body.message || "Update failed");
+      const body = (await res.json()) as AdminPageRow & { message?: string; error?: string };
+      if (!res.ok) {
+        const err = new Error(body.message || "Update failed") as Error & { code?: string };
+        err.code = body.error;
+        throw err;
+      }
       const row = { ...body, lang };
       patchPageLocal(id, lang, row);
       return row;
@@ -181,15 +212,19 @@ export function AdminPostsEditorProvider({
         const saved = await patchPageApi(page.id, page.lang, {
           title: page.title,
           contentMd: page.contentMd,
-          isPublished: page.isPublished,
+          isPublished: isNotes ? false : page.isPublished,
         });
         tabs.markSaved(saved.id, saved.lang, saved);
-        setStatus(dict.admin.posts.saved);
+        setStatus(isNotes ? dict.admin.notes.idle : dict.admin.posts.saved);
       } catch (e) {
         setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
       }
     });
-  }, [dict.admin.posts, patchPageApi, setStatus, tabs]);
+  }, [dict.admin.notes, dict.admin.posts, isNotes, patchPageApi, setStatus, tabs]);
+
+  useEffect(() => {
+    if (isNotes) setStatus(dict.admin.notes.idle);
+  }, [dict.admin.notes.idle, isNotes, setStatus]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -211,6 +246,14 @@ export function AdminPostsEditorProvider({
     title: string,
     isCategory = false,
   ) => {
+    const normalizedParentParts = isNotes
+      ? parentPathParts.length === 0
+        ? ["notes"]
+        : parentPathParts[0] === "notes"
+          ? parentPathParts
+          : ["notes", ...parentPathParts]
+      : parentPathParts;
+
     const response = await apiFetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -221,7 +264,8 @@ export function AdminPostsEditorProvider({
         isPublished: false,
         isCategory,
         icon: isCategory ? "folder" : null,
-        parentPathParts,
+        parentPathParts: normalizedParentParts,
+        ...(isNotes ? { scope: "NOTES" } : {}),
       }),
     });
     if (!response.ok) {
@@ -235,6 +279,8 @@ export function AdminPostsEditorProvider({
       lang,
       icon: data.icon ?? null,
       isCategory: data.isCategory ?? isCategory,
+      scope: data.scope ?? (isNotes ? "NOTES" : "WIKI"),
+      systemKey: data.systemKey ?? null,
     };
     upsertPage(row);
     if (!isCategory) {
@@ -256,16 +302,45 @@ export function AdminPostsEditorProvider({
   const submitRename = async () => {
     if (!renameModal) return;
     const title = renameModal.title.trim();
-    if (!title) return;
-    patchPageLocal(renameModal.id, renameModal.lang, { title });
+    const slug = validateSlugInput(renameModal.slug);
+    if (!title || !slug) {
+      setStatus(dict.admin.posts.slugInvalid, "error");
+      return;
+    }
+    const page = getPage(renameModal.id, renameModal.lang);
+    if (!page) return;
+    const slugChanged = slug !== page.slug;
+
+    patchPageLocal(renameModal.id, renameModal.lang, { title, slug });
     try {
-      await patchPageApi(renameModal.id, renameModal.lang, { title });
+      const saved = await patchPageApi(renameModal.id, renameModal.lang, { title, slug });
+      if (slugChanged) {
+        await refreshPagesForLang(renameModal.lang);
+        tabs.openPageTab(saved);
+        syncActivePathUrl(saved);
+      }
       setStatus(dict.admin.posts.saved);
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
+      patchPageLocal(renameModal.id, renameModal.lang, { title: page.title, slug: page.slug });
+      const code = (e as Error & { code?: string }).code;
+      if (code === "SLUG_COLLISION") setStatus(dict.admin.posts.slugConflict, "error");
+      else if (code === "SLUG_INVALID") setStatus(dict.admin.posts.slugInvalid, "error");
+      else setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
     }
     setRenameModal(null);
   };
+
+  const renamePreviewPath = useMemo(() => {
+    if (!renameModal) return "";
+    const slug = validateSlugInput(renameModal.slug);
+    if (!slug) return "";
+    const page = getPage(renameModal.id, renameModal.lang);
+    if (!page) return "";
+    const parentParts = getParentParts(page.path, renameModal.lang);
+    return normalizePath(renameModal.lang, [...parentParts, slug]);
+  }, [getPage, getParentParts, renameModal]);
+
+  const renameSlugValid = renameModal ? validateSlugInput(renameModal.slug) !== null : true;
 
   const countDescendants = useCallback(
     (path: string, lang: string) =>
@@ -276,9 +351,13 @@ export function AdminPostsEditorProvider({
   const submitDelete = async () => {
     if (!deleteModal) return;
     const res = await apiFetch(`/api/pages/${deleteModal.id}`, { method: "DELETE" });
-    const body = (await res.json()) as { ok?: boolean; deletedIds?: string[]; message?: string };
+    const body = (await res.json()) as { ok?: boolean; deletedIds?: string[]; message?: string; error?: string };
     if (!res.ok || !body.ok) {
-      setStatus(body.message ?? dict.admin.posts.deleteFailed, "error");
+      const msg =
+        body.error === "SYSTEM_PAGE_PROTECTED"
+          ? dict.admin.notes.systemProtected
+          : (body.message ?? dict.admin.posts.deleteFailed);
+      setStatus(msg, "error");
       return;
     }
     const deletedIds = body.deletedIds?.length ? body.deletedIds : [deleteModal.id];
@@ -442,32 +521,34 @@ export function AdminPostsEditorProvider({
       },
       onRename: (id, lang) => {
         const page = getPage(id, lang);
-        if (page) setRenameModal({ id, lang, title: page.title });
+        if (!page || page.systemKey) return;
+        setRenameModal({ id, lang, title: page.title, slug: page.slug });
       },
       onDelete: (id, lang) => {
         const page = getPage(id, lang);
-        if (page) {
-          setDeleteModal({
-            id,
-            lang,
-            title: page.title,
-            childCount: countDescendants(page.path, lang),
-          });
-        }
+        if (!page || page.systemKey) return;
+        setDeleteModal({
+          id,
+          lang,
+          title: page.title,
+          childCount: countDescendants(page.path, lang),
+        });
       },
-      onTogglePublish: async (id, lang) => {
-        const page = getPage(id, lang);
-        if (!page) return;
-        const next = !page.isPublished;
-        patchPageLocal(id, lang, { isPublished: next });
-        try {
-          await patchPageApi(id, lang, { isPublished: next });
-          setStatus(dict.admin.posts.saved);
-        } catch (e) {
-          patchPageLocal(id, lang, { isPublished: page.isPublished });
-          setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
-        }
-      },
+      onTogglePublish: isNotes
+        ? undefined
+        : async (id, lang) => {
+            const page = getPage(id, lang);
+            if (!page) return;
+            const next = !page.isPublished;
+            patchPageLocal(id, lang, { isPublished: next });
+            try {
+              await patchPageApi(id, lang, { isPublished: next });
+              setStatus(dict.admin.posts.saved);
+            } catch (e) {
+              patchPageLocal(id, lang, { isPublished: page.isPublished });
+              setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
+            }
+          },
       onMoveByDrop: movePageByDrop,
       onAddChild: (id, lang) => {
         const page = getPage(id, lang);
@@ -493,8 +574,11 @@ export function AdminPostsEditorProvider({
       onRefresh: async (scope) => {
         setStatus(dict.admin.workbench.refreshing);
         try {
-          const url = scope === "all" ? "/api/admin/pages?all=1" : `/api/admin/pages?lang=${encodeURIComponent(scope)}`;
-          const res = await apiFetch(url);
+          const base =
+            scope === "all"
+              ? `/api/admin/pages?all=1${scopeQuery}`
+              : `/api/admin/pages?lang=${encodeURIComponent(scope)}${scopeQuery}`;
+          const res = await apiFetch(base);
           if (!res.ok) throw new Error(dict.admin.posts.failed);
           const data = (await res.json()) as AdminPageRow[] | AdminPagesByLang;
           if (scope === "all" && data && typeof data === "object" && !Array.isArray(data)) {
@@ -506,6 +590,8 @@ export function AdminPostsEditorProvider({
                   lang,
                   icon: r.icon ?? null,
                   isCategory: r.isCategory ?? false,
+                  scope: r.scope ?? (isNotes ? "NOTES" : "WIKI"),
+                  systemKey: r.systemKey ?? null,
                 })),
               );
             }
@@ -517,6 +603,8 @@ export function AdminPostsEditorProvider({
                 lang: scope,
                 icon: r.icon ?? null,
                 isCategory: r.isCategory ?? false,
+                scope: r.scope ?? (isNotes ? "NOTES" : "WIKI"),
+                systemKey: r.systemKey ?? null,
               })),
             );
           }
@@ -551,7 +639,13 @@ export function AdminPostsEditorProvider({
   );
 
   const explorer = (
-    <AdminExplorer pagesByLang={pagesByLang} enabledLanguages={enabledLanguages} dict={dict} actions={explorerActions} />
+    <AdminExplorer
+      pagesByLang={pagesByLang}
+      enabledLanguages={explorerLanguages}
+      dict={dict}
+      actions={explorerActions}
+      variant={variant}
+    />
   );
 
   const main = (
@@ -628,22 +722,48 @@ export function AdminPostsEditorProvider({
       ) : null}
       {renameModal ? (
         <ModalCard
-          title={dict.admin.posts.renamePrompt}
+          title={dict.admin.posts.rename}
           cancelLabel={dict.common.cancel}
           onCancel={() => setRenameModal(null)}
           onSubmit={() => void submitRename()}
           submitLabel={dict.common.save}
-          submitDisabled={!renameModal.title.trim()}
+          submitDisabled={!renameModal.title.trim() || !renameSlugValid}
         >
-          <input
-            style={{ ...inputStyle, width: "100%" }}
-            value={renameModal.title}
-            autoFocus
-            onChange={(e) => setRenameModal((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void submitRename();
-            }}
-          />
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+              {dict.admin.posts.renamePrompt}
+              <input
+                style={{ ...inputStyle, width: "100%" }}
+                value={renameModal.title}
+                autoFocus
+                onChange={(e) => setRenameModal((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void submitRename();
+                }}
+              />
+            </label>
+            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+              {dict.admin.posts.renameSlug}
+              <span style={{ color: "var(--muted)", fontSize: 12 }}>{dict.admin.posts.renameSlugHint}</span>
+              <input
+                style={{
+                  ...inputStyle,
+                  width: "100%",
+                  borderColor: renameSlugValid ? undefined : "#ff5f7d",
+                }}
+                value={renameModal.slug}
+                onChange={(e) => setRenameModal((prev) => (prev ? { ...prev, slug: e.target.value } : prev))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void submitRename();
+                }}
+              />
+            </label>
+            {renamePreviewPath ? (
+              <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>
+                {dict.admin.posts.renameSlugPreview.replace("{path}", renamePreviewPath)}
+              </p>
+            ) : null}
+          </div>
         </ModalCard>
       ) : null}
       {deleteModal ? (

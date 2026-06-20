@@ -17,6 +17,11 @@ enum PageReaction {
   LOVED
 }
 
+enum PageScope {
+  WIKI
+  NOTES
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String    @unique
@@ -54,6 +59,8 @@ model Page {
   icon         String?
   isCategory   Boolean        @default(false)
   isPublished  Boolean        @default(false)
+  scope        PageScope      @default(WIKI)
+  systemKey    String?
   parentId     String?
   originalId   String?
   deletedAt    DateTime?
@@ -65,9 +72,11 @@ model Page {
   ratings      PageRating[]
 
   @@index([lang, slug])
+  @@index([lang, scope])
   @@index([isCategory])
   @@index([deletedAt])
   @@index([lang, deletedAt])
+  @@unique([lang, systemKey])
 }
 
 model PageRevision {
@@ -122,6 +131,7 @@ model AgentMessage {
 model GlobalSettings {
   id                   String   @id @default("default")
   defaultLanguage      String   @default("en")
+  adminLanguage        String   @default("en")
   headHtml             String   @default("")
   bodyHtml             String   @default("")
   /** JSON array of enabled locale codes; empty = use ENABLED_LANGUAGES env. */
@@ -130,6 +140,18 @@ model GlobalSettings {
   aiAgentsJson         String   @default("")
   wikiTreeGuideColor   String?
   updatedAt            DateTime @updatedAt
+}
+
+model PageRedirect {
+  id        String   @id @default(uuid())
+  lang      String
+  fromPath  String
+  toPath    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([lang, fromPath])
+  @@index([expiresAt])
 }
 
 model AuditLog {

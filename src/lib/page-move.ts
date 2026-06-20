@@ -1,4 +1,5 @@
-import { normalizePath } from "@/lib/slug";
+import { normalizePath, validateSlugInput } from "@/lib/slug";
+import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 
 export function nextPagePath(lang: string, parentPathParts: string[], slug: string): string {
   return normalizePath(lang, [...parentPathParts, slug]);
@@ -52,4 +53,71 @@ export function planPageBranchMove(
   }
 
   return { oldPath, newPath, updates };
+}
+
+export type SlugRenamePathUpdate = { id: string; path: string; slug?: string };
+
+export type SlugRenamePlan = {
+  pathUpdates: SlugRenamePathUpdate[];
+  redirectPairs: { lang: string; oldPath: string; newPath: string }[];
+};
+
+export function collectSiblingSlugs(
+  pages: { id: string; slug: string; path: string }[],
+  pageId: string,
+  parentParts: string[],
+  lang: string,
+): string[] {
+  const parentKey = parentParts.join("/");
+  return pages
+    .filter((p) => {
+      if (p.id === pageId) return false;
+      const segs = pathSegmentsAfterLang(p.path, lang);
+      return segs.slice(0, -1).join("/") === parentKey;
+    })
+    .map((p) => p.slug);
+}
+
+export function planPageSlugRename(
+  page: { id: string; path: string; slug: string; lang: string },
+  newSlugInput: string,
+  descendants: PagePathRow[],
+  siblingSlugs: string[],
+): SlugRenamePlan {
+  const newSlug = validateSlugInput(newSlugInput);
+  if (!newSlug) throw new Error("SLUG_INVALID");
+  if (page.slug === newSlug) {
+    return { pathUpdates: [], redirectPairs: [] };
+  }
+  if (siblingSlugs.includes(newSlug)) throw new Error("SLUG_COLLISION");
+
+  const parentParts = pathSegmentsAfterLang(page.path, page.lang).slice(0, -1);
+  const plan = planPageBranchMove(
+    { id: page.id, path: page.path },
+    parentParts,
+    page.lang,
+    newSlug,
+    descendants,
+  );
+
+  const oldPathById = new Map<string, string>([
+    [page.id, page.path],
+    ...descendants.map((d) => [d.id, d.path] as const),
+  ]);
+
+  const pathUpdates: SlugRenamePathUpdate[] = plan.updates.map((u) => ({
+    id: u.id,
+    path: u.path,
+    ...(u.id === page.id ? { slug: newSlug } : {}),
+  }));
+
+  const redirectPairs = plan.updates
+    .map((u) => ({
+      lang: page.lang,
+      oldPath: oldPathById.get(u.id) ?? u.path,
+      newPath: u.path,
+    }))
+    .filter((r) => r.oldPath !== r.newPath);
+
+  return { pathUpdates, redirectPairs };
 }

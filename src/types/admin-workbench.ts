@@ -1,8 +1,9 @@
-export type AdminActivityTab = "posts" | "ai" | "settings" | "tech" | "architecture" | "trash";
+export type AdminActivityTab = "posts" | "notes" | "ai" | "settings" | "tech" | "architecture" | "trash";
 
 export type AdminPageRow = {
   id: string;
   title: string;
+  slug: string;
   path: string;
   contentMd: string;
   isPublished: boolean;
@@ -10,6 +11,8 @@ export type AdminPageRow = {
   lang: string;
   icon: string | null;
   isCategory: boolean;
+  scope: "WIKI" | "NOTES";
+  systemKey: string | null;
 };
 
 export type AdminOpenTab = {

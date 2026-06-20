@@ -73,6 +73,8 @@
     "workbench": {
       "activityBarAria": "Admin sections",
       "activityPosts": "Posts",
+      "activityNotes": "Notes",
+      "activityNotesBadge": "INTERNAL",
       "activityAi": "AI agents",
       "activitySettings": "Settings",
       "activityTech": "Tech",
@@ -143,7 +145,7 @@
       "aiFailed": "AI title translation failed.",
       "aiDone": "Titles updated: {updated}, created: {created}.",
       "noRootPage": "No pages in this language to localize.",
-      "slugHint": "Syntax: Title [my-slug] (or .md for articles). No brackets = auto slug. Existing page slug changes only via Explorer."
+      "slugHint": "Syntax: Title [my-slug] (or .md for articles). No brackets = auto slug. Change existing page slugs via Explorer context menu Rename."
     },
     "accountSettings": "Account Settings",
     "globalSettings": "Global Settings",
@@ -205,6 +207,11 @@
       "deleted": "Deleted",
       "rename": "Rename",
       "renamePrompt": "New title",
+      "renameSlug": "Slug",
+      "renameSlugHint": "URL segment. Latin letters, digits, hyphen only.",
+      "renameSlugPreview": "New path: {path}",
+      "slugInvalid": "Invalid slug",
+      "slugConflict": "A page with this slug already exists",
       "publishToggle": "Toggle publish",
       "dragHint": "Drag to reorder or nest",
       "changeIcon": "Change icon",
@@ -255,6 +262,11 @@
       "treeExpandBranch": "Expand",
       "treeCollapseBranch": "Collapse",
       "pagesTreeAria": "Published pages tree"
+    },
+    "notes": {
+      "idle": "Internal notes",
+      "systemProtected": "System note is protected",
+      "internalBadge": "INTERNAL"
     },
     "editor": {
       "postPrompt": "Post path for /post: e.g. h2 or parent/child",
@@ -381,6 +393,9 @@
     },
     "administration": {
       "title": "Administration",
+      "adminLanguage": "Admin UI language",
+      "adminLanguageHint": "Language of the admin panel interface",
+      "adminLanguageFallback": "Translation missing; English is used",
       "languagesHint": "Enabled wiki languages (click to toggle)",
       "agentsHint": "AI agents for chat and localization (click to toggle)",
       "langOn": "Language enabled",

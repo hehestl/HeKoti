@@ -1,12 +1,13 @@
 "use client";
 
-import { Bot, FileText, Layers, Settings, Trash2, Wrench } from "lucide-react";
+import { Bot, FileText, Layers, Settings, StickyNote, Trash2, Wrench } from "lucide-react";
 import { HekotiMascotMenu } from "@/components/hekoti-mascot-menu";
 import { ThemeModeToggle } from "@/components/theme-mode-toggle";
 import type { AdminActivityTab } from "@/types/admin-workbench";
 
 const mainItems: { id: AdminActivityTab; icon: typeof FileText }[] = [
   { id: "posts", icon: FileText },
+  { id: "notes", icon: StickyNote },
   { id: "ai", icon: Bot },
   { id: "settings", icon: Settings },
   { id: "tech", icon: Wrench },
@@ -44,11 +45,12 @@ export function AdminActivityBar({
 }) {
   const labels: Record<AdminActivityTab, string> = {
     posts: dict.admin.workbench.activityPosts ?? dict.common.posts,
+    notes: dict.admin.workbench.activityNotes,
     ai: dict.admin.workbench.activityAi ?? dict.common.aiAgents,
     settings: dict.admin.workbench.activitySettings ?? dict.common.settings,
     tech: dict.admin.workbench.activityTech ?? dict.common.administration,
-    architecture: dict.admin.workbench.activityArchitecture ?? "Architecture",
-    trash: dict.admin.workbench.activityTrash ?? "Trash",
+    architecture: dict.admin.workbench.activityArchitecture,
+    trash: dict.admin.workbench.activityTrash,
   };
 
   const renderBtn = (id: AdminActivityTab, Icon: typeof FileText) => {
@@ -64,12 +66,15 @@ export function AdminActivityBar({
         onClick={() => onActivityChange(id)}
       >
         <Icon size={22} strokeWidth={1.75} aria-hidden />
+        {id === "notes" && active ? (
+          <span className="admin-activity-internal-badge">{dict.admin.workbench.activityNotesBadge}</span>
+        ) : null}
       </button>
     );
   };
 
   return (
-    <nav className="admin-activity-bar" aria-label={dict.admin.workbench.activityBarAria ?? "Admin sections"}>
+    <nav className="admin-activity-bar" aria-label={dict.admin.workbench.activityBarAria}>
       <HekotiMascotMenu
         lang={lang}
         isAdmin
@@ -79,7 +84,7 @@ export function AdminActivityBar({
         showOpenSite
         openSiteLabel={dict.admin.workbench.openOnSite}
         adminLabel={dict.admin.workbench.mascotAdmin ?? dict.common.administration}
-        versionLabel={dict.admin.workbench.mascotVersion ?? "Version"}
+        versionLabel={dict.admin.workbench.mascotVersion}
       />
       <div className="admin-activity-items">
         {mainItems.map(({ id, icon }) => renderBtn(id, icon))}

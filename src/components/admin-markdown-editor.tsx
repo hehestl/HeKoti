@@ -1,8 +1,9 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import type * as monaco from "monaco-editor";
 import {
   insertAtCursor,
@@ -44,10 +45,32 @@ type LinkModalState =
   | { mode: "url"; url: string; label: string; error: string };
 
 export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, height = "60vh" }: Props) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const edRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monRef = useRef<typeof monaco | null>(null);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
+  const [measuredHeight, setMeasuredHeight] = useState(120);
+  const { resolvedTheme } = useTheme();
+  const fillParent = height === "100%";
+  const monacoTheme = resolvedTheme === "dark" ? "vs-dark" : "vs";
+
+  useEffect(() => {
+    if (!fillParent) return;
+    const host = hostRef.current;
+    if (!host) return;
+
+    const syncHeight = () => {
+      const next = host.clientHeight;
+      if (next > 0) setMeasuredHeight(next);
+      edRef.current?.layout();
+    };
+
+    syncHeight();
+    const ro = new ResizeObserver(syncHeight);
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [fillParent]);
 
   const withEd = useCallback((fn: (ed: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => void) => {
     const ed = edRef.current;
@@ -203,17 +226,24 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     ];
   }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertWikiLink, insertWikiPost]);
 
+  const monacoHeight = fillParent ? measuredHeight : height;
+
   return (
-    <div className="admin-monaco-wrap" style={{ height, minHeight: 120 }}>
-      <div className="admin-monaco-editor-host">
+    <div
+      className={`admin-monaco-wrap${fillParent ? " admin-monaco-wrap-fill" : ""}`}
+      style={fillParent ? { minHeight: 120 } : { height, minHeight: 120 }}
+    >
+      <div className="admin-monaco-editor-host" ref={hostRef}>
         <MonacoEditor
-          height="100%"
+          height={monacoHeight}
           language="markdown"
+          theme={monacoTheme}
           value={value}
           onChange={(v) => onChange(v ?? "")}
           onMount={(editor, m) => {
             edRef.current = editor;
             monRef.current = m;
+            requestAnimationFrame(() => editor.layout());
             editor.onContextMenu((e) => {
               e.event.preventDefault();
               e.event.stopPropagation();

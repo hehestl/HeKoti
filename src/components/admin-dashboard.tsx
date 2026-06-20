@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminAccountSettings } from "@/components/admin-account-settings";
 import { AdminAgentChat } from "@/components/admin-agent-chat";
-import { AdminEditorExplorer, AdminEditorMain, AdminPostsEditorProvider } from "@/components/admin-editor";
+import { AdminEditorExplorer, AdminEditorMain, AdminNotesEditorProvider, AdminPostsEditorProvider } from "@/components/admin-editor";
+import { AdminNotesPagesProvider } from "@/components/admin-workbench/admin-notes-pages-provider";
 import { AdminTotpSettings, type TotpStatus } from "@/components/admin-totp-settings";
 import { AdminGlobalSettings } from "@/components/admin-global-settings";
 import { AdminSiteConfig } from "@/components/admin-site-config";
@@ -51,6 +52,8 @@ function AdminWorkbenchInner({
   knownLanguages,
   aiAgents,
   onStatusChange,
+  initialAdminLanguage,
+  messageLocales,
 }: {
   tab: AdminActivityTab;
   setTab: (t: AdminActivityTab) => void;
@@ -74,9 +77,11 @@ function AdminWorkbenchInner({
   knownLanguages: string[];
   aiAgents: AgentRow[];
   onStatusChange: (text: string, tone: "neutral" | "error") => void;
+  initialAdminLanguage: string;
+  messageLocales: string[];
 }) {
   const sidebar =
-    tab === "posts" ? (
+    tab === "posts" || tab === "notes" ? (
       <AdminEditorExplorer />
     ) : tab === "trash" || tab === "architecture" ? null : (
       <AdminActivitySidebar
@@ -88,7 +93,7 @@ function AdminWorkbenchInner({
     );
 
   const main =
-    tab === "posts" ? (
+    tab === "posts" || tab === "notes" ? (
       <AdminEditorMain />
     ) : tab === "trash" ? (
       <AdminTrashView enabledLanguages={enabledLanguages} dict={dict} onStatusChange={(t, tone) => onStatusChange(t, tone ?? "neutral")} />
@@ -126,6 +131,8 @@ function AdminWorkbenchInner({
         tech={tech}
         initialKnownLanguages={knownLanguages}
         initialEnabledLanguages={enabledLanguages}
+        initialAdminLanguage={initialAdminLanguage}
+        messageLocales={messageLocales}
         initialAgents={aiAgents}
       />
     );
@@ -151,6 +158,7 @@ export function AdminDashboard({
   initialLogin,
   initialTotpStatus,
   initialPagesByLang,
+  initialNotesByLang,
   initialMessages,
   initialActiveAgentId,
   dict,
@@ -164,11 +172,14 @@ export function AdminDashboard({
   tech,
   initialTab,
   initialActivePath,
+  initialAdminLanguage,
+  messageLocales,
 }: {
   lang: string;
   initialLogin: string;
   initialTotpStatus: TotpStatus;
   initialPagesByLang: AdminPagesByLang;
+  initialNotesByLang: AdminPagesByLang;
   initialMessages: Msg[];
   initialActiveAgentId: string | null;
   dict: Dictionary;
@@ -182,6 +193,8 @@ export function AdminDashboard({
   tech: TechInfo;
   initialTab: AdminActivityTab;
   initialActivePath?: string;
+  initialAdminLanguage: string;
+  messageLocales: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -198,6 +211,7 @@ export function AdminDashboard({
       raw === "ai" ||
       raw === "settings" ||
       raw === "posts" ||
+      raw === "notes" ||
       raw === "tech" ||
       raw === "architecture" ||
       raw === "trash"
@@ -243,6 +257,8 @@ export function AdminDashboard({
     knownLanguages,
     aiAgents,
     onStatusChange,
+    initialAdminLanguage,
+    messageLocales,
   };
 
   return (
@@ -261,6 +277,20 @@ export function AdminDashboard({
         >
           <AdminWorkbenchInner {...innerProps} />
         </AdminPostsEditorProvider>
+      ) : tab === "notes" ? (
+        <AdminNotesPagesProvider initialPagesByLang={initialNotesByLang}>
+          <AdminNotesEditorProvider
+            uiLang={lang}
+            dict={dict}
+            initialActivePath={initialActivePath}
+            onStatusChange={onStatusChange}
+            previewVisible={workbenchUi.previewVisible}
+            splitRatio={workbenchUi.splitRatio}
+            onSplitRatioChange={workbenchUi.updateSplitRatio}
+          >
+            <AdminWorkbenchInner {...innerProps} />
+          </AdminNotesEditorProvider>
+        </AdminNotesPagesProvider>
       ) : (
         <AdminWorkbenchInner {...innerProps} />
       )}

@@ -7,6 +7,7 @@ import {
   FilePlus,
   FolderPlus,
   FoldVertical,
+  Lock,
   RefreshCw,
   UnfoldVertical,
 } from "lucide-react";
@@ -81,7 +82,7 @@ export type AdminExplorerActions = {
   onSelectPage: (page: AdminPageRow) => void;
   onRename: (id: string, lang: string) => void;
   onDelete: (id: string, lang: string) => void;
-  onTogglePublish: (id: string, lang: string) => void;
+  onTogglePublish?: (id: string, lang: string) => void;
   onMoveByDrop: (
     fromId: string,
     lang: string,
@@ -143,12 +144,15 @@ export function AdminExplorer({
   enabledLanguages,
   dict,
   actions,
+  variant = "posts",
 }: {
   pagesByLang: AdminPagesByLang;
   enabledLanguages: string[];
   dict: Dictionary;
   actions: AdminExplorerActions;
+  variant?: "posts" | "notes";
 }) {
+  const isNotes = variant === "notes";
   const wb = dict.admin.workbench;
   const [expandedLangs, setExpandedLangs] = useState(() => new Set(enabledLanguages));
   const [openBranchesByLang, setOpenBranchesByLang] = useState<Record<string, Set<string>>>(() =>
@@ -231,7 +235,9 @@ export function AdminExplorer({
       { id: "sibling", label: wb.createArticle, onClick: () => actions.onAddSibling(page.id, page.lang) },
       { id: "child", label: dict.admin.posts.addChild, onClick: () => actions.onAddChild(page.id, page.lang) },
       { id: "cat", label: wb.createCategory, onClick: () => actions.onCreateCategory(page.lang, pathSegmentsAfterLang(page.path, page.lang)) },
-      { id: "rename", label: dict.admin.posts.rename, onClick: () => actions.onRename(page.id, page.lang) },
+      ...(page.systemKey
+        ? []
+        : [{ id: "rename", label: dict.admin.posts.rename, onClick: () => actions.onRename(page.id, page.lang) }]),
       {
         id: "icon",
         label: dict.admin.posts.changeIcon,
@@ -240,27 +246,37 @@ export function AdminExplorer({
           setIconPicker({ id: page.id, lang: page.lang, x: menuX, y: menuY });
         },
       },
-      {
-        id: "publish",
-        label: page.isPublished ? wb.unpublish : wb.publish,
-        onClick: () => actions.onTogglePublish(page.id, page.lang),
-      },
-      { id: "public", label: wb.openOnSite, onClick: () => actions.onOpenPublic(page) },
+      ...(actions.onTogglePublish
+        ? [
+            {
+              id: "publish",
+              label: page.isPublished ? wb.unpublish : wb.publish,
+              onClick: () => actions.onTogglePublish!(page.id, page.lang),
+            },
+          ]
+        : []),
+      ...(!isNotes ? [{ id: "public", label: wb.openOnSite, onClick: () => actions.onOpenPublic(page) }] : []),
       { id: "lift", label: dict.admin.posts.upLevel, onClick: () => actions.onLiftUp(page.id, page.lang) },
-      { id: "sep1", label: "", separator: true },
-      { id: "loc-branch", label: dict.admin.posts.aiLocalizeBranch, onClick: () => actions.onLocalizeBranch(page.id, page.lang) },
-      { id: "loc-all", label: dict.admin.posts.aiLocalizeAll, onClick: () => actions.onLocalizeAll(page.id, page.lang) },
+      ...(!isNotes
+        ? [
+            { id: "sep1", label: "", separator: true },
+            { id: "loc-branch", label: dict.admin.posts.aiLocalizeBranch, onClick: () => actions.onLocalizeBranch(page.id, page.lang) },
+            { id: "loc-all", label: dict.admin.posts.aiLocalizeAll, onClick: () => actions.onLocalizeAll(page.id, page.lang) },
+          ]
+        : []),
       { id: "sep2", label: "", separator: true },
-      { id: "delete", label: deleteLabel, danger: true, onClick: () => actions.onDelete(page.id, page.lang) },
+      ...(page.systemKey
+        ? [{ id: "protected", label: dict.admin.notes.systemProtected, disabled: true }]
+        : [{ id: "delete", label: deleteLabel, danger: true, onClick: () => actions.onDelete(page.id, page.lang) }]),
     ];
     },
-    [actions, dict.admin.posts, pagesByLang, wb],
+    [actions, dict.admin.notes, dict.admin.posts, isNotes, pagesByLang, wb],
   );
 
   const activeId = actions.activePageId ?? "";
 
   return (
-    <div className="admin-explorer">
+    <div className={`admin-explorer${isNotes ? " admin-notes-mode" : ""}`}>
       <div className="admin-explorer-header-row">
         <div className="admin-explorer-title">{wb.explorerTitle}</div>
         <ExplorerHeaderActions
@@ -359,6 +375,7 @@ export function AdminExplorer({
                     }}
                     onContextMenu={(page, x, y) => setRowMenu({ id: page.id, lang, x, y })}
                     onMoveByDrop={actions.onMoveByDrop}
+                    variant={variant}
                   />
                 )}
               </div>
@@ -456,6 +473,7 @@ function AdminPathTree({
   onSelect,
   onContextMenu,
   onMoveByDrop,
+  variant = "posts",
 }: {
   nodes: PathTreeNode<AdminPageRow>[];
   lang: string;
@@ -468,6 +486,7 @@ function AdminPathTree({
   onSelect: (id: string) => void;
   onContextMenu: (page: AdminPageRow, x: number, y: number) => void;
   onMoveByDrop: AdminExplorerActions["onMoveByDrop"];
+  variant?: "posts" | "notes";
 }) {
   return (
     <div className="admin-path-tree">
@@ -487,6 +506,7 @@ function AdminPathTree({
           onSelect={onSelect}
           onContextMenu={onContextMenu}
           onMoveByDrop={onMoveByDrop}
+          variant={variant}
         />
       ))}
     </div>
@@ -507,6 +527,7 @@ function AdminTreeBranch({
   onSelect,
   onContextMenu,
   onMoveByDrop,
+  variant = "posts",
 }: {
   node: PathTreeNode<AdminPageRow>;
   lang: string;
@@ -521,7 +542,9 @@ function AdminTreeBranch({
   onSelect: (id: string) => void;
   onContextMenu: (page: AdminPageRow, x: number, y: number) => void;
   onMoveByDrop: AdminExplorerActions["onMoveByDrop"];
+  variant?: "posts" | "notes";
 }) {
+  const isNotes = variant === "notes";
   const hasChildren = node.children.length > 0;
   const page = node.page;
   const isCategory = page?.isCategory === true;
@@ -603,7 +626,8 @@ function AdminTreeBranch({
         }}
       >
         <button type="button" className="admin-tree-label-btn" draggable={false} onClick={() => onSelect(page.id)} title={page.path}>
-          {!page.isPublished ? <span className="admin-tree-draft-dot" aria-hidden /> : null}
+          {!isNotes && !page.isPublished ? <span className="admin-tree-draft-dot" aria-hidden /> : null}
+          {page.systemKey ? <Lock size={12} aria-hidden className="admin-tree-system-lock" /> : null}
           <TreePageIcon icon={page.icon} isCategory={page.isCategory} />
           <span className="admin-tree-title">{page.title}</span>
         </button>
@@ -663,6 +687,7 @@ function AdminTreeBranch({
               onSelect={onSelect}
               onContextMenu={onContextMenu}
               onMoveByDrop={onMoveByDrop}
+              variant={variant}
             />
           ))}
         </div>

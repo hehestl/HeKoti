@@ -73,6 +73,8 @@
     "workbench": {
       "activityBarAria": "Разделы админки",
       "activityPosts": "Посты",
+      "activityNotes": "Заметки",
+      "activityNotesBadge": "INTERNAL",
       "activityAi": "AI-агенты",
       "activitySettings": "Настройки",
       "activityTech": "Тех. данные",
@@ -143,7 +145,7 @@
       "aiFailed": "Не удалось перевести названия через AI.",
       "aiDone": "Названия обновлены: {updated}, создано: {created}.",
       "noRootPage": "Нет страниц на этом языке для локализации.",
-      "slugHint": "Синтаксис: Название [my-slug] (или .md для статей). Без скобок — slug генерируется автоматически. Изменение slug существующих страниц — только через Explorer."
+      "slugHint": "Синтаксис: Название [my-slug] (или .md для статей). Без скобок — slug генерируется автоматически. Смена slug существующих страниц — ПКМ «Переименовать» в Explorer."
     },
     "accountSettings": "Настройки аккаунта",
     "globalSettings": "Глобальные настройки",
@@ -205,6 +207,11 @@
       "deleted": "Удалено",
       "rename": "Переименовать",
       "renamePrompt": "Новый заголовок",
+      "renameSlug": "Slug",
+      "renameSlugHint": "Часть URL. Только латинские буквы, цифры, дефис.",
+      "renameSlugPreview": "Новый путь: {path}",
+      "slugInvalid": "Некорректный slug",
+      "slugConflict": "Страница с таким slug уже существует",
       "publishToggle": "Опубликовать/снять с публикации",
       "dragHint": "Перетащить для изменения порядка или вложенности",
       "changeIcon": "Сменить иконку",
@@ -255,6 +262,11 @@
       "treeExpandBranch": "Развернуть",
       "treeCollapseBranch": "Свернуть",
       "pagesTreeAria": "Дерево опубликованных страниц"
+    },
+    "notes": {
+      "idle": "Внутренние заметки",
+      "systemProtected": "Системная заметка защищена",
+      "internalBadge": "INTERNAL"
     },
     "editor": {
       "postPrompt": "Путь статьи для /post: h2 или parent/child",
@@ -381,6 +393,9 @@
     },
     "administration": {
       "title": "Администрирование",
+      "adminLanguage": "Язык админки",
+      "adminLanguageHint": "Язык интерфейса панели управления",
+      "adminLanguageFallback": "Перевод отсутствует, используется английский",
       "languagesHint": "Включённые языки вики (клик — вкл/выкл)",
       "agentsHint": "AI-агенты для чата и локализации (клик — вкл/выкл)",
       "langOn": "Язык включён",

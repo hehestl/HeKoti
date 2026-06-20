@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { WikiArticleFooter } from "@/components/wiki-article-footer";
 import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
@@ -11,13 +11,15 @@ import { getSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/user-role";
 import { getCached, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
-import { activePageWhere } from "@/lib/page-query";
+import { wikiPageWhere } from "@/lib/page-query";
+import { getWikiShellProps } from "@/lib/wiki-shell-props";
 import { env } from "@/lib/env";
 import { getDictionary, safeLangAsync } from "@/lib/i18n";
 import { getEnabledLanguages } from "@/lib/site-config";
 import { renderWikiHtml } from "@/lib/markdown";
 import { normalizePath } from "@/lib/slug";
-import { getWikiShellProps } from "@/lib/wiki-shell-props";
+import { findActiveRedirect, maybePurgeExpiredRedirects } from "@/lib/page-redirect";
+import { wikiPublicHref } from "@/lib/wiki-path";
 import {
   breadcrumbChain,
   breadcrumbChainForPage,
@@ -84,7 +86,7 @@ export async function generateMetadata({
 
   const [page, tree, excerptByPath, dict] = await Promise.all([
     prisma.page.findFirst({
-      where: { lang, path, ...activePageWhere },
+      where: { lang, path, ...wikiPageWhere },
       select: { title: true, excerpt: true, isPublished: true },
     }),
     getLangPathTree(lang),
@@ -126,10 +128,17 @@ export default async function WikiPage({
 
   const path = normalizePath(lang, slug);
   const pagePath = wikiPagePath(lang, slug);
+
+  maybePurgeExpiredRedirects();
+  const activeRedirect = await findActiveRedirect(lang, path);
+  if (activeRedirect) {
+    redirect(wikiPublicHref(lang, activeRedirect.toPath));
+  }
+
   const isAdmin = !!user && isAdminRole(user.role);
 
   const [page, tree, excerptByPath, dict] = await Promise.all([
-    prisma.page.findFirst({ where: { lang, path, ...activePageWhere } }),
+    prisma.page.findFirst({ where: { lang, path, ...wikiPageWhere } }),
     getLangPathTree(lang),
     getExcerptByPath(lang),
     getDictionary(lang),
@@ -198,7 +207,7 @@ export default async function WikiPage({
     .map((l) => ({ lang: l, path: normalizePath(l, slug) }));
   const existing = await prisma.page.findMany({
     where: {
-      ...activePageWhere,
+      ...wikiPageWhere,
       OR: candidates.map((c) => ({ lang: c.lang, path: c.path })),
     },
     select: { lang: true, path: true, title: true, isPublished: true },

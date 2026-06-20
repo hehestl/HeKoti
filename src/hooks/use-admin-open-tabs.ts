@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminOpenTab, AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 
-const STORAGE_KEY = "admin-open-tabs";
+const STORAGE_KEY_POSTS = "admin-open-tabs";
+const STORAGE_KEY_NOTES = "admin-open-tabs-notes";
 
 type StoredTab = { pageId: string; lang: string };
 
-function loadStoredTabs(): StoredTab[] {
+function loadStoredTabs(storageKey: string): StoredTab[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as StoredTab[];
     return Array.isArray(parsed) ? parsed : [];
@@ -19,8 +20,13 @@ function loadStoredTabs(): StoredTab[] {
   }
 }
 
-function saveStoredTabs(tabs: StoredTab[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs));
+function saveStoredTabs(storageKey: string, tabs: StoredTab[]) {
+  localStorage.setItem(storageKey, JSON.stringify(tabs));
+}
+
+export function clearNotesOpenTabs() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(STORAGE_KEY_NOTES);
 }
 
 export function tabKey(pageId: string, lang: string) {
@@ -32,11 +38,13 @@ export function useAdminOpenTabs({
   getPage,
   initialActivePath,
   dirtyConfirm,
+  storageKey = STORAGE_KEY_POSTS,
 }: {
   pagesByLang: AdminPagesByLang;
   getPage: (id: string, lang: string) => AdminPageRow | undefined;
   initialActivePath?: string;
   dirtyConfirm: string;
+  storageKey?: string;
 }) {
   const [openTabs, setOpenTabs] = useState<AdminOpenTab[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
@@ -100,16 +108,16 @@ export function useAdminOpenTabs({
       }
     }
 
-    for (const st of loadStoredTabs()) {
+    for (const st of loadStoredTabs(storageKey)) {
       const page = getPage(st.pageId, st.lang);
       if (page) openPageTab(page);
     }
-  }, [getPage, initialActivePath, openPageTab, pagesByLang]);
+  }, [getPage, initialActivePath, openPageTab, pagesByLang, storageKey]);
 
   useEffect(() => {
     if (openTabs.length === 0) return;
-    saveStoredTabs(openTabs.map((t) => ({ pageId: t.pageId, lang: t.lang })));
-  }, [openTabs]);
+    saveStoredTabs(storageKey, openTabs.map((t) => ({ pageId: t.pageId, lang: t.lang })));
+  }, [openTabs, storageKey]);
 
   useEffect(() => {
     setOpenTabs((prev) =>

@@ -10,6 +10,25 @@
 
 ## [Unreleased]
 
+### Added
+
+- Admin: вкладка «Заметки» — внутреннее дерево без публикации в вики (`PageScope.NOTES`)
+- Admin: системные заметки `hekoti-welcome` и `hekoti-support` (неудаляемые)
+
+## [0.3.3] — 2026-06-20
+
+### Added
+
+- Admin: язык интерфейса в «Администрирование» (`GlobalSettings.adminLanguage`, кэш словарей)
+- Admin: переименование со slug в ПКМ Explorer (live-превью пути)
+- Wiki: редирект со старого URL 7 дней после смены slug (`PageRedirect`)
+
+### Fixed
+
+- Admin: текст статьи в Monaco-редакторе — ResizeObserver и измеренная высота вместо `height: 100%` в flex-layout workbench
+
+### Changed
+
 - Wiki: перемещение страницы вместе с вложенными (каскад path), без блокировки «есть дочерние»
 - Wiki: иконки категорий отображаются из пресета; пресет `coins`
 - Admin: Architecture — запоминание языка и «Зеркалировать структуру» в localStorage

@@ -5,10 +5,11 @@ import { getSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/user-role";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
 import { prisma } from "@/lib/db";
-import { safeLangAsync, getDictionary, getGlobalSettings } from "@/lib/i18n";
+import { getDictionary, getGlobalSettings, getAvailableMessageLocales } from "@/lib/i18n";
 import { getSiteConfig } from "@/lib/site-config";
 import { getAppVersion } from "@/lib/version";
-import { activePageWhere } from "@/lib/page-query";
+import { notesPageWhere, wikiPageWhere } from "@/lib/page-query";
+import { ensureSystemNotes } from "@/lib/system-notes";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import pkg from "../../../../package.json";
 
@@ -21,45 +22,79 @@ export default async function AdminPage({
 }) {
   const { lang: inputLang } = await params;
   const { tab: rawTab, activePath: rawActivePath } = await searchParams;
-  const [{ enabledLanguages, aiAgents, knownLanguages }, lang] = await Promise.all([
+  const [{ enabledLanguages, aiAgents, knownLanguages }, settings] = await Promise.all([
     getSiteConfig(),
-    safeLangAsync(inputLang),
+    getGlobalSettings(),
   ]);
-  const dict = await getDictionary(lang);
+  const adminLanguage = settings.adminLanguage;
+  if (inputLang !== adminLanguage) {
+    const qs = new URLSearchParams();
+    if (rawTab) qs.set("tab", rawTab);
+    if (rawActivePath) qs.set("activePath", rawActivePath);
+    const q = qs.toString();
+    redirect(`/${adminLanguage}/admin${q ? `?${q}` : ""}`);
+  }
+  const dict = await getDictionary(adminLanguage);
   const user = await getSessionUser();
-  if (!user) redirect(`/${lang}/login`);
-  if (!isAdminRole(user.role)) redirect(`/${lang}`);
+  if (!user) redirect(`/${adminLanguage}/login`);
+  if (!isAdminRole(user.role)) redirect(`/${adminLanguage}`);
 
   const initialTotpStatus =
     user.isTotpEnabled ? "enabled" : user.totpSecret ? "pending" : "off";
 
+  await ensureSystemNotes(adminLanguage);
+
+  const pageSelect = {
+    id: true,
+    title: true,
+    path: true,
+    contentMd: true,
+    isPublished: true,
+    navOrder: true,
+    icon: true,
+    slug: true,
+    isCategory: true,
+    scope: true,
+    systemKey: true,
+  } as const;
+
   const pagesByLangEntries = await Promise.all(
     enabledLanguages.map(async (pageLang) => {
       const rows = await prisma.page.findMany({
-        where: { lang: pageLang, ...activePageWhere },
+        where: { lang: pageLang, ...wikiPageWhere },
         orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
         take: 100,
-        select: {
-          id: true,
-          title: true,
-          path: true,
-          contentMd: true,
-          isPublished: true,
-          navOrder: true,
-          icon: true,
-          isCategory: true,
-        },
+        select: pageSelect,
       });
       const pages: AdminPageRow[] = rows.map((r) => ({
         ...r,
         lang: pageLang,
         icon: r.icon ?? null,
         isCategory: r.isCategory ?? false,
+        scope: r.scope,
+        systemKey: r.systemKey,
       }));
       return [pageLang, pages] as const;
     }),
   );
   const initialPagesByLang: AdminPagesByLang = Object.fromEntries(pagesByLangEntries);
+
+  const noteRows = await prisma.page.findMany({
+    where: { lang: adminLanguage, ...notesPageWhere },
+    orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
+    take: 300,
+    select: pageSelect,
+  });
+  const initialNotesByLang: AdminPagesByLang = {
+    [adminLanguage]: noteRows.map((r) => ({
+      ...r,
+      lang: adminLanguage,
+      icon: r.icon ?? null,
+      isCategory: r.isCategory ?? false,
+      scope: r.scope,
+      systemKey: r.systemKey,
+    })),
+  };
 
   const channel = await ensureDefaultChannel();
   const agentMessages = await prisma.agentMessage.findMany({
@@ -74,7 +109,7 @@ export default async function AdminPage({
     createdAt: item.createdAt.toISOString(),
   }));
 
-  const settings = await getGlobalSettings();
+  const messageLocales = getAvailableMessageLocales();
   const tech = {
     version: getAppVersion(),
     next: (pkg.dependencies as Record<string, string | undefined>)?.next ?? "",
@@ -90,6 +125,7 @@ export default async function AdminPage({
   }));
   const initialTab =
     rawTab === "posts" ||
+    rawTab === "notes" ||
     rawTab === "ai" ||
     rawTab === "settings" ||
     rawTab === "tech" ||
@@ -98,16 +134,17 @@ export default async function AdminPage({
       ? rawTab
       : "posts";
   const initialActivePath =
-    rawActivePath && rawActivePath.startsWith(`/${lang}/`) ? rawActivePath : undefined;
+    rawActivePath && rawActivePath.startsWith(`/${adminLanguage}/`) ? rawActivePath : undefined;
 
   return (
     <main className="admin-page-root">
       <Suspense fallback={<div style={{ color: "var(--muted)", padding: 12 }}>{dict.common.loading}</div>}>
         <AdminDashboard
-          lang={lang}
+          lang={adminLanguage}
           initialLogin={user.email}
           initialTotpStatus={initialTotpStatus}
           initialPagesByLang={initialPagesByLang}
+          initialNotesByLang={initialNotesByLang}
           initialMessages={initialMessages}
           initialActiveAgentId={channel.activeAgentId}
           dict={dict}
@@ -117,6 +154,8 @@ export default async function AdminPage({
           wikiTreeGuideColor={settings.wikiTreeGuideColor}
           enabledLanguages={enabledLanguages}
           knownLanguages={knownLanguages}
+          initialAdminLanguage={adminLanguage}
+          messageLocales={messageLocales}
           aiAgents={agentRows}
           tech={tech}
           initialTab={initialTab}

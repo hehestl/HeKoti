@@ -2,17 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getGlobalSettings } from "@/lib/i18n";
+import { ensureSystemNotes } from "@/lib/system-notes";
 import {
   buildAgentTogglesJson,
   buildEnabledLanguagesJson,
   getAiAgents,
-  getEnabledLanguages,
   getSiteConfig,
   knownLanguages,
 } from "@/lib/site-config";
 
 const patchSchema = z.object({
   enabledLanguages: z.array(z.string().min(2).max(12)).optional(),
+  adminLanguage: z.string().min(2).max(12).optional(),
   aiAgents: z
     .array(
       z.object({
@@ -26,11 +28,12 @@ const patchSchema = z.object({
 export async function GET() {
   try {
     await requireAdminUser();
-    const config = await getSiteConfig();
+    const [config, settings] = await Promise.all([getSiteConfig(), getGlobalSettings()]);
     return NextResponse.json({
       ok: true,
       knownLanguages,
       enabledLanguages: config.enabledLanguages,
+      adminLanguage: settings.adminLanguage,
       aiAgents: config.aiAgents.map((a) => ({
         id: a.id,
         title: a.title,
@@ -63,11 +66,22 @@ export async function PATCH(request: Request) {
       }
     }
 
+    if (body.adminLanguage && !knownLanguages.includes(body.adminLanguage)) {
+      return NextResponse.json({ ok: false, message: "Invalid admin language." }, { status: 400 });
+    }
+
     const currentAgents = await getAiAgents();
-    const update: { enabledLanguagesJson?: string; aiAgentsJson?: string } = {};
+    const update: {
+      enabledLanguagesJson?: string;
+      aiAgentsJson?: string;
+      adminLanguage?: string;
+    } = {};
 
     if (body.enabledLanguages) {
       update.enabledLanguagesJson = buildEnabledLanguagesJson(body.enabledLanguages);
+    }
+    if (body.adminLanguage) {
+      update.adminLanguage = body.adminLanguage;
     }
     if (body.aiAgents) {
       const toggleMap = new Map(body.aiAgents.map((a) => [a.id, a.enabled]));
@@ -88,10 +102,15 @@ export async function PATCH(request: Request) {
       create: { id: "default", ...update },
     });
 
-    const config = await getSiteConfig();
+    if (body.adminLanguage) {
+      await ensureSystemNotes(body.adminLanguage);
+    }
+
+    const [config, settings] = await Promise.all([getSiteConfig(), getGlobalSettings()]);
     return NextResponse.json({
       ok: true,
       enabledLanguages: config.enabledLanguages,
+      adminLanguage: settings.adminLanguage,
       aiAgents: config.aiAgents.map((a) => ({
         id: a.id,
         title: a.title,
