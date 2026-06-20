@@ -3,20 +3,36 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTypewriterPlaceholder } from "@/hooks/use-typewriter-placeholder";
 import { resolveSearchNavigation } from "@/lib/search-navigation";
 
 export function HelpCenterSearchForm({
   lang,
   placeholder,
   initialQuery = "",
+  searchSampleTitles = [],
+  enableTypewriterPlaceholder = false,
 }: {
   lang: string;
   placeholder: string;
   initialQuery?: string;
+  searchSampleTitles?: string[];
+  enableTypewriterPlaceholder?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
+  const [focused, setFocused] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const typewriterEnabled =
+    enableTypewriterPlaceholder && searchSampleTitles.length > 0 && !focused && query === "";
+
+  const { displayText, showCaret } = useTypewriterPlaceholder({
+    titles: searchSampleTitles,
+    enabled: typewriterEnabled,
+  });
+
+  const showTypewriter = typewriterEnabled;
 
   return (
     <form
@@ -32,17 +48,27 @@ export function HelpCenterSearchForm({
       }}
     >
       <Search size={18} strokeWidth={2} className="help-center-search-icon" aria-hidden />
-      <input
-        type="search"
-        className="help-center-search-input"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        autoComplete="off"
-        autoCorrect="off"
-        disabled={pending}
-      />
+      <div className="help-center-search-input-wrap">
+        <input
+          type="search"
+          className="help-center-search-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={showTypewriter ? "" : placeholder}
+          aria-label={placeholder}
+          autoComplete="off"
+          autoCorrect="off"
+          disabled={pending}
+        />
+        {showTypewriter ? (
+          <span className="help-center-search-typewriter" aria-hidden>
+            <span className="help-center-search-typewriter-text">{displayText}</span>
+            {showCaret ? <span className="help-center-search-typewriter-caret" /> : null}
+          </span>
+        ) : null}
+      </div>
     </form>
   );
 }

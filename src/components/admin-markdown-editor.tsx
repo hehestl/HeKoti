@@ -18,6 +18,8 @@ import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
 import type { Dictionary } from "@/lib/i18n";
 import { AdminBlockMenu, type BlockMenuType } from "@/components/admin-block-menu";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
+import { AdminMediaModal } from "@/components/admin-media-modal";
+import { DIAGRAM_TEMPLATES, type DiagramTemplateKey } from "@/lib/diagram-templates";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 const MonacoEditor = dynamic(() => import("@/components/admin-monaco"), { ssr: false });
 
@@ -56,6 +58,9 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
   const [blockMenu, setBlockMenu] = useState<{ x: number; y: number; line: number } | null>(null);
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
+  const [mediaModal, setMediaModal] = useState<"image" | "video" | null>(null);
+  const [diagramMenuOpen, setDiagramMenuOpen] = useState(false);
+  const diagramMenuRef = useRef<HTMLDivElement | null>(null);
   const [measuredHeight, setMeasuredHeight] = useState(120);
   const { resolvedTheme } = useTheme();
   const fillParent = height === "100%";
@@ -251,6 +256,33 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     setLinkModal(null);
   }, [dict.admin.editor, lang, linkModal, wikiPages, withEd]);
 
+  const insertMediaSnippet = useCallback(
+    (snippet: string) => {
+      withEd((ed, m) => insertSnippetBlock(ed, m, snippet));
+    },
+    [withEd],
+  );
+
+  const insertDiagramTemplate = useCallback(
+    (key: DiagramTemplateKey) => {
+      insertMediaSnippet(DIAGRAM_TEMPLATES[key]);
+      setDiagramMenuOpen(false);
+    },
+    [insertMediaSnippet],
+  );
+
+  useEffect(() => {
+    if (!diagramMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!diagramMenuRef.current?.contains(e.target as Node)) setDiagramMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [diagramMenuOpen]);
+
+  const openImageModal = useCallback(() => setMediaModal("image"), []);
+  const openVideoModal = useCallback(() => setMediaModal("video"), []);
+
   const insertDateTime = useCallback(() => {
     withEd((ed, m) =>
       insertAtCursor(
@@ -320,12 +352,15 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       { id: "callout", label: cm.callout, onClick: () => run("callout") },
       { id: "formula", label: cm.formula, onClick: () => run("formula") },
       { id: "sep3", label: "", separator: true },
+      { id: "image", label: cm.insertImage, onClick: () => { openImageModal(); setCtx(null); } },
+      { id: "video", label: cm.insertVideo, onClick: () => { openVideoModal(); setCtx(null); } },
+      { id: "sep4", label: "", separator: true },
       { id: "wiki", label: cm.wikiLink, onClick: () => { insertWikiLink(); setCtx(null); } },
       { id: "ext", label: cm.externalLink, onClick: () => { insertExternalLink(); setCtx(null); } },
       { id: "post", label: cm.insertPost, onClick: () => { insertWikiPost(); setCtx(null); } },
       { id: "date", label: cm.insertDateTime, onClick: () => { insertDateTime(); setCtx(null); } },
     ];
-  }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertWikiLink, insertWikiPost]);
+  }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertWikiLink, insertWikiPost, openImageModal, openVideoModal]);
 
   const monacoHeight = fillParent ? measuredHeight : height;
 
@@ -334,6 +369,41 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       className={`admin-monaco-wrap${fillParent ? " admin-monaco-wrap-fill" : ""}`}
       style={fillParent ? { minHeight: 120 } : { height, minHeight: 120 }}
     >
+      <div className="admin-markdown-editor-toolbar">
+        <button type="button" style={tbBtn} title={dict.admin.editor.media.imageTitle} onClick={openImageModal}>
+          {dict.admin.editor.media.imageBtn}
+        </button>
+        <button type="button" style={tbBtn} title={dict.admin.editor.media.videoTitle} onClick={openVideoModal}>
+          {dict.admin.editor.media.videoBtn}
+        </button>
+        <div className="admin-diagram-menu-wrap" ref={diagramMenuRef}>
+          <button
+            type="button"
+            style={tbBtn}
+            title={dict.admin.editor.diagramTitle}
+            aria-expanded={diagramMenuOpen}
+            onClick={() => setDiagramMenuOpen((v) => !v)}
+          >
+            {dict.admin.editor.diagram}
+          </button>
+          {diagramMenuOpen ? (
+            <div className="admin-diagram-menu" role="menu">
+              {(Object.keys(DIAGRAM_TEMPLATES) as DiagramTemplateKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="menuitem"
+                  className="admin-diagram-menu-item"
+                  onClick={() => insertDiagramTemplate(key)}
+                >
+                  {dict.admin.editor.diagramTemplates[key]}
+                </button>
+              ))}
+              <p className="admin-diagram-menu-hint">{dict.admin.editor.diagramHelp}</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
       <div className="admin-monaco-editor-host" ref={hostRef}>
         <MonacoEditor
           height={monacoHeight}
@@ -449,6 +519,14 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
             </div>
           </div>
         </div>
+      ) : null}
+      {mediaModal ? (
+        <AdminMediaModal
+          mode={mediaModal}
+          dict={dict}
+          onClose={() => setMediaModal(null)}
+          onInsert={insertMediaSnippet}
+        />
       ) : null}
     </div>
   );

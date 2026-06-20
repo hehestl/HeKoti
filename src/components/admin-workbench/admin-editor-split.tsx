@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
 import { apiFetch } from "@/lib/api-fetch";
 import { wikiPublicHref } from "@/lib/wiki-path";
 
@@ -22,7 +23,10 @@ export function AdminEditorSplit({
   splitRatio: number;
   onSplitRatioChange: (ratio: number) => void;
   editor: React.ReactNode;
-  dict: Record<string, string>;
+  dict: Record<string, string> & {
+    diagramCopy?: string;
+    diagramCopied?: string;
+  };
 }) {
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(false);
@@ -93,6 +97,10 @@ export function AdminEditorSplit({
             </div>
             <div className="admin-editor-split-preview-body">
               {loading ? <p className="admin-sidebar-hint">{dict.previewLoading}</p> : null}
+              <WikiDiagramEnhancer
+                copyLabel={dict.diagramCopy ?? "Copy diagram source"}
+                copiedLabel={dict.diagramCopied ?? "Copied"}
+              />
               <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: html }} />
             </div>
           </div>

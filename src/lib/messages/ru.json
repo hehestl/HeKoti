@@ -63,7 +63,9 @@
     "ratingNeutral": "Нормально",
     "ratingLoved": "Отлично",
     "tocNav": "На этой странице",
-    "tocNavToggle": "Оглавление"
+    "tocNavToggle": "Оглавление",
+    "diagramCopy": "Копировать код схемы",
+    "diagramCopied": "Скопировано"
   },
   "search": {
     "resultsTitle": "Результаты поиска «{q}»",
@@ -333,6 +335,15 @@
       "codeBlockTitle": "Блок кода",
       "formula": "f(x)",
       "formulaTitle": "Формула $$...$$",
+      "diagram": "Схема",
+      "diagramTitle": "Вставить Mermaid-схему",
+      "diagramHelp": "Блок ```mermaid или вставка SVG. Примеры: /wiki/diagrams",
+      "diagramTemplates": {
+        "flowchartLr": "Flowchart LR",
+        "flowchartTb": "Flowchart TB",
+        "sequence": "Sequence",
+        "state": "State"
+      },
       "post": "/post",
       "postTitle": "/post slug — подставится при показе статьи",
       "wiki": "Вики",
@@ -360,16 +371,57 @@
         "wikiLink": "Ссылка вики…",
         "externalLink": "Внешняя ссылка…",
         "insertPost": "Вставить /post …",
-        "insertDateTime": "Дата и время"
+        "insertDateTime": "Дата и время",
+        "insertImage": "Вставить изображение…",
+        "insertVideo": "Вставить видео…"
+      },
+      "media": {
+        "imageBtn": "Картинка",
+        "videoBtn": "Видео",
+        "imageTitle": "Вставить изображение",
+        "videoTitle": "Вставить видео",
+        "tabUpload": "Загрузка",
+        "tabGallery": "Галерея",
+        "tabUrl": "По URL",
+        "uploadImageHint": "JPEG, PNG, GIF или WebP до 10 МБ. Сохраняется как WebP.",
+        "uploadVideoHint": "MP4 или WebM до 100 МБ.",
+        "uploading": "Загрузка…",
+        "loading": "Загрузка…",
+        "empty": "Медиа пока нет. Сначала загрузите файл.",
+        "loadMore": "Ещё",
+        "insertSelected": "Вставить выбранные",
+        "urlPlaceholder": "https://…",
+        "altPlaceholder": "Подпись (alt), необязательно",
+        "defaultAlt": "изображение",
+        "urlRequired": "Укажите URL.",
+        "pickOne": "Выберите хотя бы один файл."
       }
     },
     "donate": {
       "title": "Поддержать Hekoti",
-      "desc": "Методы пожертвования настраиваются через переменные окружения.",
+      "desc": "Методы пожертвования настраиваются здесь (ПКМ по логотипу → Редактировать) или через переменные окружения как fallback.",
       "platforms": "Платформы",
       "noPlatforms": "Ссылки на платформы не настроены.",
       "crypto": "Криптокошельки",
-      "noCrypto": "Кошельки не настроены."
+      "noCrypto": "Кошельки не настроены.",
+      "contacts": "Контакты",
+      "noContacts": "Контакты не настроены.",
+      "edit": "Редактировать донат",
+      "exitEdit": "Выйти из редактирования",
+      "save": "Сохранить",
+      "saved": "Сохранено",
+      "saving": "Сохранение…",
+      "failed": "Ошибка сохранения",
+      "dirtyConfirm": "Отменить несохранённые изменения?",
+      "addPlatform": "Добавить платформу",
+      "addCrypto": "Добавить кошелёк",
+      "addContact": "Добавить контакт",
+      "removeRow": "Удалить",
+      "fieldTitle": "Название",
+      "fieldUrl": "URL",
+      "fieldAsset": "Актив",
+      "fieldNetwork": "Сеть",
+      "fieldAddress": "Адрес"
     },
     "auth": {
       "login": "Логин",

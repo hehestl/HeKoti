@@ -22,6 +22,11 @@ enum PageScope {
   NOTES
 }
 
+enum MediaKind {
+  IMAGE
+  VIDEO
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String    @unique
@@ -36,6 +41,7 @@ model User {
   pageRevisions  PageRevision[]
   agentMessages  AgentMessage[]
   pageRatings    PageRating[]
+  mediaAssets    MediaAsset[]
 }
 
 model Session {
@@ -140,6 +146,12 @@ model GlobalSettings {
   /** JSON array of {id, enabled} overrides for AI agents; empty = use AI_AGENTS_JSON env. */
   aiAgentsJson         String   @default("")
   wikiTreeGuideColor   String?
+  /** JSON donate platforms; empty = DONATE_LINKS_JSON env fallback. */
+  donateLinksJson      String   @default("")
+  /** JSON crypto wallets; empty = CRYPTO_DONATION_JSON env fallback. */
+  cryptoDonationJson   String   @default("")
+  /** JSON contact links on donate page. */
+  donateContactsJson   String   @default("")
   updatedAt            DateTime @updatedAt
 }
 
@@ -153,6 +165,25 @@ model PageRedirect {
 
   @@unique([lang, fromPath])
   @@index([expiresAt])
+}
+
+model MediaAsset {
+  id           String    @id @default(uuid())
+  storageKey   String    @unique
+  publicUrl    String
+  filename     String
+  mimeType     String
+  kind         MediaKind
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  uploadedById String
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([kind, deletedAt, createdAt])
+  @@index([uploadedById])
 }
 
 model AuditLog {

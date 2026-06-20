@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCached, invalidateSearchLangCache, invalidateWikiLangCache, setCached } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { requireAdminUser } from "@/lib/auth";
-import { normalizePath, toSlug } from "@/lib/slug";
+import { normalizePath, toSlug, validateSlugInput } from "@/lib/slug";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     const parentPathParts = isNotes
       ? normalizeNotesParentParts(payload.parentPathParts)
       : payload.parentPathParts;
-    const slug = payload.slug ? String(payload.slug) : toSlug(payload.title);
+    const slug = payload.slug ? (validateSlugInput(String(payload.slug)) ?? toSlug(payload.title)) : toSlug(payload.title);
     const path = normalizePath(payload.lang, [...parentPathParts, slug]);
     const scopeWhere = isNotes ? { scope: "NOTES" as const, deletedAt: null } : wikiPageWhere;
 

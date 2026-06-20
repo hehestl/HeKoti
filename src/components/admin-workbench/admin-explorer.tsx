@@ -25,6 +25,7 @@ import {
 import {
   buildPathTree,
   collectPathKeys,
+  pathKeysBranchingToTarget,
   pathKeysWithChildren,
 } from "@/lib/page-tree";
 import { useAdminExplorerSelection } from "@/hooks/use-admin-explorer-selection";
@@ -39,12 +40,16 @@ export function AdminExplorer({
   dict,
   actions,
   variant = "posts",
+  revealPagePath = null,
+  onRevealPageDone,
 }: {
   pagesByLang: AdminPagesByLang;
   enabledLanguages: string[];
   dict: Dictionary;
   actions: AdminExplorerActions;
   variant?: "posts" | "notes";
+  revealPagePath?: { lang: string; path: string } | null;
+  onRevealPageDone?: () => void;
 }) {
   const isNotes = variant === "notes";
   const storageVariant = isNotes ? "notes" : "posts";
@@ -103,6 +108,25 @@ export function AdminExplorer({
       pruneBranches(lang, pagesByLang[lang] ?? []);
     }
   }, [enabledLanguages, pagesByLang, pruneBranches]);
+
+  useEffect(() => {
+    if (!revealPagePath) return;
+    const { lang, path } = revealPagePath;
+    const tree = buildPathTree(pagesByLang[lang] ?? [], lang);
+    const keys = pathKeysBranchingToTarget(tree, path);
+    if (keys.size === 0) {
+      onRevealPageDone?.();
+      return;
+    }
+    setOpenBranchesByLang((prev) => {
+      const current = prev[lang] ?? new Set<string>();
+      const next = new Set([...current, ...keys]);
+      const merged = { ...prev, [lang]: next };
+      persistOpenBranches(merged, storageVariant);
+      return merged;
+    });
+    onRevealPageDone?.();
+  }, [revealPagePath, pagesByLang, storageVariant, onRevealPageDone]);
 
   const toggleLang = (lang: string) => {
     setExpandedLangs((prev) => {
@@ -232,7 +256,7 @@ export function AdminExplorer({
           const pages = pagesByLang[lang] ?? [];
           const expanded = expandedLangs.has(lang);
           const tree = buildPathTree(pages, lang);
-          const openBranches = openBranchesByLang[lang] ?? pathKeysWithChildren(tree);
+          const openBranches = openBranchesByLang[lang] ?? new Set<string>();
           return (
             <section key={lang} className="admin-explorer-lang-section">
               <div className="admin-explorer-header-row admin-explorer-lang-header-row">

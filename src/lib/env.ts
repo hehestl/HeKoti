@@ -24,6 +24,16 @@ const envSchema = z.object({
   AI_AGENTS_JSON: z.string().default("[]"),
   ASSETS_BASE_URL: z.string().default(""),
   LOCAL_UPLOAD_DIR: z.string().default("public/uploads"),
+  MEDIA_STORAGE: z.enum(["local", "s3"]).default("local"),
+  S3_ENDPOINT: z.string().optional(),
+  S3_REGION: z.string().default("us-east-1"),
+  S3_BUCKET: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_PUBLIC_URL: z.string().optional(),
+  MEDIA_MAX_IMAGE_BYTES: z.coerce.number().default(10 * 1024 * 1024),
+  MEDIA_MAX_VIDEO_BYTES: z.coerce.number().default(100 * 1024 * 1024),
+  MEDIA_PRESIGN_TTL_SECONDS: z.coerce.number().default(900),
   /** Optional LanguageTool HTTP API (e.g. http://hekoti-languagetool:8010). */
   LANGUAGETOOL_URL: z.string().optional(),
   /**

@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -16,7 +17,11 @@ import type {
   WikiInlineEditLabels,
   WikiPageBrief,
 } from "@/components/wiki-inline-edit-types";
-import { pageDraftEquals, useWikiInlineSave } from "@/hooks/use-wiki-inline-save";
+import {
+  mergeDraftAfterSave,
+  pageDraftEquals,
+  useWikiInlineSave,
+} from "@/hooks/use-wiki-inline-save";
 
 type WikiInlineEditContextValue = {
   canEdit: boolean;
@@ -59,6 +64,9 @@ export function WikiInlineEditProvider({
   const [statusTone, setStatusTone] = useState<"neutral" | "error">("neutral");
   const [wikiPages, setWikiPages] = useState<WikiPageBrief[]>([]);
   const registeredIdRef = useRef<string | null>(null);
+  const lastRegisteredPageRef = useRef<EditableWikiPage | null>(null);
+  const isEditingRef = useRef(false);
+  isEditingRef.current = isEditing;
 
   const setStatus = useCallback((text: string, tone: "neutral" | "error" = "neutral") => {
     setStatusText(text);
@@ -69,7 +77,8 @@ export function WikiInlineEditProvider({
 
   const registerPage = useCallback((page: EditableWikiPage) => {
     registeredIdRef.current = page.id;
-    if (!isEditing) {
+    lastRegisteredPageRef.current = page;
+    if (!isEditingRef.current) {
       setEditablePage(page);
       setBaseline(page);
       setDraft(null);
@@ -77,14 +86,15 @@ export function WikiInlineEditProvider({
     }
     setEditablePage((prev) => (prev?.id === page.id ? prev : page));
     setBaseline((prev) => (prev?.id === page.id ? prev : page));
-  }, [isEditing]);
+  }, []);
 
   const unregisterPage = useCallback(() => {
     registeredIdRef.current = null;
+    lastRegisteredPageRef.current = null;
     setEditablePage(null);
     setBaseline(null);
-    if (!isEditing) setDraft(null);
-  }, [isEditing]);
+    if (!isEditingRef.current) setDraft(null);
+  }, []);
 
   const loadWikiPages = useCallback(async (lang: string) => {
     try {
@@ -98,12 +108,14 @@ export function WikiInlineEditProvider({
   }, []);
 
   const startEdit = useCallback(() => {
-    if (!isAdmin || !editablePage) return;
-    const next = { ...editablePage };
+    const page = editablePage ?? lastRegisteredPageRef.current;
+    if (!isAdmin || !page) return;
+    const next = { ...page };
     setDraft(next);
     setBaseline(next);
     setIsEditing(true);
-    void loadWikiPages(editablePage.lang);
+    isEditingRef.current = true;
+    void loadWikiPages(page.lang);
   }, [editablePage, isAdmin, loadWikiPages]);
 
   const isDirty = useMemo(() => {
@@ -111,8 +123,16 @@ export function WikiInlineEditProvider({
     return !pageDraftEquals(draft, baseline);
   }, [baseline, draft]);
 
+  useEffect(() => {
+    if (!isEditing || draft || !editablePage) return;
+    const next = { ...editablePage };
+    setDraft(next);
+    setBaseline(next);
+  }, [draft, editablePage, isEditing]);
+
   const cancelEdit = useCallback(() => {
     if (isDirty && !window.confirm(labels.dirtyConfirm)) return;
+    isEditingRef.current = false;
     setIsEditing(false);
     setDraft(null);
     setStatusText("");
@@ -123,11 +143,13 @@ export function WikiInlineEditProvider({
   const saveNow = useCallback(
     async (opts?: { silent?: boolean }) => {
       if (!draft || !baseline) return false;
-      const saved = await saveDraft(draft, baseline, opts);
+      const snapshot = draft;
+      const baselineSnapshot = baseline;
+      const saved = await saveDraft(snapshot, baselineSnapshot, opts);
       if (!saved) return false;
-      setDraft(saved);
+      setDraft((cur) => (cur ? mergeDraftAfterSave(cur, snapshot, saved) : saved));
       setBaseline(saved);
-      setEditablePage(saved);
+      setEditablePage((cur) => (cur ? mergeDraftAfterSave(cur, snapshot, saved) : saved));
       return true;
     },
     [baseline, draft, saveDraft],

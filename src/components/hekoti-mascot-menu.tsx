@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
 import { useWikiInlineEditOptional } from "@/components/wiki-inline-edit-context";
+import { useDonateInlineEditOptional } from "@/components/donate-inline-edit-context";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
 export function HekotiMascotMenu({
@@ -37,7 +38,9 @@ export function HekotiMascotMenu({
   exitEditLabel?: string;
 }) {
   const router = useRouter();
-  const inlineEdit = useWikiInlineEditOptional();
+  const donateEdit = useDonateInlineEditOptional();
+  const wikiEdit = useWikiInlineEditOptional();
+  const inlineEdit = donateEdit?.canEdit ? donateEdit : wikiEdit;
   const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
 
   const onContextMenu = useCallback(

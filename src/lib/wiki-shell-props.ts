@@ -33,5 +33,7 @@ export async function getWikiShellProps(inputLang: string) {
       unpublish: dict.admin.workbench.unpublish,
       dirtyConfirm: dict.admin.workbench.dirtyConfirm,
     },
+    diagramCopyLabel: dict.article.diagramCopy,
+    diagramCopiedLabel: dict.article.diagramCopied,
   };
 }

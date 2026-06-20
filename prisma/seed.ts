@@ -112,6 +112,64 @@ Pages live under a language prefix, for example \`/en/about\`. Revisions are sto
 
 > Tip: run \`npm run db:seed\` (or \`tsx prisma/seed.ts\`) anytime to restore these demo pages without touching your admin password.`,
       },
+      {
+        path: "/en/diagrams",
+        title: "Diagrams in articles",
+        slug: "diagrams",
+        lang: "en",
+        excerpt: "Mermaid and SVG diagrams in wiki pages.",
+        contentMd: `# Diagrams
+
+Insert diagrams with a **Mermaid** code block or paste **SVG**.
+
+## Mermaid example
+
+\`\`\`mermaid
+flowchart LR
+  A[Start] --> B[End]
+\`\`\`
+alt: Simple flowchart
+
+## SVG fence
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" role="img">
+  <rect x="1" y="1" width="118" height="38" fill="none" stroke="currentColor"/>
+  <text x="60" y="24" text-anchor="middle" font-size="12">SVG</text>
+</svg>
+\`\`\`
+
+Use the **Diagram** button in the admin editor for templates.`,
+      },
+      {
+        path: "/ru/diagrams",
+        title: "Схемы в статьях",
+        slug: "diagrams",
+        lang: "ru",
+        excerpt: "Mermaid и SVG в страницах вики.",
+        contentMd: `# Схемы
+
+Вставляйте схемы блоком **Mermaid** или готовым **SVG**.
+
+## Пример Mermaid
+
+\`\`\`mermaid
+flowchart LR
+  A[Старт] --> B[Конец]
+\`\`\`
+alt: Простая блок-схема
+
+## Блок SVG
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" role="img">
+  <rect x="1" y="1" width="118" height="38" fill="none" stroke="currentColor"/>
+  <text x="60" y="24" text-anchor="middle" font-size="12">SVG</text>
+</svg>
+\`\`\`
+
+В админке — кнопка **Схема** с шаблонами.`,
+      },
     ];
 
     for (const row of samples) {

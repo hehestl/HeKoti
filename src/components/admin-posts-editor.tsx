@@ -1,15 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminExplorer } from "@/components/admin-workbench/admin-explorer";
 import { AdminPostsEditorMain } from "@/components/admin-posts-editor-main";
@@ -22,6 +14,7 @@ import { apiFetch } from "@/lib/api-fetch";
 import { exportArticleCsv, exportArticleMarkdown, exportArticlePdf } from "@/lib/article-export";
 import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
+import { toSlug } from "@/lib/slug";
 import type { AdminPageRow, AdminPagesByLang, AdminPagesStore } from "@/types/admin-workbench";
 
 type PostsEditorContextValue = {
@@ -84,6 +77,9 @@ export function AdminPostsEditorProvider({
     null,
   );
   const [createTitle, setCreateTitle] = useState("");
+  const [createSlug, setCreateSlug] = useState("");
+  const [createSlugManual, setCreateSlugManual] = useState(false);
+  const [revealPagePath, setRevealPagePath] = useState<{ lang: string; path: string } | null>(null);
   const [renameModal, setRenameModal] = useState<{
     id: string;
     lang: string;
@@ -187,6 +183,8 @@ export function AdminPostsEditorProvider({
     submitDelete,
     renamePreviewPath,
     renameSlugValid,
+    createPreviewPath,
+    createSlugValid,
     pagesForLang,
   } = useAdminPostsPageOps({
     dict,
@@ -208,6 +206,11 @@ export function AdminPostsEditorProvider({
     setCreateModal,
     createTitle,
     setCreateTitle,
+    createSlug,
+    setCreateSlug,
+    createSlugManual,
+    setCreateSlugManual,
+    setRevealPagePath,
     renameModal,
     setRenameModal,
     deleteModal,
@@ -219,6 +222,14 @@ export function AdminPostsEditorProvider({
     [active, pagesForLang],
   );
 
+  const onCreateTitleChange = useCallback(
+    (title: string) => {
+      setCreateTitle(title);
+      if (!createSlugManual) setCreateSlug(toSlug(title.trim()));
+    },
+    [createSlugManual],
+  );
+
   const explorer = (
     <AdminExplorer
       pagesByLang={pagesByLang}
@@ -226,6 +237,8 @@ export function AdminPostsEditorProvider({
       dict={dict}
       actions={explorerActions}
       variant={variant}
+      revealPagePath={revealPagePath}
+      onRevealPageDone={() => setRevealPagePath(null)}
     />
   );
 
@@ -245,10 +258,19 @@ export function AdminPostsEditorProvider({
       isPending={isPending}
       createModal={createModal}
       createTitle={createTitle}
-      onCreateTitleChange={setCreateTitle}
+      createSlug={createSlug}
+      createPreviewPath={createPreviewPath}
+      createSlugValid={createSlugValid}
+      onCreateTitleChange={onCreateTitleChange}
+      onCreateSlugChange={(slug) => {
+        setCreateSlugManual(true);
+        setCreateSlug(slug);
+      }}
       onCreateCancel={() => {
         setCreateModal(null);
         setCreateTitle("");
+        setCreateSlug("");
+        setCreateSlugManual(false);
       }}
       onCreateSubmit={() => void submitCreate()}
       renameModal={renameModal}

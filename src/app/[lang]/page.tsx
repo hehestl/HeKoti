@@ -5,7 +5,7 @@ import { WikiSearchResults } from "@/components/wiki-search-results";
 import { getSessionUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { safeLang, getDictionary } from "@/lib/i18n";
-import { getExcerptByPath, getLangPathTree } from "@/lib/wiki-collection";
+import { getExcerptByPath, getLangPathTree, getSamplePageTitles } from "@/lib/wiki-collection";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
 import { searchPublishedPages } from "@/lib/wiki-search";
 import Link from "next/link";
@@ -38,10 +38,11 @@ export default async function LanguageHome({
   const searchMode = qTrim.length > 0;
   const shell = await getWikiShellProps(lang);
 
-  const [pathTree, excerptByPath, searchResults] = await Promise.all([
+  const [pathTree, excerptByPath, searchResults, sampleTitles] = await Promise.all([
     getLangPathTree(lang),
     getExcerptByPath(lang),
     searchMode ? searchPublishedPages(lang, qTrim) : Promise.resolve([]),
+    getSamplePageTitles(lang),
   ]);
 
   const searchCrumbs = [
@@ -54,6 +55,8 @@ export default async function LanguageHome({
       {...shell}
       variant={searchMode ? "compact" : "home"}
       initialSearchQuery={searchMode ? qTrim : undefined}
+      searchSampleTitles={sampleTitles}
+      enableTypewriterPlaceholder={!searchMode}
     >
       {searchMode ? (
         <>

@@ -15,7 +15,9 @@ export function WikiPublicHeader({
   searchPlaceholder,
   languageAria,
   variant,
-  initialSearchQuery = "",
+  initialSearchQuery,
+  searchSampleTitles = [],
+  enableTypewriterPlaceholder = false,
   isAdmin = false,
   appVersion,
   adminLabel,
@@ -29,6 +31,8 @@ export function WikiPublicHeader({
   languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
+  searchSampleTitles?: string[];
+  enableTypewriterPlaceholder?: boolean;
   isAdmin?: boolean;
   appVersion?: string;
   adminLabel: string;
@@ -55,6 +59,8 @@ export function WikiPublicHeader({
             lang={lang}
             placeholder={searchPlaceholder}
             initialQuery={initialSearchQuery}
+            searchSampleTitles={searchSampleTitles}
+            enableTypewriterPlaceholder={enableTypewriterPlaceholder}
           />
         </div>
         <Suspense fallback={<LanguageSwitchFallback lang={lang} langs={langs} />}>

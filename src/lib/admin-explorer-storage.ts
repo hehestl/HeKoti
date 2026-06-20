@@ -82,8 +82,8 @@ export function loadOpenBranchesState(
     const valid = collectPathKeys(tree);
     const defaultOpen = pathKeysWithChildren(tree);
     const saved = stored[lang];
-    if (saved && saved.length > 0) {
-      next[lang] = new Set(saved.filter((k) => valid.has(k)));
+    if (Object.prototype.hasOwnProperty.call(stored, lang)) {
+      next[lang] = new Set((saved ?? []).filter((k) => valid.has(k)));
     } else {
       next[lang] = new Set(defaultOpen);
     }

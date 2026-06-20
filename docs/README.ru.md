@@ -39,6 +39,15 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `CRYPTO_DONATION_JSON`
 - `LANGUAGETOOL_URL` (опционально, контейнер `hekoti-languagetool` в Docker Compose)
 
+### Медиа (S3-compatible)
+
+- `MEDIA_STORAGE=local` — dev: файлы в `public/uploads` (том `hekoti_uploads` в Compose)
+- `MEDIA_STORAGE=s3` — prod: бинарники в bucket, в PostgreSQL только метаданные (`MediaAsset`)
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_URL`
+- `ASSETS_BASE_URL` — CDN для локального режима
+
+Пример MinIO: задайте `S3_ENDPOINT=https://minio.example.com`, `S3_PUBLIC_URL=https://cdn.example.com`, `forcePathStyle` включён автоматически при наличии endpoint.
+
 ## AI-агенты
 
 Можно сразу подключать несколько провайдеров через `AI_AGENTS_JSON`.
@@ -64,6 +73,10 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `GET|POST /api/pages`
 - `PATCH /api/pages/:id`
 - `POST /api/media/upload`
+- `POST /api/media/presign` — presigned PUT для видео (требует `MEDIA_STORAGE=s3`)
+- `POST /api/media/complete` — регистрация видео после прямой загрузки в S3
+- `GET /api/admin/media` — галерея медиа (метаданные в БД, файлы в S3 или `LOCAL_UPLOAD_DIR`)
+- `DELETE /api/admin/media/:id` — удаление файла и soft-delete записи
 - `POST /api/webhooks/incoming`
 - `GET /api/health` — сводная проверка (БД обязательна для `200`)
 - `GET /api/health/live`

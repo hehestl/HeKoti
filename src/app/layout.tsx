@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { getGlobalSettings } from "@/lib/i18n";
+import { MONACO_WORKERS_INLINE_SCRIPT } from "@/lib/monaco-workers-core";
 import { parseTelemetrySnippet } from "@/lib/telemetry-snippets";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: MONACO_WORKERS_INLINE_SCRIPT }} />
         {wikiTreeGuideColor ? (
           <style>{`:root { --wiki-tree-guide-color: ${wikiTreeGuideColor}; }`}</style>
         ) : null}

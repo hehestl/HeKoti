@@ -8,6 +8,20 @@ export function pageDraftEquals(a: EditableWikiPage, b: EditableWikiPage): boole
   return a.title === b.title && a.contentMd === b.contentMd && a.isPublished === b.isPublished;
 }
 
+/** After PATCH: apply server body only if the user did not change draft during the request. */
+export function mergeDraftAfterSave(
+  current: EditableWikiPage,
+  snapshot: EditableWikiPage,
+  saved: EditableWikiPage,
+): EditableWikiPage {
+  return pageDraftEquals(current, snapshot) ? saved : current;
+}
+
+/** unregisterPage must read live isEditing via ref — stale closure would wipe draft in edit mode. */
+export function shouldClearDraftOnUnregister(isEditing: boolean): boolean {
+  return !isEditing;
+}
+
 export function useWikiInlineSave({
   labels,
   setStatus,

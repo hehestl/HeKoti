@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 import { isMoveIntoDescendant, nextPagePath } from "@/lib/page-move";
 import { pathSegmentsAfterLang, wikiPublicHref } from "@/lib/wiki-path";
-import { normalizePath, validateSlugInput } from "@/lib/slug";
+import { normalizePath, toSlug, validateSlugInput } from "@/lib/slug";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import type { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
 
@@ -52,6 +52,11 @@ export function useAdminPostsPageOps({
   setCreateModal,
   createTitle,
   setCreateTitle,
+  createSlug,
+  setCreateSlug,
+  createSlugManual,
+  setCreateSlugManual,
+  setRevealPagePath,
   renameModal,
   setRenameModal,
   deleteModal,
@@ -76,12 +81,23 @@ export function useAdminPostsPageOps({
   setCreateModal: (v: CreateModal) => void;
   createTitle: string;
   setCreateTitle: (v: string) => void;
+  createSlug: string;
+  setCreateSlug: (v: string) => void;
+  createSlugManual: boolean;
+  setCreateSlugManual: (v: boolean) => void;
+  setRevealPagePath: (v: { lang: string; path: string } | null) => void;
   renameModal: RenameModal;
   setRenameModal: (v: RenameModal | ((prev: RenameModal) => RenameModal)) => void;
   deleteModal: DeleteModal;
   setDeleteModal: (v: DeleteModal) => void;
 }) {
   const pagesForLang = useCallback((lang: string) => pagesByLang[lang] ?? [], [pagesByLang]);
+
+  const resetCreateForm = useCallback(() => {
+    setCreateTitle("");
+    setCreateSlug("");
+    setCreateSlugManual(false);
+  }, [setCreateSlug, setCreateSlugManual, setCreateTitle]);
 
   const getParentParts = useCallback((path: string, lang: string) => {
     const segs = pathSegmentsAfterLang(path, lang);
@@ -92,6 +108,7 @@ export function useAdminPostsPageOps({
     lang: string,
     parentPathParts: string[],
     title: string,
+    slugInput: string,
     isCategory = false,
   ) => {
     const normalizedParentParts = isNotes
@@ -102,12 +119,15 @@ export function useAdminPostsPageOps({
           : ["notes", ...parentPathParts]
       : parentPathParts;
 
+    const slug = validateSlugInput(slugInput) ?? toSlug(title);
+
     const response = await apiFetch("/api/pages", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         lang,
         title,
+        slug,
         contentMd: "",
         isPublished: false,
         isCategory,
@@ -132,6 +152,7 @@ export function useAdminPostsPageOps({
       systemKey: data.systemKey ?? null,
     };
     upsertPage(row);
+    setRevealPagePath({ lang, path: row.path });
     if (!isCategory) {
       tabs.openPageTab(row);
       syncActivePathUrl(row);
@@ -143,10 +164,30 @@ export function useAdminPostsPageOps({
     if (!createModal) return;
     const title = createTitle.trim();
     if (!title) return;
-    await createWithParent(createModal.lang, createModal.parentParts, title, createModal.isCategory === true);
+
+    if (createModal.isCategory) {
+      await createWithParent(createModal.lang, createModal.parentParts, title, toSlug(title), true);
+    } else {
+      const slug = validateSlugInput(createSlug);
+      if (!slug) {
+        setStatus(dict.admin.posts.slugInvalid, "error");
+        return;
+      }
+      await createWithParent(createModal.lang, createModal.parentParts, title, slug, false);
+    }
     setCreateModal(null);
-    setCreateTitle("");
+    resetCreateForm();
   };
+
+  const createPreviewPath = useMemo(() => {
+    if (!createModal) return "";
+    const slug = validateSlugInput(createSlug);
+    if (!slug) return "";
+    const parentParts = createModal.parentParts;
+    return normalizePath(createModal.lang, [...parentParts, slug]);
+  }, [createModal, createSlug]);
+
+  const createSlugValid = createModal ? validateSlugInput(createSlug) !== null : true;
 
   const submitRename = async () => {
     if (!renameModal) return;
@@ -421,22 +462,22 @@ export function useAdminPostsPageOps({
         const page = getPage(id, lang);
         if (!page) return;
         setCreateModal({ lang, parentParts: pathSegmentsAfterLang(page.path, lang) });
-        setCreateTitle("");
+        resetCreateForm();
       },
       onAddSibling: (id, lang) => {
         const page = getPage(id, lang);
         if (!page) return;
         const segs = pathSegmentsAfterLang(page.path, lang);
         setCreateModal({ lang, parentParts: segs.length <= 1 ? [] : segs.slice(0, -1) });
-        setCreateTitle("");
+        resetCreateForm();
       },
       onCreateAtRoot: (lang) => {
         setCreateModal({ lang, parentParts: [], isCategory: false });
-        setCreateTitle("");
+        resetCreateForm();
       },
       onCreateCategory: (lang, parentParts) => {
         setCreateModal({ lang, parentParts, isCategory: true });
-        setCreateTitle("");
+        resetCreateForm();
       },
       onRefresh: async (scope) => {
         setStatus(dict.admin.workbench.refreshing);
@@ -509,6 +550,7 @@ export function useAdminPostsPageOps({
       patchPageApi,
       patchPageLocal,
       scopeQuery,
+      resetCreateForm,
       setCreateModal,
       setCreateTitle,
       setDeleteModal,
@@ -527,6 +569,8 @@ export function useAdminPostsPageOps({
     submitDelete,
     renamePreviewPath,
     renameSlugValid,
+    createPreviewPath,
+    createSlugValid,
     pagesForLang,
   };
 }

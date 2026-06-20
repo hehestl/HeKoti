@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
 import { WikiArticleToc } from "@/components/wiki-article-toc";
 import type { EditableWikiPage } from "@/components/wiki-inline-edit-types";
@@ -47,18 +47,29 @@ export function WikiEditableArticle({
     editablePage,
   } = useWikiInlineEdit();
 
-  useEffect(() => {
+  const autosaveTimerRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
     registerPage(page);
     return unregisterPage;
   }, [page, registerPage, unregisterPage]);
 
   useEffect(() => {
     if (!isEditing || !draft) return;
-    const timer = window.setTimeout(() => {
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = window.setTimeout(() => {
+      autosaveTimerRef.current = null;
       void saveNow({ silent: true });
     }, 1200);
-    return () => window.clearTimeout(timer);
-  }, [draft?.title, draft?.contentMd, isEditing, saveNow, draft]);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+    };
+  }, [draft?.title, draft?.contentMd, isEditing, saveNow]);
 
   useEffect(() => {
     if (!isEditing) return;

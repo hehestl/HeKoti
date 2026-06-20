@@ -270,6 +270,14 @@ export async function getExcerptByPath(lang: string): Promise<Map<string, string
   return new Map(pages.map((p) => [p.path, p.excerpt ?? null]));
 }
 
+export async function getSamplePageTitles(lang: string, limit = 30): Promise<string[]> {
+  const pages = await getLangPages(lang);
+  return pages
+    .filter((p) => !p.isCategory && p.title.trim())
+    .map((p) => p.title.trim())
+    .slice(0, limit);
+}
+
 export function wikiHrefFromDbPath(lang: string, path: string): string {
   const prefix = `/${lang}/`;
   if (!path.startsWith(prefix)) return `/${lang}`;

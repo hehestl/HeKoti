@@ -44,4 +44,11 @@ describe("admin-explorer-storage", () => {
     const state = loadOpenBranchesState(["en"], { en: pages }, "posts", stored);
     expect([...state.en!]).toEqual(["/en/a"]);
   });
+
+  it("loadOpenBranchesState treats empty stored array as collapsed", () => {
+    const pages = [page("1", "/en/a"), page("2", "/en/a/b")];
+    const stored = { en: [] as string[] };
+    const state = loadOpenBranchesState(["en"], { en: pages }, "posts", stored);
+    expect([...state.en!]).toEqual([]);
+  });
 });

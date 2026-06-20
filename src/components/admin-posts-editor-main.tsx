@@ -40,7 +40,11 @@ export function AdminPostsEditorMain({
   isPending,
   createModal,
   createTitle,
+  createSlug,
+  createPreviewPath,
+  createSlugValid,
   onCreateTitleChange,
+  onCreateSlugChange,
   onCreateCancel,
   onCreateSubmit,
   renameModal,
@@ -67,7 +71,11 @@ export function AdminPostsEditorMain({
   isPending: boolean;
   createModal: CreateModal;
   createTitle: string;
+  createSlug: string;
+  createPreviewPath: string;
+  createSlugValid: boolean;
   onCreateTitleChange: (v: string) => void;
+  onCreateSlugChange: (v: string) => void;
   onCreateCancel: () => void;
   onCreateSubmit: () => void;
   renameModal: RenameModal;
@@ -115,7 +123,11 @@ export function AdminPostsEditorMain({
             previewVisible={previewVisible}
             splitRatio={splitRatio}
             onSplitRatioChange={onSplitRatioChange}
-            dict={wb}
+            dict={{
+              ...wb,
+              diagramCopy: dict.article.diagramCopy,
+              diagramCopied: dict.article.diagramCopied,
+            }}
             editor={
               <AdminMarkdownEditor
                 key={`${active.id}:${active.lang}`}
@@ -135,7 +147,11 @@ export function AdminPostsEditorMain({
         isPending={isPending}
         createModal={createModal}
         createTitle={createTitle}
+        createSlug={createSlug}
+        createPreviewPath={createPreviewPath}
+        createSlugValid={createSlugValid}
         onCreateTitleChange={onCreateTitleChange}
+        onCreateSlugChange={onCreateSlugChange}
         onCreateCancel={onCreateCancel}
         onCreateSubmit={onCreateSubmit}
         renameModal={renameModal}

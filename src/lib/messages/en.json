@@ -63,7 +63,9 @@
     "ratingNeutral": "Okay",
     "ratingLoved": "Loved it",
     "tocNav": "On this page",
-    "tocNavToggle": "Table of contents"
+    "tocNavToggle": "Table of contents",
+    "diagramCopy": "Copy diagram source",
+    "diagramCopied": "Copied"
   },
   "search": {
     "resultsTitle": "Search results for “{q}”",
@@ -333,6 +335,15 @@
       "codeBlockTitle": "Code block",
       "formula": "f(x)",
       "formulaTitle": "Formula $$...$$",
+      "diagram": "Diagram",
+      "diagramTitle": "Insert Mermaid diagram",
+      "diagramHelp": "Use ```mermaid blocks or paste SVG. Examples: /wiki/diagrams",
+      "diagramTemplates": {
+        "flowchartLr": "Flowchart LR",
+        "flowchartTb": "Flowchart TB",
+        "sequence": "Sequence",
+        "state": "State"
+      },
       "post": "/post",
       "postTitle": "/post slug — replaced with link on render",
       "wiki": "Wiki",
@@ -360,16 +371,57 @@
         "wikiLink": "Wiki link...",
         "externalLink": "External link...",
         "insertPost": "Insert /post...",
-        "insertDateTime": "Date and Time"
+        "insertDateTime": "Date and Time",
+        "insertImage": "Insert image...",
+        "insertVideo": "Insert video..."
+      },
+      "media": {
+        "imageBtn": "Image",
+        "videoBtn": "Video",
+        "imageTitle": "Insert image",
+        "videoTitle": "Insert video",
+        "tabUpload": "Upload",
+        "tabGallery": "Gallery",
+        "tabUrl": "By URL",
+        "uploadImageHint": "JPEG, PNG, GIF or WebP up to 10 MB. Saved as WebP.",
+        "uploadVideoHint": "MP4 or WebM up to 100 MB.",
+        "uploading": "Uploading…",
+        "loading": "Loading…",
+        "empty": "No media yet. Upload a file first.",
+        "loadMore": "Load more",
+        "insertSelected": "Insert selected",
+        "urlPlaceholder": "https://…",
+        "altPlaceholder": "Alt text (optional)",
+        "defaultAlt": "image",
+        "urlRequired": "URL is required.",
+        "pickOne": "Select at least one item."
       }
     },
     "donate": {
       "title": "Support Hekoti",
-      "desc": "Donation methods are configured from environment variables.",
+      "desc": "Configure donation methods here (right-click the logo → Edit) or via environment variables as fallback.",
       "platforms": "Platforms",
       "noPlatforms": "No platform links configured.",
       "crypto": "Crypto wallets",
-      "noCrypto": "No wallets configured."
+      "noCrypto": "No wallets configured.",
+      "contacts": "Contacts",
+      "noContacts": "No contacts configured.",
+      "edit": "Edit donate page",
+      "exitEdit": "Exit editing",
+      "save": "Save",
+      "saved": "Saved",
+      "saving": "Saving…",
+      "failed": "Save failed",
+      "dirtyConfirm": "Discard unsaved changes?",
+      "addPlatform": "Add platform",
+      "addCrypto": "Add wallet",
+      "addContact": "Add contact",
+      "removeRow": "Remove",
+      "fieldTitle": "Title",
+      "fieldUrl": "URL",
+      "fieldAsset": "Asset",
+      "fieldNetwork": "Network",
+      "fieldAddress": "Address"
     },
     "auth": {
       "login": "Login",

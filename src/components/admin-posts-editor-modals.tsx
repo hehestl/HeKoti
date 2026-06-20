@@ -64,7 +64,11 @@ export function AdminPostsEditorModals({
   isPending,
   createModal,
   createTitle,
+  createSlug,
+  createPreviewPath,
+  createSlugValid,
   onCreateTitleChange,
+  onCreateSlugChange,
   onCreateCancel,
   onCreateSubmit,
   renameModal,
@@ -81,7 +85,11 @@ export function AdminPostsEditorModals({
   isPending: boolean;
   createModal: { isCategory?: boolean } | null;
   createTitle: string;
+  createSlug: string;
+  createPreviewPath: string;
+  createSlugValid: boolean;
   onCreateTitleChange: (v: string) => void;
+  onCreateSlugChange: (v: string) => void;
   onCreateCancel: () => void;
   onCreateSubmit: () => void;
   renameModal: { title: string; slug: string } | null;
@@ -103,17 +111,47 @@ export function AdminPostsEditorModals({
           onCancel={onCreateCancel}
           onSubmit={onCreateSubmit}
           submitLabel={dict.common.save}
-          submitDisabled={!createTitle.trim() || isPending}
+          submitDisabled={!createTitle.trim() || isPending || (!createModal.isCategory && !createSlugValid)}
         >
-          <input
-            style={{ ...inputStyle, width: "100%" }}
-            value={createTitle}
-            autoFocus
-            onChange={(e) => onCreateTitleChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onCreateSubmit();
-            }}
-          />
+          <div style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+              {dict.admin.posts.renamePrompt}
+              <input
+                style={{ ...inputStyle, width: "100%" }}
+                value={createTitle}
+                autoFocus
+                onChange={(e) => onCreateTitleChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && createSlugValid) onCreateSubmit();
+                }}
+              />
+            </label>
+            {!createModal.isCategory ? (
+              <>
+                <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
+                  {dict.admin.posts.renameSlug}
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>{dict.admin.posts.renameSlugHint}</span>
+                  <input
+                    style={{
+                      ...inputStyle,
+                      width: "100%",
+                      borderColor: createSlugValid ? undefined : "#ff5f7d",
+                    }}
+                    value={createSlug}
+                    onChange={(e) => onCreateSlugChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && createSlugValid) onCreateSubmit();
+                    }}
+                  />
+                </label>
+                {createPreviewPath ? (
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>
+                    {dict.admin.posts.renameSlugPreview.replace("{path}", createPreviewPath)}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+          </div>
         </ModalCard>
       ) : null}
       {renameModal ? (

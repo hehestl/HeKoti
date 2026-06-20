@@ -39,6 +39,15 @@ Key variables:
 - `CRYPTO_DONATION_JSON`
 - `LANGUAGETOOL_URL` (optional; Docker Compose service `hekoti-languagetool`)
 
+### Media (S3-compatible)
+
+- `MEDIA_STORAGE=local` — dev: files under `public/uploads` (Compose volume `hekoti_uploads`)
+- `MEDIA_STORAGE=s3` — prod: blobs in bucket; PostgreSQL stores metadata only (`MediaAsset`)
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_URL`
+- `ASSETS_BASE_URL` — CDN prefix for local mode
+
+MinIO example: set `S3_ENDPOINT=https://minio.example.com` and `S3_PUBLIC_URL=https://cdn.example.com`; path-style is enabled automatically when endpoint is set.
+
 ## AI agents
 
 You can configure multiple providers at once using `AI_AGENTS_JSON`.
@@ -64,6 +73,10 @@ Chat is stored in DB (`AgentChannel` / `AgentMessage`) and rendered in the admin
 - `GET|POST /api/pages`
 - `PATCH /api/pages/:id`
 - `POST /api/media/upload`
+- `POST /api/media/presign` — presigned PUT for video (`MEDIA_STORAGE=s3`)
+- `POST /api/media/complete` — register video after direct S3 upload
+- `GET /api/admin/media` — media gallery (metadata in DB, files in S3 or `LOCAL_UPLOAD_DIR`)
+- `DELETE /api/admin/media/:id` — delete object and soft-delete record
 - `POST /api/webhooks/incoming`
 - `GET /api/health` — aggregate probe (`200` requires database)
 - `GET /api/health/live`

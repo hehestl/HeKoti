@@ -10,9 +10,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- Home: typewriter-примеры заголовков статей в поле поиска (только главная, пока поле пустое)
+- Donate: inline-редактирование платформ, крипто и контактов (ПКМ по маскоту, GlobalSettings)
+- Media: S3-compatible storage (`MEDIA_STORAGE=s3`), metadata in `MediaAsset`, presigned video upload
+- Admin editor: image/video modal (upload, gallery, insert by URL); toolbar buttons; `<video controls>` on wiki pages
+- Wiki: схемы Mermaid и SVG в статьях (server render, dual theme, cache, copy source); seed `/diagrams`
+
 ### Fixed
 
+- Wiki: inline-edit на публичной статье — draft не сбрасывается при входе в режим редактирования (stale cleanup useEffect)
+- Monaco: inline bootstrap в `<head>` + `/monaco-workers/` same-origin (прод ещё тянул jsdelivr CDN — CORS/worker-src)
 - Admin Explorer: убрано дублирующее ПКМ-меню секции языка при клике по строкам дерева (остаётся только меню строки; меню секции — по заголовку RU/EN)
+- Admin Explorer: после создания статьи раскрывается только путь к ней, а не всё дерево; пустой список свёрнутых веток в localStorage больше не сбрасывается в «развернуть всё»
+- Admin: при создании статьи — поле slug и превью пути (как при переименовании)
 - Version: номер версии вшивается при `next build` (`HEKOTI_APP_VERSION`); Docker runner копирует `VERSION` из builder-стадии
 - Ops: `deploy-update.sh` — `git pull --autostash`, build-arg `HEKOTI_APP_VERSION`, проверка VERSION в контейнере после деплоя
 

@@ -1,100 +1,61 @@
-import fs from "fs/promises";
-import path from "path";
-import sharp from "sharp";
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/auth";
+import { createMediaAssetRecord, toMediaAssetDto } from "@/lib/media-assets";
+import {
+  getMediaStorage,
+  validateImageFile,
+  validateVideoFile,
+} from "@/lib/media-storage";
 import { env } from "@/lib/env";
 
-// Security constants
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-]);
-
-/**
- * Validates that a file is a valid image
- */
-function validateFile(file: File): { valid: boolean; error?: string } {
-  // Check file size
-  if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.` };
-  }
-
-  // Check MIME type
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return {
-      valid: false,
-      error: `File type "${file.type}" is not allowed. Allowed types: ${Array.from(ALLOWED_MIME_TYPES).join(", ")}.`,
-    };
-  }
-
-  // Check file extension
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  const allowedExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
-  if (ext && !allowedExtensions.has(ext)) {
-    return {
-      valid: false,
-      error: `File extension ".${ext}" is not allowed.`,
-    };
-  }
-
-  return { valid: true };
+function safeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : "Upload failed";
+  return env.NODE_ENV === "production" ? "Upload failed" : message;
 }
-
 
 export async function POST(request: Request) {
   try {
-    await requireAdminUser();
-    
+    const user = await requireAdminUser();
     const form = await request.formData();
     const file = form.get("file");
-    
+    const kind = form.get("kind");
+
     if (!(file instanceof File)) {
       return NextResponse.json({ ok: false, message: "File is required." }, { status: 400 });
     }
 
-    // Validate file
-    const validation = validateFile(file);
+    const storage = getMediaStorage();
+    const isVideo = kind === "video";
+
+    if (isVideo) {
+      if (storage.mode === "s3") {
+        return NextResponse.json(
+          { ok: false, message: "Use presigned upload for video when MEDIA_STORAGE=s3." },
+          { status: 400 },
+        );
+      }
+      const validation = validateVideoFile(file);
+      if (!validation.valid) {
+        return NextResponse.json({ ok: false, message: validation.error }, { status: 400 });
+      }
+      const bytes = await file.arrayBuffer();
+      const put = await storage.putVideo(Buffer.from(bytes), file.name, file.type);
+      const asset = await createMediaAssetRecord(user.id, "VIDEO", file.name, put);
+      return NextResponse.json({ ok: true, asset: toMediaAssetDto(asset), url: put.publicUrl });
+    }
+
+    const validation = validateImageFile(file);
     if (!validation.valid) {
       return NextResponse.json({ ok: false, message: validation.error }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
-    
-    // Generate safe filename (timestamp + random + .webp)
-    const name = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.webp`;
-    
-    // Ensure upload directory exists
-    const targetDir = path.join(process.cwd(), "public", "uploads");
-    await fs.mkdir(targetDir, { recursive: true });
-    
-    // Use path.resolve and verify the path is within uploads directory
-    const target = path.join(targetDir, name);
-    const resolvedTarget = path.resolve(target);
-    
-    // Prevent path traversal attacks
-    if (!resolvedTarget.startsWith(path.resolve(targetDir))) {
-      return NextResponse.json({ ok: false, message: "Invalid file path." }, { status: 400 });
-    }
-
-    // Process image with sharp
-    await sharp(Buffer.from(bytes))
-      .resize({ width: 1920, withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(target);
-
-    const publicPath = `/uploads/${name}`;
-    return NextResponse.json({
-      ok: true,
-      url: env.ASSETS_BASE_URL ? `${env.ASSETS_BASE_URL}${publicPath}` : publicPath,
-    });
+    const put = await storage.putImage(Buffer.from(bytes), file.name);
+    const asset = await createMediaAssetRecord(user.id, "IMAGE", file.name, put);
+    return NextResponse.json({ ok: true, asset: toMediaAssetDto(asset), url: put.publicUrl });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upload failed";
-    // Don't expose internal errors
-    const safeMessage = process.env.NODE_ENV === "production" ? "Upload failed" : message;
-    return NextResponse.json({ ok: false, message: safeMessage }, { status: 400 });
+    const message = safeErrorMessage(error);
+    const status = message === "Unauthorized." ? 401 : 400;
+    return NextResponse.json({ ok: false, message }, { status });
   }
 }
