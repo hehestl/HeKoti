@@ -64,7 +64,7 @@ export default async function AdminPage({
       const rows = await prisma.page.findMany({
         where: { lang: pageLang, ...wikiPageWhere },
         orderBy: [{ navOrder: "asc" }, { updatedAt: "desc" }],
-        take: 100,
+        take: 500,
         select: pageSelect,
       });
       const pages: AdminPageRow[] = rows.map((r) => ({

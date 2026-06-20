@@ -10,6 +10,8 @@
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-06-17
+
 ### Added
 
 - Wiki: оглавление (TOC) на публичных страницах с якорями H1–H4
@@ -20,6 +22,7 @@
 ### Fixed
 
 - Admin Explorer: по ПКМ на строке дерева открывались два контекстных меню (неверный CSS-селектор + всплытие события)
+- Admin Explorer: состояние свёрнутых веток сбрасывалось при обновлении дерева (Architecture refresh, deploy) — `pagesByLang` больше не переинициализирует localStorage
 - Monaco: workers с same-origin `/monaco-workers/` (CSP `worker-src 'self'` блокировал jsdelivr); прямой `monaco.editor.create` без `@monaco-editor/loader` (CDN в `script-src` тоже запрещён); `monaco-workers-env` до импорта monaco; workers в git и проверка в Docker build
 - Wiki inline edit: `registerPage` не сбрасывает baseline/draft во время редактирования
 - Admin: исправлено контекстное меню в Monaco (ПКМ больше не закрывается сразу)

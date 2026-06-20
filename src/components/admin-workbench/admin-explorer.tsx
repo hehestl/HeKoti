@@ -12,9 +12,8 @@ import {
 import type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
 export type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
 import {
-  buildDefaultOpenBranches,
   loadExpandedLangs,
-  loadOpenBranches,
+  loadOpenBranchesState,
   persistExpandedLangs,
   persistOpenBranches,
 } from "@/lib/admin-explorer-storage";
@@ -48,9 +47,11 @@ export function AdminExplorer({
   variant?: "posts" | "notes";
 }) {
   const isNotes = variant === "notes";
-  const [expandedLangs, setExpandedLangs] = useState(() => new Set(enabledLanguages));
+  const storageVariant = isNotes ? "notes" : "posts";
+
+  const [expandedLangs, setExpandedLangs] = useState(() => loadExpandedLangs(enabledLanguages, storageVariant));
   const [openBranchesByLang, setOpenBranchesByLang] = useState<Record<string, Set<string>>>(() =>
-    buildDefaultOpenBranches(enabledLanguages, pagesByLang),
+    loadOpenBranchesState(enabledLanguages, pagesByLang, storageVariant),
   );
   const [dragOver, setDragOver] = useState<DropState>(null);
   const [rowMenu, setRowMenu] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
@@ -58,31 +59,26 @@ export function AdminExplorer({
   const [iconPicker, setIconPicker] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const selection = useAdminExplorerSelection();
 
-  const pruneBranches = useCallback((lang: string, pages: AdminPageRow[]) => {
-    const tree = buildPathTree(pages, lang);
-    const valid = collectPathKeys(tree);
-    setOpenBranchesByLang((prev) => {
-      const current = prev[lang] ?? new Set<string>();
-      const next = new Set([...current].filter((k) => valid.has(k)));
-      const merged = { ...prev, [lang]: next };
-      persistOpenBranches(merged);
-      return merged;
-    });
-  }, []);
+  const pruneBranches = useCallback(
+    (lang: string, pages: AdminPageRow[]) => {
+      const tree = buildPathTree(pages, lang);
+      const valid = collectPathKeys(tree);
+      setOpenBranchesByLang((prev) => {
+        const current = prev[lang] ?? new Set<string>();
+        const next = new Set([...current].filter((k) => valid.has(k)));
+        if (next.size === current.size && [...next].every((k) => current.has(k))) return prev;
+        const merged = { ...prev, [lang]: next };
+        persistOpenBranches(merged, storageVariant);
+        return merged;
+      });
+    },
+    [storageVariant],
+  );
 
   useEffect(() => {
-    setExpandedLangs(loadExpandedLangs(enabledLanguages));
-    const stored = loadOpenBranches();
-    setOpenBranchesByLang(() => {
-      const next: Record<string, Set<string>> = {};
-      for (const lang of enabledLanguages) {
-        const pages = pagesByLang[lang] ?? [];
-        const tree = buildPathTree(pages, lang);
-        next[lang] = new Set(stored[lang] ?? [...pathKeysWithChildren(tree)]);
-      }
-      return next;
-    });
-  }, [enabledLanguages, pagesByLang]);
+    setExpandedLangs(loadExpandedLangs(enabledLanguages, storageVariant));
+    setOpenBranchesByLang(loadOpenBranchesState(enabledLanguages, pagesByLang, storageVariant));
+  }, [enabledLanguages, storageVariant]);
 
   useEffect(() => {
     for (const lang of enabledLanguages) {
@@ -95,7 +91,7 @@ export function AdminExplorer({
       const next = new Set(prev);
       if (next.has(lang)) next.delete(lang);
       else next.add(lang);
-      persistExpandedLangs(next);
+      persistExpandedLangs(next, storageVariant);
       return next;
     });
   };
@@ -103,7 +99,7 @@ export function AdminExplorer({
   const setBranchesForLang = (lang: string, next: Set<string>) => {
     setOpenBranchesByLang((prev) => {
       const merged = { ...prev, [lang]: next };
-      persistOpenBranches(merged);
+      persistOpenBranches(merged, storageVariant);
       return merged;
     });
   };
@@ -118,7 +114,7 @@ export function AdminExplorer({
     setExpandedLangs((prev) => {
       const next = new Set(prev);
       next.delete(lang);
-      persistExpandedLangs(next);
+      persistExpandedLangs(next, storageVariant);
       return next;
     });
   };
@@ -127,7 +123,7 @@ export function AdminExplorer({
     setExpandedLangs((prev) => {
       const next = new Set(prev);
       next.add(lang);
-      persistExpandedLangs(next);
+      persistExpandedLangs(next, storageVariant);
       return next;
     });
   };
