@@ -23,6 +23,7 @@ export function HekotiMascotMenu({
   versionLabel,
   editLabel,
   exitEditLabel,
+  inlineEditSource = "auto",
 }: {
   lang: string;
   isAdmin: boolean;
@@ -37,12 +38,24 @@ export function HekotiMascotMenu({
   versionLabel: string;
   editLabel?: string;
   exitEditLabel?: string;
+  inlineEditSource?: "donate" | "auto";
 }) {
   const router = useRouter();
   const donateEdit = useDonateInlineEditOptional();
   const wikiEdit = useWikiInlineEditOptional();
   const homeEdit = useHomeInlineEditOptional();
-  const inlineEdit = donateEdit?.canEdit ? donateEdit : wikiEdit?.canEdit ? wikiEdit : homeEdit;
+  const inlineEdit =
+    inlineEditSource === "donate" && donateEdit && isAdmin
+      ? donateEdit
+      : donateEdit?.canEdit
+        ? donateEdit
+        : wikiEdit?.canEdit
+          ? wikiEdit
+          : homeEdit;
+  const inlineEditMenuVisible =
+    inlineEditSource === "donate" && donateEdit && isAdmin
+      ? donateEdit.canEdit
+      : !!inlineEdit?.canEdit;
   const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
 
   const onContextMenu = useCallback(
@@ -63,7 +76,7 @@ export function HekotiMascotMenu({
     items.push({ id: "site", label: openSiteLabel ?? "Site", onClick: () => router.push(`/${lang}`) });
     items.push({ id: "sep0", label: "", separator: true });
   }
-  if (inlineEdit?.canEdit && editLabel && exitEditLabel) {
+  if (inlineEditMenuVisible && editLabel && exitEditLabel && inlineEdit) {
     if (inlineEdit.isEditing) {
       items.push({
         id: "exit-edit",

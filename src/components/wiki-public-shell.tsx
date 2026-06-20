@@ -1,4 +1,5 @@
 import { WikiPublicShellClient } from "@/components/wiki-public-shell-client";
+import { WikiPublicLanguageSwitch } from "@/components/wiki-public-language-switch";
 import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-types";
 import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
@@ -51,9 +52,7 @@ export function WikiPublicShell({
   return (
     <WikiPublicShellClient
       lang={lang}
-      langs={langs}
       searchPlaceholder={searchPlaceholder}
-      languageAria={languageAria}
       variant={variant}
       initialSearchQuery={initialSearchQuery}
       searchSampleTitles={searchSampleTitles}
@@ -68,6 +67,9 @@ export function WikiPublicShell({
       donateEditLabels={donateEditLabels}
       diagramCopyLabel={diagramCopyLabel}
       diagramCopiedLabel={diagramCopiedLabel}
+      languageSwitch={
+        <WikiPublicLanguageSwitch lang={lang} langs={langs} groupAria={languageAria} />
+      }
     >
       {children}
     </WikiPublicShellClient>

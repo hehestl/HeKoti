@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { HomeCategoryTreeEditor } from "@/components/home-category-tree-editor";
 import { useHomeInlineEdit } from "@/components/home-inline-edit-context";
 import { InlineEditToolbar } from "@/components/inline-edit-toolbar";
 import type { HomeTreePage } from "@/components/home-inline-edit-types";
 import type { PathTreeNode } from "@/lib/page-tree";
+
+function useMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 /** Registers home tree after mount — avoids setState during hydration. */
 function HomeInlineEditRegister({
@@ -51,8 +59,7 @@ export function HelpCenterHomeView({
     cancelEdit,
   } = useHomeInlineEdit();
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const showEdit = mounted && isEditing && draft;
 

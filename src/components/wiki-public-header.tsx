@@ -1,19 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
 import { HekotiMascotMenu } from "@/components/hekoti-mascot-menu";
 import { HelpCenterSearchForm } from "@/components/help-center-search-form";
-import { LanguageSwitch, LanguageSwitchFallback } from "@/components/language-switch";
-
-type LangOption = { code: string; label: string };
+import type { ReactNode } from "react";
 
 export type WikiPublicHeaderVariant = "home" | "compact";
 
 export function WikiPublicHeader({
   lang,
-  langs,
   searchPlaceholder,
-  languageAria,
   variant,
   initialSearchQuery,
   searchSampleTitles = [],
@@ -24,11 +19,11 @@ export function WikiPublicHeader({
   versionLabel,
   editLabel,
   exitEditLabel,
+  inlineEditSource = "auto",
+  languageSwitch,
 }: {
   lang: string;
-  langs: LangOption[];
   searchPlaceholder: string;
-  languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
   searchSampleTitles?: string[];
@@ -39,6 +34,8 @@ export function WikiPublicHeader({
   versionLabel: string;
   editLabel?: string;
   exitEditLabel?: string;
+  inlineEditSource?: "donate" | "auto";
+  languageSwitch: ReactNode;
 }) {
   return (
     <header className="wiki-public-header">
@@ -53,6 +50,7 @@ export function WikiPublicHeader({
           versionLabel={versionLabel}
           editLabel={editLabel}
           exitEditLabel={exitEditLabel}
+          inlineEditSource={inlineEditSource}
         />
         <div className="wiki-public-header-search">
           <HelpCenterSearchForm
@@ -63,9 +61,7 @@ export function WikiPublicHeader({
             enableTypewriterPlaceholder={enableTypewriterPlaceholder}
           />
         </div>
-        <Suspense fallback={<LanguageSwitchFallback lang={lang} langs={langs} />}>
-          <LanguageSwitch lang={lang} langs={langs} groupAria={languageAria} />
-        </Suspense>
+        {languageSwitch}
       </div>
     </header>
   );

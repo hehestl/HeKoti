@@ -385,6 +385,9 @@ select {
 }
 
 .site-footer {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
   padding: 12px 14px 16px;
   border-top: 1px solid var(--line);
   background: var(--panel);

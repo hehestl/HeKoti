@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
-import { SiteFooterControls } from "@/components/site-footer-controls";
-import { safeLang, getDictionary } from "@/lib/i18n";
+import { SiteFooterControls } from "@/components/site-footer-controls";import { safeLang, getDictionary } from "@/lib/i18n";
 
 export default async function LocaleLayout({
   params,
@@ -30,7 +29,7 @@ export default async function LocaleLayout({
       </div>
       <footer className="site-footer">
         <div className="site-footer-links">
-          <Link href={`/${lang}`}>{dict.common.developedBy}</Link>
+          <Link href={`/${lang}`} prefetch={false}>{dict.common.developedBy}</Link>
           <a href="https://t.me/hehestl" target="_blank" rel="noopener noreferrer">
             @hehestl
           </a>
@@ -43,7 +42,7 @@ export default async function LocaleLayout({
             {dict.common.support}
           </a>
           <span aria-hidden>·</span>
-          <Link href={`/${lang}/donate`}>{dict.common.donate}</Link>
+          <Link href={`/${lang}/donate`} prefetch={false}>{dict.common.donate}</Link>
         </div>
         <SiteFooterControls
           labels={{

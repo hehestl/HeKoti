@@ -1,6 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AdminRevisionDiff } from "@/components/admin-revision-diff";
 import {
   formatRevisionRelativeTime,
@@ -38,8 +40,23 @@ export function AdminPageRevisionPanel({
     loadMore,
   } = usePageRevisions(pageId);
 
-  return (
-    <div className="admin-modal-backdrop" role="presentation" onClick={onClose}>
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="admin-modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="admin-revision-panel admin-modal-card"
         role="dialog"
@@ -123,6 +140,7 @@ export function AdminPageRevisionPanel({
           </section>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

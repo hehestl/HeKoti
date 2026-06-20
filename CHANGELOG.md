@@ -10,6 +10,13 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Admin: история ревизий — modal overlay (fix layout squeeze)
+- Donate: inline-edit через меню маскота (fix выбора контекста и старт редактирования)
+- Footer: ссылка «Донат» с главной — полная навигация (fix съеденного клика)
+- Home: React #419 — Suspense для LanguageSwitch в RSC, гидрация typewriter/edit UI
+
 ## [0.4.3] — 2026-06-21
 
 ### Added

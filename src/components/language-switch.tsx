@@ -65,7 +65,7 @@ export function LanguageSwitch({
         >
           {currentLabel(lang, langs)}
         </Link>
-        <DropdownMenu.Root>
+        <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger asChild>
             <button type="button" className="topbar-lang-toggle" aria-label={groupAria}>
               <ChevronDown size={14} strokeWidth={2} />

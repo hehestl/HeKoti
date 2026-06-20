@@ -64,7 +64,7 @@ export function AdminContextMenu({
   useEffect(() => {
     let cleanup: (() => void) | undefined;
     const raf = window.requestAnimationFrame(() => {
-      const onMouseDown = (e: MouseEvent) => {
+      const onClickOutside = (e: MouseEvent) => {
         if (ref.current?.contains(e.target as Node)) return;
         onClose();
       };
@@ -78,13 +78,13 @@ export function AdminContextMenu({
         if (target instanceof Element && target.closest(".monaco-scrollable-element")) return;
         onClose();
       };
-      window.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("click", onClickOutside);
       window.addEventListener("keydown", onKeyDown);
       if (dismissOnScroll) {
         window.addEventListener("scroll", onScroll, true);
       }
       cleanup = () => {
-        window.removeEventListener("mousedown", onMouseDown);
+        window.removeEventListener("click", onClickOutside);
         window.removeEventListener("keydown", onKeyDown);
         if (dismissOnScroll) {
           window.removeEventListener("scroll", onScroll, true);

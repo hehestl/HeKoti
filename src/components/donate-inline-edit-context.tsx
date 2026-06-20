@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,7 +30,7 @@ type DonateInlineEditContextValue = {
   startEdit: () => void;
   cancelEdit: () => void;
   saveNow: () => Promise<boolean>;
-  patchDraft: (patch: Partial<DonateConfig>) => void;
+  patchDraft: (next: DonateConfig) => void;
   isDirty: boolean;
 };
 
@@ -37,20 +39,34 @@ const DonateInlineEditContext = createContext<DonateInlineEditContextValue | nul
 export function DonateInlineEditProvider({
   isAdmin,
   labels,
+  initialConfig,
   children,
 }: {
   isAdmin: boolean;
   labels: DonateInlineEditLabels;
+  initialConfig: DonateConfig;
   children: ReactNode;
 }) {
   const router = useRouter();
-  const [config, setConfig] = useState<DonateConfig | null>(null);
-  const [baseline, setBaseline] = useState<DonateConfig | null>(null);
+  const [config, setConfig] = useState<DonateConfig | null>(initialConfig);
+  const [baseline, setBaseline] = useState<DonateConfig | null>(initialConfig);
   const [draft, setDraft] = useState<DonateConfig | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [statusTone, setStatusTone] = useState<"neutral" | "error">("neutral");
-  const [registered, setRegistered] = useState(false);
+  const [registered, setRegistered] = useState(true);
+  const lastConfigRef = useRef<DonateConfig>(initialConfig);
+  const isEditingRef = useRef(false);
+  isEditingRef.current = isEditing;
+
+  useEffect(() => {
+    lastConfigRef.current = initialConfig;
+    if (!isEditingRef.current) {
+      setConfig(initialConfig);
+      setBaseline(initialConfig);
+      setRegistered(true);
+    }
+  }, [initialConfig]);
 
   const setStatus = useCallback((text: string, tone: "neutral" | "error" = "neutral") => {
     setStatusText(text);
@@ -59,8 +75,9 @@ export function DonateInlineEditProvider({
 
   const registerConfig = useCallback(
     (next: DonateConfig) => {
+      lastConfigRef.current = next;
       setRegistered(true);
-      if (!isEditing) {
+      if (!isEditingRef.current) {
         setConfig(next);
         setBaseline(next);
         setDraft(null);
@@ -69,15 +86,15 @@ export function DonateInlineEditProvider({
       setConfig(next);
       setBaseline(next);
     },
-    [isEditing],
+    [],
   );
 
   const unregisterConfig = useCallback(() => {
     setRegistered(false);
     setConfig(null);
     setBaseline(null);
-    if (!isEditing) setDraft(null);
-  }, [isEditing]);
+    if (!isEditingRef.current) setDraft(null);
+  }, []);
 
   const isDirty = useMemo(() => {
     if (!draft || !baseline) return false;
@@ -85,21 +102,24 @@ export function DonateInlineEditProvider({
   }, [baseline, draft]);
 
   const startEdit = useCallback(() => {
-    if (!isAdmin || !config) return;
+    const source = config ?? lastConfigRef.current;
+    if (!isAdmin || !source) return;
     const next = {
-      platforms: config.platforms.map((p) => ({ ...p })),
-      crypto: config.crypto.map((c) => ({ ...c })),
-      contacts: config.contacts.map((c) => ({ ...c })),
+      platforms: source.platforms.map((p) => ({ ...p })),
+      crypto: source.crypto.map((c) => ({ ...c })),
+      contacts: source.contacts.map((c) => ({ ...c })),
     };
     setDraft(next);
     setBaseline(next);
     setIsEditing(true);
+    isEditingRef.current = true;
     setStatusText("");
     setStatusTone("neutral");
   }, [config, isAdmin]);
 
   const cancelEdit = useCallback(() => {
     if (isDirty && !window.confirm(labels.dirtyConfirm)) return;
+    isEditingRef.current = false;
     setIsEditing(false);
     setDraft(null);
     setStatusText("");
@@ -121,6 +141,7 @@ export function DonateInlineEditProvider({
         setStatus(data.message ?? labels.failed, "error");
         return false;
       }
+      lastConfigRef.current = data.config;
       setConfig(data.config);
       setBaseline(data.config);
       setDraft(data.config);
@@ -131,10 +152,10 @@ export function DonateInlineEditProvider({
       setStatus(labels.failed, "error");
       return false;
     }
-  }, [baseline, draft, labels.failed, labels.saved, labels.saving, router]);
+  }, [baseline, draft, labels.failed, labels.saved, labels.saving, router, setStatus]);
 
-  const patchDraft = useCallback((patch: Partial<DonateConfig>) => {
-    setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+  const patchDraft = useCallback((next: DonateConfig) => {
+    setDraft(next);
   }, []);
 
   const value = useMemo(

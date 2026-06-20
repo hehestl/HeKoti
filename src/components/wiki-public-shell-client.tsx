@@ -9,15 +9,11 @@ import { WikiInlineEditProvider } from "@/components/wiki-inline-edit-context";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
 import { WikiPublicHeader, type WikiPublicHeaderVariant } from "@/components/wiki-public-header";
-import type { DonateConfig } from "@/lib/donate-config";
-
-type LangOption = { code: string; label: string };
+import type { DonateConfig } from "@/lib/donate-config-shared";
 
 export function WikiPublicShellClient({
   lang,
-  langs,
   searchPlaceholder,
-  languageAria,
   variant,
   initialSearchQuery,
   searchSampleTitles = [],
@@ -32,12 +28,11 @@ export function WikiPublicShellClient({
   donateEditLabels,
   diagramCopyLabel,
   diagramCopiedLabel,
+  languageSwitch,
   children,
 }: {
   lang: string;
-  langs: LangOption[];
   searchPlaceholder: string;
-  languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
   searchSampleTitles?: string[];
@@ -52,6 +47,7 @@ export function WikiPublicShellClient({
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
   diagramCopiedLabel: string;
+  languageSwitch: ReactNode;
   children: ReactNode;
 }) {
   const editLabel = donateEditLabels?.edit ?? inlineEditLabels.mascotEdit;
@@ -62,9 +58,7 @@ export function WikiPublicShellClient({
       <WikiDiagramEnhancer copyLabel={diagramCopyLabel} copiedLabel={diagramCopiedLabel} />
       <WikiPublicHeader
         lang={lang}
-        langs={langs}
         searchPlaceholder={searchPlaceholder}
-        languageAria={languageAria}
         variant={variant}
         initialSearchQuery={initialSearchQuery}
         searchSampleTitles={searchSampleTitles}
@@ -75,6 +69,8 @@ export function WikiPublicShellClient({
         versionLabel={versionLabel}
         editLabel={editLabel}
         exitEditLabel={exitEditLabel}
+        inlineEditSource={initialDonateConfig && donateEditLabels ? "donate" : "auto"}
+        languageSwitch={languageSwitch}
       />
       <div className="wiki-public-content">{children}</div>
     </>
@@ -84,7 +80,7 @@ export function WikiPublicShellClient({
     <WikiInlineEditProvider isAdmin={!!isAdmin} labels={inlineEditLabels}>
       <HomeInlineEditProvider isAdmin={!!isAdmin} labels={homeInlineEditLabels ?? defaultHomeInlineEditLabels(inlineEditLabels)}>
         {initialDonateConfig && donateEditLabels ? (
-          <DonateInlineEditProvider isAdmin={!!isAdmin} labels={donateEditLabels}>
+          <DonateInlineEditProvider isAdmin={!!isAdmin} labels={donateEditLabels} initialConfig={initialDonateConfig}>
             {shell}
           </DonateInlineEditProvider>
         ) : (
