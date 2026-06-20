@@ -1,5 +1,8 @@
 # Hekoti stack: Postgres + Redis + app (+ optional LanguageTool).
 #
+# Deploy manifest: .agentrules (taxonomy social/chat, paths Profile B, port 3310)
+# Prod data/logs bind: /var/lib/hh/chat/data, /var/log/hh/chat (see .agentrules paths.*)
+#
 # Faster image builds: `export DOCKER_BUILDKIT=1` (or set in ~/.docker/config.json `"features": { "buildkit": true }`).
 #
 # Database URL: you do not need DATABASE_URL in `.env` for Compose. The app
@@ -33,11 +36,18 @@
 # В NPM укажите upstream http://hh-hekoti-app:3310 (container_name в proxy-network).
 # WARNING: image: и container_name — .cursor/rules/docker-naming.md
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   hekoti-postgres:
     image: postgres:17-alpine
     container_name: hh-hekoti-pg
     restart: unless-stopped
+    logging: *default-logging
     environment:
       # Defaults match hekoti-app / docker-entrypoint. Override only with matching DB volume or after recreate.
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
@@ -51,12 +61,13 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - default
+      - hh-network
 
   hekoti-redis:
     image: redis:7-alpine
     container_name: hh-hekoti-redis
     restart: unless-stopped
+    logging: *default-logging
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - hekoti_redis_data:/data
@@ -66,12 +77,13 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - default
+      - hh-network
 
   hekoti-languagetool:
     image: erikvl87/languagetool:latest
-    container_name: hekoti-languagetool
+    container_name: hh-hekoti-lt
     restart: unless-stopped
+    logging: *default-logging
     # Optional: expose to host for debugging — "8010:8010"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8010/v2/languages >/dev/null || exit 1"]
@@ -80,7 +92,7 @@ services:
       retries: 15
       start_period: 120s
     networks:
-      - default
+      - hh-network
 
   hekoti-app:
     image: hh-hekoti-app:latest
@@ -89,6 +101,7 @@ services:
       dockerfile: Dockerfile
     container_name: hh-hekoti-app
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - path: .env
         required: false
@@ -119,7 +132,7 @@ services:
       hekoti-redis:
         condition: service_healthy
     ports:
-      - "3310:3310"
+      - "127.0.0.1:3310:3310"
     volumes:
       - hekoti_uploads:/app/public/uploads
     # After HOSTNAME=0.0.0.0, loopback reaches the server; node is always present (no wget/curl in slim images).
@@ -136,11 +149,12 @@ services:
       retries: 5
       start_period: 120s
     networks:
-      - default
+      - hh-network
       - proxy-network
 
 networks:
-  default:
+  hh-network:
+    name: hh-network
     driver: bridge
   proxy-network:
     external: true

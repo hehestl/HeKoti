@@ -19,10 +19,12 @@
 ### Changed
 
 - Docker: сеть `hh-network`, logging rotation, `hh-hekoti-lt`, bind `127.0.0.1:3310`
+- Ops: HH Standards — `hh-project-standards.md`, синхронизация `infra-taxonomy`, README paths
 
 ### Fixed
 
-- Admin: Monaco — web workers (`MonacoEnvironment.getWorkerUrl`), синхронизация `contentMd` при открытии вкладки
+- Admin: Monaco — web workers same-origin (webpack bundle), синхронизация `contentMd` при открытии вкладки
+- Admin: автосохранение статьи (debounce 1.2 с) при правке title/contentMd
 
 ## [0.3.3] — 2026-06-20
 

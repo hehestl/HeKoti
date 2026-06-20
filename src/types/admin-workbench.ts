@@ -34,6 +34,15 @@ export type AdminContextMenuItem = {
 
 export type AdminPagesByLang = Record<string, AdminPageRow[]>;
 
+export type AdminPagesStore = {
+  pagesByLang: AdminPagesByLang;
+  setPagesForLang: (lang: string, pages: AdminPageRow[]) => void;
+  upsertPage: (page: AdminPageRow) => void;
+  removePages: (ids: string[], lang: string) => void;
+  patchPageLocal: (id: string, lang: string, patch: Partial<AdminPageRow>) => void;
+  getPage: (id: string, lang: string) => AdminPageRow | undefined;
+};
+
 export type AdminWorkbenchUiState = {
   previewVisible: boolean;
   splitRatio: number;

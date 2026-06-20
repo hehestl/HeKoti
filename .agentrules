@@ -1,0 +1,31 @@
+version: 1
+taxonomy:
+  environment: ops
+  namespace: hh
+  domain: social
+  service: chat
+runtime:
+  kind: ui
+  entry: server.js
+ports:
+  pool: ui
+  host: 3310
+  target_host: 3100
+paths:
+  app: /opt/app/ops/hh/chat
+  data: /var/lib/hh/chat/data
+  logs: /var/log/hh/chat
+migration:
+  status: legacy
+  target_paths:
+    app: /opt/app/prod/hh/social/chat
+    data: /var/lib/hh/social/chat/data
+    logs: /var/log/hh/social/chat
+docker:
+  image: hh-hekoti-app
+  container_name: hh-hekoti-app
+logging:
+  labels:
+    hh_env: ops
+    hh_domain: social
+    hh_service: chat

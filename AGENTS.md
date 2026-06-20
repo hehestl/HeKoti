@@ -5,6 +5,8 @@
 | Файл | Назначение |
 |------|------------|
 | `00-hekoti.mdc` | Всегда включено (`alwaysApply: true`) |
+| `.agentrules` | Deploy-манифест (taxonomy, paths, ports) — корень репозитория |
+| `hh-project-standards.md` | HH Standards (экосистема `.cursor/rules/`) |
 | `00global.md` | Глобальные приоритеты и формат работы |
 | `glossary.md` | Имена доменов (Loka, Hemonea, Hefest и др.) |
 | `architecture.md` | Архитектура и слои |

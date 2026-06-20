@@ -48,6 +48,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   const hostRef = useRef<HTMLDivElement | null>(null);
   const edRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monRef = useRef<typeof monaco | null>(null);
+  const skipChangeRef = useRef(false);
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
   const [measuredHeight, setMeasuredHeight] = useState(120);
@@ -81,11 +82,13 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     if (!ed) return;
     const model = ed.getModel();
     if (!model || model.getValue() === value) return;
+    skipChangeRef.current = true;
     const scrollTop = ed.getScrollTop();
     const pos = ed.getPosition();
     ed.setValue(value);
     ed.setScrollTop(scrollTop);
     if (pos) ed.setPosition(pos);
+    skipChangeRef.current = false;
   }, [value]);
 
   const withEd = useCallback((fn: (ed: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => void) => {
@@ -255,11 +258,18 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
           language="markdown"
           theme={monacoTheme}
           value={value}
-          onChange={(v) => onChange(v ?? "")}
+          onChange={(v) => {
+            if (skipChangeRef.current) return;
+            onChange(v ?? "");
+          }}
           onMount={(editor, m) => {
             edRef.current = editor;
             monRef.current = m;
-            if (editor.getValue() !== value) editor.setValue(value);
+            if (editor.getValue() !== value) {
+              skipChangeRef.current = true;
+              editor.setValue(value);
+              skipChangeRef.current = false;
+            }
             requestAnimationFrame(() => editor.layout());
             editor.onContextMenu((e) => {
               e.event.preventDefault();

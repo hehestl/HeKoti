@@ -78,11 +78,13 @@ It’s designed for “public read + private write” deployments: visitors can 
 
 Requires **Docker Compose v2.24+**.
 
-Zero‑config (defaults live in `docker-compose.yml`):
+Zero‑config (defaults live in `docker-compose.yml` and [`.agentrules`](./.agentrules)):
 
 ```bash
 docker compose up -d --build
 ```
+
+**Ops paths (Profile B):** app `/opt/app/ops/hh/chat` · data `/var/lib/hh/chat/data` · logs `/var/log/hh/chat` · UI port `127.0.0.1:3310` (target `3100`).
 
 **Server update** (pull + rebuild + recreate app):
 
@@ -187,11 +189,13 @@ Hekoti — лёгкий self‑hosted движок вики: публикуеш�
 
 Нужен **Docker Compose v2.24+**.
 
-Запуск без конфигурации (дефолты в `docker-compose.yml`):
+Запуск без конфигурации (дефолты в `docker-compose.yml` и [`.agentrules`](./.agentrules)):
 
 ```bash
 docker compose up -d --build
 ```
+
+**Ops paths (Профиль B):** app `/opt/app/ops/hh/chat` · data `/var/lib/hh/chat/data` · logs `/var/log/hh/chat` · порт UI `127.0.0.1:3310` (цель `3100`).
 
 **Обновление на сервере** (pull + пересборка + пересоздание app):
 
