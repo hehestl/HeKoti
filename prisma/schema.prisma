@@ -90,11 +90,26 @@ model PageRevision {
   id          String   @id @default(uuid())
   pageId      String
   editorId    String
-  title       String
-  contentMd   String
   createdAt   DateTime @default(now())
+
+  title       String
+  contentMd   String   @default("")
+  slug        String?
+  path        String?
+  icon        String?
+  isPublished Boolean?
+  showToc     Boolean?
+  isCategory  Boolean?
+  navOrder    Int?
+
+  contentHash String?
+  sizeBytes   Int?
+  summary     String?
+
   page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
   editor      User     @relation(fields: [editorId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt(sort: Desc)])
 }
 
 model PageRating {

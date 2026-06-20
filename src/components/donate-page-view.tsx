@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { DonateConfigEditor } from "@/components/donate-config-editor";
+import { InlineEditToolbar } from "@/components/inline-edit-toolbar";
 import { useDonateInlineEdit } from "@/components/donate-inline-edit-context";
 import type { Dictionary } from "@/lib/i18n";
 import type { DonateConfig } from "@/lib/donate-config";
@@ -55,21 +56,14 @@ export function DonatePageView({
   if (isEditing && draft) {
     return (
       <main style={{ padding: 12 }} className="wiki-inline-edit-wrap">
-        <div className="wiki-inline-edit-toolbar">
-          <div className="wiki-inline-edit-toolbar-actions">
-            <button type="button" className="wiki-inline-edit-btn" onClick={() => void saveNow()}>
-              {labels.save}
-            </button>
-            <button type="button" className="wiki-inline-edit-btn wiki-inline-edit-btn-muted" onClick={cancelEdit}>
-              {labels.cancel}
-            </button>
-          </div>
-          {statusText ? (
-            <span className={`wiki-inline-edit-status${statusTone === "error" ? " wiki-inline-edit-status-error" : ""}`}>
-              {statusText}
-            </span>
-          ) : null}
-        </div>
+        <InlineEditToolbar
+          saveLabel={labels.save}
+          cancelLabel={labels.cancel}
+          statusText={statusText}
+          statusTone={statusTone}
+          onSave={() => void saveNow()}
+          onCancel={cancelEdit}
+        />
         <h1>{d.title}</h1>
         <p style={{ color: "var(--muted)", marginTop: 6 }}>{d.desc}</p>
         <DonateConfigEditor draft={draft} dict={d} onChange={(next) => patchDraft(next)} />

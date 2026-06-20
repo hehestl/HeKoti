@@ -3,8 +3,10 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AdminPageRevisionPanel } from "@/components/admin-page-revision-panel";
 import { AdminExplorer } from "@/components/admin-workbench/admin-explorer";
 import { AdminPostsEditorMain } from "@/components/admin-posts-editor-main";
+import { AdminActionToast } from "@/components/admin-workbench/admin-action-toast";
 import { buildStatusBarExtras, type AdminStatusBarExtras } from "@/components/admin-workbench/admin-status-bar";
 import { useAdminPages } from "@/components/admin-workbench/admin-pages-provider";
 import { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
@@ -92,6 +94,9 @@ export function AdminPostsEditorProvider({
     title: string;
     childCount: number;
   } | null>(null);
+  const [sendToChatPending, setSendToChatPending] = useState(false);
+  const [chatToast, setChatToast] = useState<{ messengerUrl: string } | null>(null);
+  const [historyPage, setHistoryPage] = useState<{ id: string; title: string } | null>(null);
 
   const setStatus = useCallback(
     (text: string, tone: "neutral" | "error" = "neutral") => onStatusChange(text, tone),
@@ -230,12 +235,22 @@ export function AdminPostsEditorProvider({
     [createSlugManual],
   );
 
+  const explorerActionsWithHistory = useMemo(
+    () => ({
+      ...explorerActions,
+      onOpenHistory: isNotes
+        ? undefined
+        : (page: AdminPageRow) => setHistoryPage({ id: page.id, title: page.title }),
+    }),
+    [explorerActions, isNotes],
+  );
+
   const explorer = (
     <AdminExplorer
       pagesByLang={pagesByLang}
       enabledLanguages={explorerLanguages}
       dict={dict}
-      actions={explorerActions}
+      actions={explorerActionsWithHistory}
       variant={variant}
       revealPagePath={revealPagePath}
       onRevealPageDone={() => setRevealPagePath(null)}
@@ -282,8 +297,71 @@ export function AdminPostsEditorProvider({
       deleteModal={deleteModal}
       onDeleteCancel={() => setDeleteModal(null)}
       onDeleteSubmit={() => void submitDelete()}
+      onOpenHistory={
+        active && !isNotes
+          ? () => setHistoryPage({ id: active.id, title: active.title })
+          : undefined
+      }
     />
   );
+
+  const historyPanel =
+    historyPage && !isNotes ? (
+      <AdminPageRevisionPanel
+        pageId={historyPage.id}
+        pageTitle={historyPage.title}
+        uiLang={uiLang}
+        dict={dict}
+        onClose={() => setHistoryPage(null)}
+      />
+    ) : null;
+
+  const handleSendToChat = useCallback(async () => {
+    const draft = active ? tabs.getDraftPage(active.id, active.lang) : undefined;
+    if (!draft || isNotes) return;
+
+    setSendToChatPending(true);
+    setStatus(wb.sendToChatPending);
+    try {
+      const res = await apiFetch("/api/admin/wiki/send-to-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pageId: draft.id,
+          title: draft.title,
+          lang: draft.lang,
+          path: draft.path,
+          slug: draft.slug,
+          contentMd: draft.contentMd,
+          isPublished: draft.isPublished,
+          updatedAt: new Date().toISOString(),
+        }),
+      });
+      const body = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        code?: string;
+        messengerUrl?: string;
+      };
+      if (!res.ok) {
+        if (body.code === "heron_required") {
+          throw new Error(wb.sendToChatNoHeron);
+        }
+        if (body.code === "chat_account_required") {
+          throw new Error(wb.sendToChatNoChatAccount);
+        }
+        throw new Error(body.message || wb.sendToChatFailed);
+      }
+      if (body.messengerUrl) {
+        setChatToast({ messengerUrl: body.messengerUrl });
+      }
+      setStatus(wb.sendToChatOk);
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : wb.sendToChatFailed, "error");
+    } finally {
+      setSendToChatPending(false);
+    }
+  }, [active, isNotes, setStatus, tabs, wb]);
 
   const statusBarExtras = useMemo(() => {
     const draft = active ? tabs.getDraftPage(active.id, active.lang) : undefined;
@@ -298,7 +376,7 @@ export function AdminPostsEditorProvider({
       contentMd: draft.contentMd,
     };
 
-    return buildStatusBarExtras(
+    const base = buildStatusBarExtras(
       draft,
       {
         patchShowToc: (value) => tabs.patchDraft(draft.id, draft.lang, { showToc: value }),
@@ -312,10 +390,39 @@ export function AdminPostsEditorProvider({
       },
       isNotes,
     );
-  }, [active, dict.admin.posts.failed, isNotes, setStatus, tabs]);
+    if (!base) return null;
+
+    return {
+      ...base,
+      onSendToChat: isNotes ? undefined : () => void handleSendToChat(),
+      sendToChatPending,
+    };
+  }, [
+    active,
+    dict.admin.posts.failed,
+    handleSendToChat,
+    isNotes,
+    sendToChatPending,
+    setStatus,
+    tabs,
+  ]);
 
   return (
-    <PostsEditorContext.Provider value={{ explorer, main, statusBarExtras }}>{children}</PostsEditorContext.Provider>
+    <PostsEditorContext.Provider value={{ explorer, main, statusBarExtras }}>
+      {chatToast ? (
+        <AdminActionToast
+          message={wb.sendToChatOk}
+          actionLabel={wb.sendToChatOpen}
+          onAction={() => {
+            window.open(chatToast.messengerUrl, "_blank", "noopener,noreferrer");
+            setChatToast(null);
+          }}
+          onDismiss={() => setChatToast(null)}
+        />
+      ) : null}
+      {historyPanel}
+      {children}
+    </PostsEditorContext.Provider>
   );
 }
 

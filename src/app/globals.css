@@ -2141,6 +2141,53 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
   border-right: 1px solid var(--line);
 }
 
+.admin-action-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 56px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.admin-action-toast-text {
+  flex: 1;
+  font-size: 13px;
+}
+
+.admin-action-toast-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-action-toast-primary {
+  border: none;
+  border-radius: 6px;
+  background: var(--accent, #3e3e26);
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.admin-action-toast-dismiss {
+  border: none;
+  background: transparent;
+  color: var(--muted, #888);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
 .admin-block-menu-filter {
   padding: 8px 8px 4px;
 }
@@ -2902,4 +2949,264 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
   padding: 12px;
   display: grid;
   gap: 10px;
+}
+
+.home-category-tree-editor {
+  margin-top: 8px;
+}
+
+.home-category-tree-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0 0 12px;
+}
+
+.home-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-tree-drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 12px;
+  user-select: none;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.home-tree-drag-spacer {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.home-tree-icon-btn {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.home-tree-title-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.home-tree-title-readonly {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.home-tree-readonly-hint {
+  font-size: 0.8125rem;
+}
+
+.home-tree-make-category-btn {
+  font-size: 0.8125rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.home-tree-implicit-hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.admin-editor-split-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-editor-split-preview-toolbar button.admin-editor-split-preview-open {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.admin-revision-panel {
+  width: min(96vw, 1100px);
+  max-width: 1100px;
+  max-height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-revision-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-revision-panel-subtitle {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 4px 0 0;
+}
+
+.admin-revision-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.admin-revision-panel-body {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-revision-timeline {
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  padding-right: 12px;
+}
+
+.admin-revision-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-revision-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 8px 10px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-revision-item-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.admin-revision-item-time {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.admin-revision-item-editor {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.admin-revision-item-summary {
+  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-revision-summary-lines {
+  color: var(--success, #16a34a);
+}
+
+.admin-revision-diff-pane {
+  overflow: auto;
+  min-width: 0;
+}
+
+.admin-revision-compare-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+}
+
+.admin-revision-diff-stats {
+  font-size: 0.875rem;
+  margin: 0 0 8px;
+}
+
+.admin-revision-stat-added {
+  color: var(--success, #16a34a);
+}
+
+.admin-revision-stat-removed {
+  color: var(--danger, #dc2626);
+}
+
+.admin-revision-title-diff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.admin-revision-title-before {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.admin-revision-meta-heading {
+  margin: 16px 0 8px;
+  font-size: 0.9375rem;
+}
+
+.admin-revision-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.admin-revision-meta-table th,
+.admin-revision-meta-table td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-revision-meta-changed td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.admin-revision-error {
+  color: var(--danger, #dc2626);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 800px) {
+  .admin-revision-panel-body {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-revision-timeline {
+    border-right: none;
+    padding-right: 0;
+    max-height: 220px;
+  }
 }

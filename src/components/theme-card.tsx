@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Folder, Shield, Wallet, Users, RefreshCw, HelpCircle } from "lucide-react";
+import { resolveWikiIconComponent } from "@/lib/wiki-icon-presets";
 import type { PathTreeNode } from "@/lib/page-tree";
 import {
   collectionDescription,
@@ -10,19 +10,12 @@ import {
   type WikiTreePage,
 } from "@/lib/wiki-collection";
 
-const THEME_ICONS = [Folder, BookOpen, Wallet, Users, Shield, RefreshCw, HelpCircle] as const;
-
-function renderThemeIcon(segment: string) {
-  const Icon = THEME_ICONS[themeIconIndex(segment)] ?? Folder;
+function renderThemeIcon(node: PathTreeNode<WikiTreePage>) {
+  const Icon = resolveWikiIconComponent(
+    node.page?.icon,
+    isCollectionNode(node) || node.page?.isCategory === true,
+  );
   return <Icon size={22} strokeWidth={1.75} />;
-}
-
-function themeIconIndex(segment: string): number {
-  let hash = 0;
-  for (let i = 0; i < segment.length; i++) {
-    hash = (hash + segment.charCodeAt(i) * (i + 1)) % THEME_ICONS.length;
-  }
-  return hash;
 }
 
 export function ThemeCard({
@@ -46,7 +39,7 @@ export function ThemeCard({
   return (
     <Link href={href} prefetch={false} className="theme-card">
       <span className="theme-card-icon" aria-hidden>
-        {renderThemeIcon(node.segment)}
+        {renderThemeIcon(node)}
       </span>
       <span className="theme-card-body">
         <span className="theme-card-title">{title}</span>

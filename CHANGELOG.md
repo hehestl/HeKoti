@@ -10,6 +10,13 @@
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-06-21
+
+### Added
+
+- Wiki: inline-edit категорий на главной (ПКМ маскот, DnD, иконки, названия)
+- Admin: история ревизий статьи (git-review, Monaco diff, metadata, пагинация)
+
 ## [0.4.2] — 2026-06-21
 
 ### Added

@@ -25,6 +25,7 @@ export type AdminExplorerActions = {
   onLocalizeBranch: (id: string, lang: string) => void;
   onLocalizeAll: (id: string, lang: string) => void;
   onOpenPublic: (page: AdminPageRow) => void;
+  onOpenHistory?: (page: AdminPageRow) => void;
   activePageId?: string;
   activePageLang?: string;
 };

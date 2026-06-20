@@ -4,9 +4,8 @@ import { AdminContextMenu } from "@/components/admin-workbench/admin-context-men
 import type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
 import type { Dictionary } from "@/lib/i18n";
 import { buildAdminExplorerBulkMenuItems, buildAdminExplorerRowMenuItems } from "@/lib/admin-explorer-row-menu";
-import type { AdminContextMenuItem, AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
-import type { WikiIconKey } from "@/lib/wiki-icon-presets";
-import { WIKI_ICON_PRESETS } from "@/lib/wiki-icon-presets";
+import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
+import { WikiIconPickerMenu } from "@/components/wiki-icon-picker-menu";
 
 export function AdminExplorerRowMenu({
   rowMenu,
@@ -71,30 +70,12 @@ export function AdminExplorerIconPicker({
   actions: AdminExplorerActions;
   onClose: () => void;
 }) {
-  const items: AdminContextMenuItem[] = [
-    ...(Object.keys(WIKI_ICON_PRESETS) as WikiIconKey[]).map((key) => ({
-      id: key,
-      label: key,
-      onClick: () => {
-        actions.onChangeIcon(iconPicker.id, iconPicker.lang, key);
-        onClose();
-      },
-    })),
-    { id: "sep", label: "", separator: true },
-    {
-      id: "clear",
-      label: dict.admin.posts.clearIcon,
-      onClick: () => {
-        actions.onChangeIcon(iconPicker.id, iconPicker.lang, null);
-        onClose();
-      },
-    },
-  ];
   return (
-    <AdminContextMenu
-      x={iconPicker.x || 120}
-      y={iconPicker.y || 120}
-      items={items}
+    <WikiIconPickerMenu
+      x={iconPicker.x}
+      y={iconPicker.y}
+      clearLabel={dict.admin.posts.clearIcon}
+      onSelect={(icon) => actions.onChangeIcon(iconPicker.id, iconPicker.lang, icon)}
       onClose={onClose}
     />
   );

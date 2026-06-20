@@ -5,6 +5,12 @@ import type { AdminExplorerActions } from "@/components/admin-workbench/admin-ex
 import { apiFetch } from "@/lib/api-fetch";
 import type { Dictionary } from "@/lib/i18n";
 import { isMoveIntoDescendant, nextPagePath } from "@/lib/page-move";
+import {
+  calculateSiblingOrders,
+  getParentPathParts,
+  isReorderError,
+  resolveMoveTarget,
+} from "@/lib/page-reorder";
 import { pathSegmentsAfterLang, wikiPublicHref } from "@/lib/wiki-path";
 import { normalizePath, toSlug, validateSlugInput } from "@/lib/slug";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
@@ -99,10 +105,7 @@ export function useAdminPostsPageOps({
     setCreateSlugManual(false);
   }, [setCreateSlug, setCreateSlugManual, setCreateTitle]);
 
-  const getParentParts = useCallback((path: string, lang: string) => {
-    const segs = pathSegmentsAfterLang(path, lang);
-    return segs.length <= 1 ? [] : segs.slice(0, -1);
-  }, []);
+  const getParentParts = getParentPathParts;
 
   const createWithParent = async (
     lang: string,
@@ -270,36 +273,28 @@ export function useAdminPostsPageOps({
     const from = pages.find((p) => p.id === fromId);
     if (!from) return;
 
-    const fromSlug = pathSegmentsAfterLang(from.path, lang).slice(-1)[0] ?? "";
-    const targetPath = nextPagePath(lang, newParentParts, fromSlug);
-    if (isMoveIntoDescendant(from.path, targetPath)) {
-      setStatus(dict.admin.posts.cantMoveIntoDescendant, "error");
+    const patches = calculateSiblingOrders(
+      lang,
+      pages.map((p) => ({ id: p.id, path: p.path, navOrder: p.navOrder, isCategory: p.isCategory })),
+      fromId,
+      newParentParts,
+      targetPageId,
+      mode,
+    );
+    if (isReorderError(patches)) {
+      if (patches.error === "INTO_DESCENDANT") {
+        setStatus(dict.admin.posts.cantMoveIntoDescendant, "error");
+      }
       return;
     }
 
-    const siblingIds = pages
-      .filter((p) => getParentParts(p.path, lang).join("/") === newParentParts.join("/"))
-      .map((p) => p.id);
-
-    let insertAt = siblingIds.length;
-    if (targetPageId && mode !== "inside") {
-      const targetIndex = siblingIds.indexOf(targetPageId);
-      if (targetIndex >= 0) insertAt = mode === "before" ? targetIndex : targetIndex + 1;
-    }
-
-    const ordered = siblingIds.filter((id) => id !== fromId);
-    ordered.splice(insertAt, 0, fromId);
+    const fromSlug = pathSegmentsAfterLang(from.path, lang).slice(-1)[0] ?? "";
+    const targetPath = nextPagePath(lang, newParentParts, fromSlug);
+    const pathChanged = from.path !== targetPath;
 
     setStatus(dict.admin.posts.saving);
-    const pathChanged = from.path !== targetPath;
     try {
-      await Promise.all(
-        ordered.map((id, i) => {
-          const patch: { navOrder: number; parentPathParts?: string[] } = { navOrder: i * 10 };
-          if (id === fromId) patch.parentPathParts = newParentParts;
-          return patchPageApi(id, lang, patch);
-        }),
-      );
+      await Promise.all(patches.map((p) => patchPageApi(p.id, lang, p)));
       if (pathChanged) {
         await refreshPagesForLang(lang);
       }
@@ -313,25 +308,14 @@ export function useAdminPostsPageOps({
     const pages = pagesForLang(lang);
     const from = pages.find((p) => p.id === fromId);
     if (!from) return;
+    if (target.kind === "page" && fromId === target.targetId) return;
 
-    if (target.kind === "root") {
-      await applyMove(fromId, lang, [], null, "after");
-      return;
-    }
-
-    if (target.kind === "folder") {
-      const parentParts = pathSegmentsAfterLang(target.pathKey, lang);
-      await applyMove(fromId, lang, parentParts, null, "inside");
-      return;
-    }
-
-    const targetPage = pages.find((p) => p.id === target.targetId);
-    if (!targetPage || fromId === target.targetId) return;
-
-    const targetParent = getParentParts(targetPage.path, lang);
-    const targetInside = pathSegmentsAfterLang(targetPage.path, lang);
-    const newParentParts = target.mode === "inside" ? targetInside : targetParent;
-    await applyMove(fromId, lang, newParentParts, target.targetId, target.mode);
+    const { newParentParts, targetPageId, mode } = resolveMoveTarget(
+      lang,
+      pages.map((p) => ({ id: p.id, path: p.path, navOrder: p.navOrder, isCategory: p.isCategory })),
+      target,
+    );
+    await applyMove(fromId, lang, newParentParts, targetPageId, mode);
   };
 
   const liftUp = async (id: string, lang: string) => {

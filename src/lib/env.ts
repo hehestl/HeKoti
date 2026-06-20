@@ -51,6 +51,9 @@ const envSchema = z.object({
   HERON_FETCH_TIMEOUT_MS: z.string().optional(),
   HEKOTI_HERON_DEFAULT_RETURN: z.string().default("/ru/admin"),
   HEKOTI_HERON_EXCHANGE_RATE_LIMIT: z.coerce.number().default(20),
+  HEHE_CHAT_API_URL: z.string().optional(),
+  HEHE_CHAT_PUBLIC_URL: z.string().optional(),
+  HEKOTI_FORWARD_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);

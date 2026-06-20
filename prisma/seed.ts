@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import pg from "pg";
 
 import { ensureSystemNotes } from "../src/lib/system-notes";
+import { createPageRevision } from "../src/lib/page-revision-snapshot";
 
 /** Local dev: load `.env` when `dotenv` is installed. Docker/Compose injects env — no `dotenv` in the runtime image. */
 async function loadDotenvOptional() {
@@ -15,14 +16,11 @@ async function ensurePageRevision(
   prisma: PrismaClient,
   pageId: string,
   editorId: string,
-  title: string,
-  contentMd: string,
+  page: { title: string; contentMd: string; slug: string; path: string; icon: string | null; isPublished: boolean; showToc: boolean; isCategory: boolean; navOrder: number },
 ) {
   const n = await prisma.pageRevision.count({ where: { pageId } });
   if (n > 0) return;
-  await prisma.pageRevision.create({
-    data: { pageId, editorId, title, contentMd },
-  });
+  await createPageRevision(prisma, { id: pageId, ...page }, editorId, null, { created: true, force: true });
 }
 
 async function main() {
@@ -199,7 +197,7 @@ alt: Простая блок-схема
               isPublished: true,
             },
           });
-      await ensurePageRevision(prisma, page.id, admin.id, row.title, row.contentMd);
+      await ensurePageRevision(prisma, page.id, admin.id, page);
     }
 
     await ensureSystemNotes("en");

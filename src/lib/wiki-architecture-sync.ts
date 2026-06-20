@@ -14,6 +14,7 @@ import {
   type ArchPageRef,
 } from "@/lib/wiki-architecture-md";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+import { createPageRevision, pageToRevisionSnapshot } from "@/lib/page-revision-snapshot";
 
 async function loadActivePages(lang: string): Promise<ArchPageRef[]> {
   return prisma.page.findMany({
@@ -76,14 +77,7 @@ async function applyCreate(
           originalId: sourcePage?.id ?? null,
         },
       });
-      await tx.pageRevision.create({
-        data: {
-          pageId: row.id,
-          editorId,
-          title: row.title,
-          contentMd: row.contentMd,
-        },
-      });
+      await createPageRevision(tx, row, editorId, null, { created: true });
       await emitOutgoingWebhook("page.created", {
         pageId: row.id,
         path: row.path,
@@ -110,18 +104,14 @@ export async function applyArchitectureOps(
       await applyCreate(op, editorId, mirrorStructure, enabledLangs);
       applied += 1;
     } else if (op.type === "update") {
+      const existing = await prisma.page.findUnique({ where: { id: op.id } });
+      if (!existing) continue;
+      const prevSnapshot = pageToRevisionSnapshot(existing);
       const updated = await prisma.page.update({
         where: { id: op.id },
         data: { title: op.title, isCategory: op.isCategory },
       });
-      await prisma.pageRevision.create({
-        data: {
-          pageId: op.id,
-          editorId,
-          title: op.title,
-          contentMd: updated.contentMd,
-        },
-      });
+      await createPageRevision(prisma, updated, editorId, prevSnapshot);
       await invalidateWikiLangCache(updated.lang);
       await invalidateSearchLangCache(updated.lang);
       applied += 1;

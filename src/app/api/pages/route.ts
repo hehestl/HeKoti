@@ -8,6 +8,7 @@ import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
+import { createPageRevision } from "@/lib/page-revision-snapshot";
 import { activePageWhere, wikiPageWhere } from "@/lib/page-query";
 import type { PageScope } from "@prisma/client";
 
@@ -112,14 +113,7 @@ export async function POST(request: Request) {
             originalId,
           },
         });
-        await tx.pageRevision.create({
-          data: {
-            pageId: created.id,
-            editorId: user.id,
-            title: created.title,
-            contentMd: created.contentMd,
-          },
-        });
+        await createPageRevision(tx, created, user.id, null, { created: true });
         return created;
       });
 
@@ -168,14 +162,7 @@ export async function POST(request: Request) {
           scope,
         },
       });
-      await tx.pageRevision.create({
-        data: {
-          pageId: created.id,
-          editorId: user.id,
-          title: payload.title,
-          contentMd: payload.contentMd,
-        },
-      });
+      await createPageRevision(tx, created, user.id, null, { created: true });
       return created;
     });
     await invalidateWikiLangCache(payload.lang);

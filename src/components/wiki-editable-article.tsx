@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { InlineEditToolbar } from "@/components/inline-edit-toolbar";
 import { AdminMarkdownEditor } from "@/components/admin-markdown-editor";
 import { WikiArticleToc } from "@/components/wiki-article-toc";
 import type { EditableWikiPage } from "@/components/wiki-inline-edit-types";
@@ -143,26 +144,20 @@ export function WikiEditableArticle({
 
   const body = (
     <>
-      <div className="wiki-inline-edit-toolbar">
-        <div className="wiki-inline-edit-toolbar-actions">
-          <button type="button" className="wiki-inline-edit-btn" onClick={() => void saveNow()}>
-            {labels.save}
+      <InlineEditToolbar
+        saveLabel={labels.save}
+        cancelLabel={labels.cancel}
+        statusText={statusText}
+        statusTone={statusTone}
+        onSave={() => void saveNow()}
+        onCancel={cancelEdit}
+      >
+        {!draft.systemKey ? (
+          <button type="button" className="wiki-inline-edit-btn wiki-inline-edit-btn-muted" onClick={() => void togglePublish()}>
+            {draft.isPublished ? labels.unpublish : labels.publish}
           </button>
-          <button type="button" className="wiki-inline-edit-btn wiki-inline-edit-btn-muted" onClick={cancelEdit}>
-            {labels.cancel}
-          </button>
-          {!draft.systemKey ? (
-            <button type="button" className="wiki-inline-edit-btn wiki-inline-edit-btn-muted" onClick={() => void togglePublish()}>
-              {draft.isPublished ? labels.unpublish : labels.publish}
-            </button>
-          ) : null}
-        </div>
-        {statusText ? (
-          <span className={`wiki-inline-edit-status${statusTone === "error" ? " wiki-inline-edit-status-error" : ""}`}>
-            {statusText}
-          </span>
         ) : null}
-      </div>
+      </InlineEditToolbar>
       {showTitle ? (
         <input
           className="wiki-inline-edit-title-input"

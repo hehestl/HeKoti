@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { DonateInlineEditProvider } from "@/components/donate-inline-edit-context";
 import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-types";
+import { HomeInlineEditProvider } from "@/components/home-inline-edit-context";
+import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import { WikiInlineEditProvider } from "@/components/wiki-inline-edit-context";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
@@ -25,6 +27,7 @@ export function WikiPublicShellClient({
   adminLabel,
   versionLabel,
   inlineEditLabels,
+  homeInlineEditLabels,
   initialDonateConfig,
   donateEditLabels,
   diagramCopyLabel,
@@ -44,6 +47,7 @@ export function WikiPublicShellClient({
   adminLabel: string;
   versionLabel: string;
   inlineEditLabels: WikiInlineEditLabels;
+  homeInlineEditLabels?: HomeInlineEditLabels;
   initialDonateConfig?: DonateConfig;
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
@@ -78,15 +82,36 @@ export function WikiPublicShellClient({
 
   const withWiki = (
     <WikiInlineEditProvider isAdmin={!!isAdmin} labels={inlineEditLabels}>
-      {initialDonateConfig && donateEditLabels ? (
-        <DonateInlineEditProvider isAdmin={!!isAdmin} labels={donateEditLabels}>
-          {shell}
-        </DonateInlineEditProvider>
-      ) : (
-        shell
-      )}
+      <HomeInlineEditProvider isAdmin={!!isAdmin} labels={homeInlineEditLabels ?? defaultHomeInlineEditLabels(inlineEditLabels)}>
+        {initialDonateConfig && donateEditLabels ? (
+          <DonateInlineEditProvider isAdmin={!!isAdmin} labels={donateEditLabels}>
+            {shell}
+          </DonateInlineEditProvider>
+        ) : (
+          shell
+        )}
+      </HomeInlineEditProvider>
     </WikiInlineEditProvider>
   );
 
   return withWiki;
+}
+
+function defaultHomeInlineEditLabels(wiki: WikiInlineEditLabels): HomeInlineEditLabels {
+  return {
+    dragHint: "",
+    makeCategory: "",
+    implicitHint: "",
+    leafReadOnly: "",
+    systemReadOnly: "",
+    clearIcon: "",
+    save: wiki.save,
+    cancel: wiki.cancel,
+    saved: wiki.saved,
+    saving: wiki.saving,
+    failed: wiki.failed,
+    dirtyConfirm: wiki.dirtyConfirm,
+    mascotEdit: wiki.mascotEdit,
+    mascotExitEdit: wiki.mascotExitEdit,
+  };
 }

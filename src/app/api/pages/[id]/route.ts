@@ -6,6 +6,7 @@ import { requireAdminUser } from "@/lib/auth";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { activePageWhere } from "@/lib/page-query";
 import { softDeletePageCascade } from "@/lib/page-trash";
+import { createPageRevision, pageToRevisionSnapshot } from "@/lib/page-revision-snapshot";
 import { collectSiblingSlugs, planPageBranchMove, planPageSlugRename } from "@/lib/page-move";
 import { createRedirectsForPathUpdates } from "@/lib/page-redirect";
 import { validateSlugInput } from "@/lib/slug";
@@ -240,6 +241,7 @@ export async function PATCH(
     }
 
     const titleInSlugTxn = slugRenamed && payload.title !== undefined;
+    const prevSnapshot = pageToRevisionSnapshot(existing);
     const updated = await prisma.page.update({
       where: { id },
       data: {
@@ -254,16 +256,7 @@ export async function PATCH(
       },
     });
 
-    if (payload.title !== undefined || payload.contentMd !== undefined) {
-      await prisma.pageRevision.create({
-        data: {
-          pageId: id,
-          editorId: user.id,
-          title: updated.title,
-          contentMd: updated.contentMd,
-        },
-      });
-    }
+    await createPageRevision(prisma, updated, user.id, prevSnapshot);
     await invalidateWikiLangCache(updated.lang);
     await invalidateSearchLangCache(updated.lang);
     if (updated.scope === "WIKI") {

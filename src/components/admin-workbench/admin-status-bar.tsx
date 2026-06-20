@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, FileDown, FileText, List, ListX, Table } from "lucide-react";
+import { Eye, EyeOff, FileDown, FileText, List, ListX, Send, Table } from "lucide-react";
 import type { AdminPageRow } from "@/types/admin-workbench";
 
 export type AdminStatusBarExtras = {
@@ -10,6 +10,9 @@ export type AdminStatusBarExtras = {
   onExportPdf: () => void;
   onExportCsv: () => void;
   onExportMarkdown: () => void;
+  onSendToChat?: () => void;
+  sendToChatPending?: boolean;
+  sendToChatDisabled?: boolean;
 };
 
 export function AdminStatusBar({
@@ -37,6 +40,19 @@ export function AdminStatusBar({
       <div className="admin-status-bar-right">
         {pageExtras ? (
           <div className="admin-status-bar-tools">
+            {pageExtras.onSendToChat ? (
+              <button
+                type="button"
+                className="admin-status-btn"
+                onClick={pageExtras.onSendToChat}
+                disabled={pageExtras.sendToChatPending || pageExtras.sendToChatDisabled}
+                title={dict.sendToChat}
+                aria-label={dict.sendToChat}
+              >
+                <Send size={14} aria-hidden />
+                <span>{dict.sendToChat}</span>
+              </button>
+            ) : null}
             {pageExtras.showTocControls ? (
               <button
                 type="button"

@@ -35,5 +35,21 @@ export async function getWikiShellProps(inputLang: string) {
     },
     diagramCopyLabel: dict.article.diagramCopy,
     diagramCopiedLabel: dict.article.diagramCopied,
+    homeInlineEditLabels: {
+      dragHint: dict.home.inlineEdit.dragHint,
+      makeCategory: dict.home.inlineEdit.makeCategory,
+      implicitHint: dict.home.inlineEdit.implicitHint,
+      leafReadOnly: dict.home.inlineEdit.leafReadOnly,
+      systemReadOnly: dict.home.inlineEdit.systemReadOnly,
+      clearIcon: dict.admin.posts.clearIcon,
+      save: dict.admin.workbench.inlineEditSave,
+      cancel: dict.admin.workbench.inlineEditCancel,
+      saved: dict.admin.workbench.inlineEditSaved,
+      saving: dict.admin.workbench.inlineEditSaving,
+      failed: dict.admin.workbench.inlineEditFailed,
+      dirtyConfirm: dict.admin.workbench.dirtyConfirm,
+      mascotEdit: dict.admin.workbench.mascotEdit,
+      mascotExitEdit: dict.admin.workbench.mascotExitEdit,
+    },
   };
 }

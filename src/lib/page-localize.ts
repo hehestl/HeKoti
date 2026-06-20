@@ -7,6 +7,7 @@ import { normalizePath, toSlug } from "@/lib/slug";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { activePageWhere } from "@/lib/page-query";
+import { createPageRevision, pageToRevisionSnapshot } from "@/lib/page-revision-snapshot";
 
 type LocalizedPayload = { title: string; contentMd: string };
 
@@ -55,6 +56,8 @@ export async function localizePageToLanguage(input: {
 
   if (existing) {
     const updated = await prisma.$transaction(async (tx) => {
+      const before = await tx.page.findUnique({ where: { id: existing.id } });
+      if (!before) throw new Error("Target page not found.");
       const row = await tx.page.update({
         where: { id: existing.id },
         data: {
@@ -63,14 +66,7 @@ export async function localizePageToLanguage(input: {
           originalId: canonicalPageId(source),
         },
       });
-      await tx.pageRevision.create({
-        data: {
-          pageId: row.id,
-          editorId: input.editorId,
-          title: row.title,
-          contentMd: row.contentMd,
-        },
-      });
+      await createPageRevision(tx, row, input.editorId, pageToRevisionSnapshot(before));
       return row;
     });
     await invalidateWikiLangCache(input.targetLang);
@@ -110,14 +106,7 @@ export async function localizePageToLanguage(input: {
         originalId: canonicalPageId(source),
       },
     });
-    await tx.pageRevision.create({
-      data: {
-        pageId: row.id,
-        editorId: input.editorId,
-        title: row.title,
-        contentMd: row.contentMd,
-      },
-    });
+    await createPageRevision(tx, row, input.editorId, null, { created: true });
     return row;
   });
 

@@ -1,5 +1,6 @@
 import { WikiPublicShellClient } from "@/components/wiki-public-shell-client";
 import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-types";
+import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import type { WikiPublicHeaderVariant } from "@/components/wiki-public-header";
 import type { DonateConfig } from "@/lib/donate-config";
@@ -20,6 +21,7 @@ export function WikiPublicShell({
   adminLabel,
   versionLabel,
   inlineEditLabels,
+  homeInlineEditLabels,
   initialDonateConfig,
   donateEditLabels,
   diagramCopyLabel,
@@ -39,6 +41,7 @@ export function WikiPublicShell({
   adminLabel: string;
   versionLabel: string;
   inlineEditLabels: WikiInlineEditLabels;
+  homeInlineEditLabels?: HomeInlineEditLabels;
   initialDonateConfig?: DonateConfig;
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
@@ -60,6 +63,7 @@ export function WikiPublicShell({
       adminLabel={adminLabel}
       versionLabel={versionLabel}
       inlineEditLabels={inlineEditLabels}
+      homeInlineEditLabels={homeInlineEditLabels}
       initialDonateConfig={initialDonateConfig}
       donateEditLabels={donateEditLabels}
       diagramCopyLabel={diagramCopyLabel}

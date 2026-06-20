@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useTypewriterPlaceholder } from "@/hooks/use-typewriter-placeholder";
 import { resolveSearchNavigation } from "@/lib/search-navigation";
 
@@ -27,12 +27,15 @@ export function HelpCenterSearchForm({
   const typewriterEnabled =
     enableTypewriterPlaceholder && searchSampleTitles.length > 0 && !focused && query === "";
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { displayText, showCaret } = useTypewriterPlaceholder({
     titles: searchSampleTitles,
-    enabled: typewriterEnabled,
+    enabled: mounted && typewriterEnabled,
   });
 
-  const showTypewriter = typewriterEnabled;
+  const showTypewriter = mounted && typewriterEnabled;
 
   return (
     <form

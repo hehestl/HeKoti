@@ -56,6 +56,7 @@ export function AdminPostsEditorMain({
   deleteModal,
   onDeleteCancel,
   onDeleteSubmit,
+  onOpenHistory,
 }: {
   dict: Dictionary;
   wb: Dictionary["admin"]["workbench"];
@@ -87,6 +88,7 @@ export function AdminPostsEditorMain({
   deleteModal: DeleteModal;
   onDeleteCancel: () => void;
   onDeleteSubmit: () => void;
+  onOpenHistory?: () => void;
 }) {
   return (
     <div className="admin-editor-main">
@@ -127,7 +129,9 @@ export function AdminPostsEditorMain({
               ...wb,
               diagramCopy: dict.article.diagramCopy,
               diagramCopied: dict.article.diagramCopied,
+              revisionHistory: wb.revisionHistory,
             }}
+            onOpenHistory={onOpenHistory}
             editor={
               <AdminMarkdownEditor
                 key={`${active.id}:${active.lang}`}

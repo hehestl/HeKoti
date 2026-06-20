@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { Clock, ExternalLink } from "lucide-react";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
 import { apiFetch } from "@/lib/api-fetch";
 import { wikiPublicHref } from "@/lib/wiki-path";
@@ -15,6 +15,7 @@ export function AdminEditorSplit({
   onSplitRatioChange,
   editor,
   dict,
+  onOpenHistory,
 }: {
   markdown: string;
   lang: string;
@@ -26,7 +27,9 @@ export function AdminEditorSplit({
   dict: Record<string, string> & {
     diagramCopy?: string;
     diagramCopied?: string;
+    revisionHistory?: string;
   };
+  onOpenHistory?: () => void;
 }) {
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,10 +93,18 @@ export function AdminEditorSplit({
           <div className="admin-editor-split-preview" style={{ flex: 1 - splitRatio }}>
             <div className="admin-editor-split-preview-toolbar">
               <span>{dict.previewTitle}</span>
-              <a href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-editor-split-preview-open">
-                <ExternalLink size={14} aria-hidden />
-                {dict.openInNewTab}
-              </a>
+              <div className="admin-editor-split-preview-actions">
+                {onOpenHistory && dict.revisionHistory ? (
+                  <button type="button" className="admin-editor-split-preview-open" onClick={onOpenHistory}>
+                    <Clock size={14} aria-hidden />
+                    {dict.revisionHistory}
+                  </button>
+                ) : null}
+                <a href={publicHref} target="_blank" rel="noopener noreferrer" className="admin-editor-split-preview-open">
+                  <ExternalLink size={14} aria-hidden />
+                  {dict.openInNewTab}
+                </a>
+              </div>
             </div>
             <div className="admin-editor-split-preview-body">
               {loading ? <p className="admin-sidebar-hint">{dict.previewLoading}</p> : null}

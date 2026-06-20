@@ -1,4 +1,5 @@
 import { HelpCenterHome } from "@/components/help-center-home";
+import { HelpCenterHomeView } from "@/components/help-center-home-view";
 import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiPublicShell } from "@/components/wiki-public-shell";
 import { WikiSearchResults } from "@/components/wiki-search-results";
@@ -67,13 +68,15 @@ export default async function LanguageHome({
           <WikiSearchResults lang={lang} query={qTrim} results={searchResults} dict={dict.search} />
         </>
       ) : (
-        <HelpCenterHome
-          lang={lang}
-          themes={pathTree}
-          excerptByPath={excerptByPath}
-          defaultDescription={dict.collection.defaultDescription}
-          dict={dict.home}
-        />
+        <HelpCenterHomeView lang={lang} pathTree={pathTree} searchMode={false}>
+          <HelpCenterHome
+            lang={lang}
+            themes={pathTree}
+            excerptByPath={excerptByPath}
+            defaultDescription={dict.collection.defaultDescription}
+            dict={dict.home}
+          />
+        </HelpCenterHomeView>
       )}
     </WikiPublicShell>
   );

@@ -110,6 +110,9 @@ export function buildAdminExplorerRowMenuItems(
         ]
       : []),
     ...(!isNotes ? [{ id: "public", label: wb.openOnSite, onClick: () => actions.onOpenPublic(page) }] : []),
+    ...(actions.onOpenHistory
+      ? [{ id: "history", label: wb.revisionHistory, onClick: () => actions.onOpenHistory!(page) }]
+      : []),
     { id: "lift", label: dict.admin.posts.upLevel, onClick: () => actions.onLiftUp(page.id, page.lang) },
     ...(!isNotes
       ? [

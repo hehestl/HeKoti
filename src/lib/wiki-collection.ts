@@ -13,6 +13,7 @@ export type WikiTreePage = {
   updatedAt?: Date;
   icon?: string | null;
   isCategory?: boolean;
+  systemKey?: string | null;
 };
 
 export function humanizeSegment(segment: string): string {
@@ -254,6 +255,7 @@ async function loadLangPages(lang: string): Promise<WikiTreePage[]> {
       updatedAt: true,
       icon: true,
       isCategory: true,
+      systemKey: true,
     },
   });
 }
