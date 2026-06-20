@@ -12,8 +12,17 @@
 
 ### Added
 
+- Ops: `.agentrules` — taxonomy social/chat, paths Профиль B, ports ui 3310→3100
 - Admin: вкладка «Заметки» — внутреннее дерево без публикации в вики (`PageScope.NOTES`)
 - Admin: системные заметки `hekoti-welcome` и `hekoti-support` (неудаляемые)
+
+### Changed
+
+- Docker: сеть `hh-network`, logging rotation, `hh-hekoti-lt`, bind `127.0.0.1:3310`
+
+### Fixed
+
+- Admin: Monaco — web workers (`MonacoEnvironment.getWorkerUrl`), синхронизация `contentMd` при открытии вкладки
 
 ## [0.3.3] — 2026-06-20
 

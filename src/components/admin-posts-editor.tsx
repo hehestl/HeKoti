@@ -686,6 +686,7 @@ export function AdminPostsEditorProvider({
             dict={wb}
             editor={
               <AdminMarkdownEditor
+                key={`${active.id}:${active.lang}`}
                 value={active.contentMd}
                 onChange={(v) => tabs.patchDraft(active.id, active.lang, { contentMd: v })}
                 lang={active.lang}

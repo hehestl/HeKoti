@@ -72,6 +72,22 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     return () => ro.disconnect();
   }, [fillParent]);
 
+  useEffect(() => {
+    edRef.current?.layout();
+  }, [measuredHeight]);
+
+  useEffect(() => {
+    const ed = edRef.current;
+    if (!ed) return;
+    const model = ed.getModel();
+    if (!model || model.getValue() === value) return;
+    const scrollTop = ed.getScrollTop();
+    const pos = ed.getPosition();
+    ed.setValue(value);
+    ed.setScrollTop(scrollTop);
+    if (pos) ed.setPosition(pos);
+  }, [value]);
+
   const withEd = useCallback((fn: (ed: monaco.editor.IStandaloneCodeEditor, m: typeof monaco) => void) => {
     const ed = edRef.current;
     const m = monRef.current;
@@ -243,6 +259,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
           onMount={(editor, m) => {
             edRef.current = editor;
             monRef.current = m;
+            if (editor.getValue() !== value) editor.setValue(value);
             requestAnimationFrame(() => editor.layout());
             editor.onContextMenu((e) => {
               e.event.preventDefault();
@@ -256,6 +273,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
             wordWrap: "on",
             scrollBeyondLastLine: false,
             contextmenu: false,
+            automaticLayout: true,
           }}
         />
       </div>

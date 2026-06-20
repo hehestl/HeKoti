@@ -2123,6 +2123,9 @@ select {
 .admin-monaco-editor-host {
   flex: 1;
   min-height: 120px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .admin-tree-row-inner {
