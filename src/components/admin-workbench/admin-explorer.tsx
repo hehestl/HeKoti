@@ -59,6 +59,24 @@ export function AdminExplorer({
   const [iconPicker, setIconPicker] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const selection = useAdminExplorerSelection();
 
+  const closeAllMenus = useCallback(() => {
+    setRowMenu(null);
+    setSectionMenu(null);
+    setIconPicker(null);
+  }, []);
+
+  const openRowMenu = useCallback((id: string, lang: string, x: number, y: number) => {
+    setSectionMenu(null);
+    setIconPicker(null);
+    setRowMenu({ id, lang, x, y });
+  }, []);
+
+  const openSectionMenu = useCallback((lang: string, x: number, y: number) => {
+    setRowMenu(null);
+    setIconPicker(null);
+    setSectionMenu({ lang, x, y });
+  }, []);
+
   const pruneBranches = useCallback(
     (lang: string, pages: AdminPageRow[]) => {
       const tree = buildPathTree(pages, lang);
@@ -224,8 +242,8 @@ export function AdminExplorer({
                   onClick={() => toggleLang(lang)}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    setRowMenu(null);
-                    setSectionMenu({ lang, x: e.clientX, y: e.clientY });
+                    e.stopPropagation();
+                    openSectionMenu(lang, e.clientX, e.clientY);
                   }}
                 >
                   <ChevronRight
@@ -248,14 +266,6 @@ export function AdminExplorer({
               {expanded ? (
                 <div
                   className="admin-explorer-lang-body"
-                  onContextMenu={(e) => {
-                    if ((e.target as HTMLElement).closest(".admin-tree-row-container, .admin-tree-branch-line, .admin-path-tree")) {
-                      return;
-                    }
-                    e.preventDefault();
-                    setRowMenu(null);
-                    setSectionMenu({ lang, x: e.clientX, y: e.clientY });
-                  }}
                   onDragOver={(e) => {
                     if (!e.dataTransfer.types.includes("text/plain")) return;
                     e.preventDefault();
@@ -298,8 +308,7 @@ export function AdminExplorer({
                       }}
                       onContextMenu={(page, x, y) => {
                         if (!selection.isSelected(lang, page.id)) selection.selectSingle(page);
-                        setSectionMenu(null);
-                        setRowMenu({ id: page.id, lang, x, y });
+                        openRowMenu(page.id, lang, x, y);
                       }}
                       onMoveByDrop={actions.onMoveByDrop}
                       variant={variant}
@@ -319,31 +328,30 @@ export function AdminExplorer({
           isNotes={isNotes}
           actions={actions}
           selected={selection.selected}
-          onClose={() => setRowMenu(null)}
+          onClose={closeAllMenus}
           onExpandSelected={expandBranchesForPages}
           onCollapseSelected={collapseBranchesForPages}
           onOpenIconPicker={(id, lang, x, y) => {
             setRowMenu(null);
+            setSectionMenu(null);
             setIconPicker({ id, lang, x, y });
           }}
         />
-      ) : null}
-      {iconPicker ? (
-        <AdminExplorerIconPicker
-          iconPicker={iconPicker}
-          dict={dict}
-          actions={actions}
-          onClose={() => setIconPicker(null)}
-        />
-      ) : null}
-      {sectionMenu ? (
+      ) : sectionMenu ? (
         <AdminExplorerSectionMenu
           sectionMenu={sectionMenu}
           dict={dict}
           actions={actions}
           onCollapseSection={collapseSection}
           onExpandSection={expandSection}
-          onClose={() => setSectionMenu(null)}
+          onClose={closeAllMenus}
+        />
+      ) : iconPicker ? (
+        <AdminExplorerIconPicker
+          iconPicker={iconPicker}
+          dict={dict}
+          actions={actions}
+          onClose={closeAllMenus}
         />
       ) : null}
     </div>

@@ -14,7 +14,11 @@ function readVersionFile(): string | null {
   return null;
 }
 
+/** Canonical app version: baked at `next build` from VERSION, runtime file as dev fallback. */
 export function getAppVersion(): string {
+  const baked = process.env.HEKOTI_APP_VERSION ?? process.env.NEXT_PUBLIC_HEKOTI_APP_VERSION;
+  if (baked && SEMVER.test(baked)) return baked;
+
   try {
     const fromFile = readVersionFile();
     if (fromFile) return fromFile;

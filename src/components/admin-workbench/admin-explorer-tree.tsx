@@ -59,7 +59,12 @@ export function AdminPathTree({
   variant?: "posts" | "notes";
 }) {
   return (
-    <div className="admin-path-tree">
+    <div
+      className="admin-path-tree"
+      onContextMenu={(e) => {
+        e.stopPropagation();
+      }}
+    >
       {nodes.map((node, index) => (
         <AdminTreeBranch
           key={node.pathKey}

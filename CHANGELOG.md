@@ -10,6 +10,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Admin Explorer: убрано дублирующее ПКМ-меню секции языка при клике по строкам дерева (остаётся только меню строки; меню секции — по заголовку RU/EN)
+- Version: номер версии вшивается при `next build` (`HEKOTI_APP_VERSION`); Docker runner копирует `VERSION` из builder-стадии
+
 ## [0.4.1] — 2026-06-17
 
 ### Added
