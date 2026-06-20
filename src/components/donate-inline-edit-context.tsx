@@ -36,6 +36,8 @@ type DonateInlineEditContextValue = {
 
 const DonateInlineEditContext = createContext<DonateInlineEditContextValue | null>(null);
 
+export { DonateInlineEditContext };
+
 export function DonateInlineEditProvider({
   isAdmin,
   labels,
@@ -204,8 +206,4 @@ export function useDonateInlineEdit() {
   const ctx = useContext(DonateInlineEditContext);
   if (!ctx) throw new Error("useDonateInlineEdit must be used within DonateInlineEditProvider");
   return ctx;
-}
-
-export function useDonateInlineEditOptional() {
-  return useContext(DonateInlineEditContext);
 }

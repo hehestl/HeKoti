@@ -1,21 +1,27 @@
-import { Suspense } from "react";
-import { LanguageSwitch, LanguageSwitchFallback } from "@/components/language-switch";
+import { LanguageSwitch } from "@/components/language-switch";
 
 type LangOption = { code: string; label: string };
 
-/** Suspense must wrap useSearchParams in a Server Component (not inside client header). */
 export function WikiPublicLanguageSwitch({
   lang,
   langs,
   groupAria,
+  pathSuffix = "",
+  queryString = "",
 }: {
   lang: string;
   langs: LangOption[];
   groupAria: string;
+  pathSuffix?: string;
+  queryString?: string;
 }) {
   return (
-    <Suspense fallback={<LanguageSwitchFallback lang={lang} langs={langs} />}>
-      <LanguageSwitch lang={lang} langs={langs} groupAria={groupAria} />
-    </Suspense>
+    <LanguageSwitch
+      lang={lang}
+      langs={langs}
+      groupAria={groupAria}
+      pathSuffix={pathSuffix}
+      queryString={queryString}
+    />
   );
 }

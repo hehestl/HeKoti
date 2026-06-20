@@ -4,7 +4,7 @@ import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-typ
 import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import type { WikiPublicHeaderVariant } from "@/components/wiki-public-header";
-import type { DonateConfig } from "@/lib/donate-config";
+import type { DonateConfig } from "@/lib/donate-config-shared";
 
 type LangOption = { code: string; label: string };
 
@@ -27,6 +27,8 @@ export function WikiPublicShell({
   donateEditLabels,
   diagramCopyLabel,
   diagramCopiedLabel,
+  languagePathSuffix = "",
+  languageQuery = "",
   children,
 }: {
   lang: string;
@@ -47,6 +49,10 @@ export function WikiPublicShell({
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
   diagramCopiedLabel: string;
+  /** Path after /{lang} for language switcher hrefs, e.g. "/wiki/foo" or "/donate". */
+  languagePathSuffix?: string;
+  /** Raw query string without leading "?", e.g. "q=test". */
+  languageQuery?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -68,7 +74,13 @@ export function WikiPublicShell({
       diagramCopyLabel={diagramCopyLabel}
       diagramCopiedLabel={diagramCopiedLabel}
       languageSwitch={
-        <WikiPublicLanguageSwitch lang={lang} langs={langs} groupAria={languageAria} />
+        <WikiPublicLanguageSwitch
+          lang={lang}
+          langs={langs}
+          groupAria={languageAria}
+          pathSuffix={languagePathSuffix}
+          queryString={languageQuery}
+        />
       }
     >
       {children}

@@ -10,6 +10,8 @@
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-06-21
+
 ### Fixed
 
 - Admin: история ревизий — modal overlay (fix layout squeeze)
@@ -17,6 +19,7 @@
 - Footer: ссылка «Донат» с главной — полная навигация (fix съеденного клика)
 - Home: React #419 — Suspense для LanguageSwitch в RSC, гидрация typewriter/edit UI
 - Home: CSP eval — Zod вынесен из client bundle (donate-config), lazy DonateInlineEditProvider
+- Home: React #419 — LanguageSwitch без useSearchParams (href с сервера); theme-card/footer — native `<a>`
 
 ## [0.4.3] — 2026-06-21
 

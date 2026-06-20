@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
-import { useDonateInlineEditOptional } from "@/components/donate-inline-edit-context";
+import { useDonateInlineEditOptional } from "@/components/donate-inline-edit-hooks";
 import { useHomeInlineEditOptional } from "@/components/home-inline-edit-context";
 import { useWikiInlineEditOptional } from "@/components/wiki-inline-edit-context";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";

@@ -32,6 +32,7 @@ export default async function DonatePage({ params }: { params: Promise<{ lang: s
       variant="compact"
       initialDonateConfig={donateConfig}
       donateEditLabels={donateEditLabels}
+      languagePathSuffix="/donate"
     >
       <WikiBreadcrumbs
         items={staticBreadcrumbChain(lang, dict.collection.allCollections, dict.admin.donate.title)}

@@ -2,20 +2,9 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { buildLanguageHref } from "@/lib/language-href";
 
 type LangOption = { code: string; label: string };
-
-function useLangHref(lang: string) {
-  const pathname = usePathname() ?? `/${lang}`;
-  const searchParams = useSearchParams();
-  const rest = pathname.startsWith(`/${lang}`) ? pathname.slice(`/${lang}`.length) : "";
-  const query = searchParams.toString();
-  const suffix = query ? `?${query}` : "";
-
-  return (code: string) => `/${code}${rest}${suffix}`;
-}
 
 function currentLabel(lang: string, langs: LangOption[]) {
   return langs.find((entry) => entry.code === lang)?.label ?? lang.toUpperCase();
@@ -43,28 +32,26 @@ export function LanguageSwitch({
   lang,
   langs,
   groupAria,
+  pathSuffix = "",
+  queryString = "",
 }: {
   lang: string;
   langs: LangOption[];
   groupAria: string;
+  pathSuffix?: string;
+  queryString?: string;
 }) {
-  const hrefFor = useLangHref(lang);
-
   if (langs.length === 0) return null;
 
+  const hrefFor = (code: string) => buildLanguageHref(code, pathSuffix, queryString);
   const next = nextLangCode(lang, langs);
 
   return (
     <div className="topbar-lang-switch-wrap" role="group" aria-label={groupAria}>
       <div className="topbar-lang-switch">
-        <Link
-          href={hrefFor(next)}
-          className="topbar-lang-current"
-          title={currentLabel(next, langs)}
-          prefetch={false}
-        >
+        <a href={hrefFor(next)} className="topbar-lang-current" title={currentLabel(next, langs)}>
           {currentLabel(lang, langs)}
-        </Link>
+        </a>
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger asChild>
             <button type="button" className="topbar-lang-toggle" aria-label={groupAria}>
@@ -75,14 +62,13 @@ export function LanguageSwitch({
             <DropdownMenu.Content className="topbar-lang-menu" align="end" sideOffset={6}>
               {langs.map((entry) => (
                 <DropdownMenu.Item key={entry.code} asChild>
-                  <Link
+                  <a
                     href={hrefFor(entry.code)}
                     className="topbar-lang-menu-item"
                     data-active={entry.code === lang ? "" : undefined}
-                    prefetch={false}
                   >
                     {entry.label}
-                  </Link>
+                  </a>
                 </DropdownMenu.Item>
               ))}
             </DropdownMenu.Content>

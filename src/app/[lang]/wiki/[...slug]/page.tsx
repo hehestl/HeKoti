@@ -155,6 +155,7 @@ export default async function WikiPage({
 
   const path = normalizePath(lang, slug);
   const pagePath = wikiPagePath(lang, slug);
+  const languagePathSuffix = `/wiki/${slug.join("/")}`;
 
   maybePurgeExpiredRedirects();
   const activeRedirect = await findActiveRedirect(lang, path);
@@ -181,7 +182,7 @@ export default async function WikiPage({
     const bodyHtml = canShowBody ? await loadCatalogBodyHtml(lang, slug, page) : undefined;
 
     return (
-      <WikiPublicShell {...shell} variant={bodyHtml ? "compact" : "home"}>
+      <WikiPublicShell {...shell} variant={bodyHtml ? "compact" : "home"} languagePathSuffix={languagePathSuffix}>
         <WikiBreadcrumbs items={crumbs} pagePath={pagePath} />
         <WikiCollectionView
           node={node}
@@ -207,7 +208,7 @@ export default async function WikiPage({
     );
 
     return (
-      <WikiPublicShell {...shell} variant="compact">
+      <WikiPublicShell {...shell} variant="compact" languagePathSuffix={languagePathSuffix}>
         <WikiBreadcrumbs items={crumbs} pagePath={pagePath} />
         <WikiEditableArticle
           variant="article"

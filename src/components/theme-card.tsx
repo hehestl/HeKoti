@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { resolveWikiIconComponent } from "@/lib/wiki-icon-presets";
 import type { PathTreeNode } from "@/lib/page-tree";
 import {
@@ -37,7 +36,7 @@ export function ThemeCard({
   const href = getNodeUrl(node, lang);
 
   return (
-    <Link href={href} prefetch={false} className="theme-card">
+    <a href={href} className="theme-card">
       <span className="theme-card-icon" aria-hidden>
         {renderThemeIcon(node)}
       </span>
@@ -48,6 +47,6 @@ export function ThemeCard({
           {articlesCountLabel.replace("{n}", String(isCollectionNode(node) ? count : count || 1))}
         </span>
       </span>
-    </Link>
+    </a>
   );
 }

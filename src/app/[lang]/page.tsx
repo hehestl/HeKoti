@@ -58,6 +58,7 @@ export default async function LanguageHome({
       initialSearchQuery={searchMode ? qTrim : undefined}
       searchSampleTitles={sampleTitles}
       enableTypewriterPlaceholder={!searchMode}
+      languageQuery={searchMode ? `q=${encodeURIComponent(qTrim)}` : ""}
     >
       {searchMode ? (
         <>

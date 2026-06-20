@@ -17,7 +17,7 @@ export default async function LoginPage({ params }: { params: Promise<{ lang: st
   const heronLoginHref = buildAuthLoginPath(`/${lang}/admin`, true);
 
   return (
-    <WikiPublicShell {...shell} variant="compact">
+    <WikiPublicShell {...shell} variant="compact" languagePathSuffix="/login">
       <WikiBreadcrumbs
         items={staticBreadcrumbChain(lang, dict.collection.allCollections, dict.admin.auth.adminLogin)}
         pagePath={`/${lang}/login`}

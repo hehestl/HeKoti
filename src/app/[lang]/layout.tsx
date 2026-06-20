@@ -42,7 +42,7 @@ export default async function LocaleLayout({
             {dict.common.support}
           </a>
           <span aria-hidden>·</span>
-          <Link href={`/${lang}/donate`} prefetch={false}>{dict.common.donate}</Link>
+          <a href={`/${lang}/donate`}>{dict.common.donate}</a>
         </div>
         <SiteFooterControls
           labels={{
