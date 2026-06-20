@@ -99,6 +99,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        HEKOTI_APP_VERSION: ${HEKOTI_APP_VERSION:-0.0.0}
     container_name: hh-hekoti-app
     restart: unless-stopped
     logging: *default-logging

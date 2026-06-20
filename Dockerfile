@@ -20,15 +20,21 @@ RUN --mount=type=cache,target=/root/.npm \
 
 FROM node:22-alpine AS builder
 WORKDIR /app
+ARG HEKOTI_APP_VERSION=0.0.0
 COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run db:generate && npm run build \
+ENV HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}
+ENV NEXT_PUBLIC_HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}
+RUN echo "hekoti build version=${HEKOTI_APP_VERSION}" \
+    && npm run db:generate && npm run build \
     && test -f public/monaco-workers/editor.worker.js
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+ARG HEKOTI_APP_VERSION=0.0.0
 ENV NODE_ENV=production
+ENV HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}
 # Docker sets HOSTNAME to the container id; Next standalone uses it for bind(). Force all interfaces.
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3310

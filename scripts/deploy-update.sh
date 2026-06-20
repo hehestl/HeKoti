@@ -8,8 +8,38 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-echo "==> git pull"
-git pull --ff-only
+read_repo_version() {
+  if [ ! -f VERSION ]; then
+    echo "0.0.0"
+    return
+  fi
+  # first non-empty, non-comment line
+  while IFS= read -r line || [ -n "$line" ]; do
+    line=$(printf '%s' "$line" | tr -d '\r')
+    case "$line" in
+      ""|"#"*) continue ;;
+      *) printf '%s' "$line"; return ;;
+    esac
+  done < VERSION
+  echo "0.0.0"
+}
+
+REPO_VERSION_BEFORE=$(read_repo_version)
+echo "==> repo VERSION (before pull): ${REPO_VERSION_BEFORE}"
+
+echo "==> git pull (--autostash for local compose tweaks on the server)"
+if ! git pull --autostash --ff-only; then
+  echo "ERROR: git pull failed. Local changes block update."
+  echo "  Inspect: git status"
+  echo "  Option A: stash manually — git stash push -m deploy docker-compose.yml && git pull --ff-only"
+  echo "  Option B: commit server-specific compose, then pull/rebase"
+  exit 1
+fi
+
+REPO_VERSION=$(read_repo_version)
+export HEKOTI_APP_VERSION="${REPO_VERSION}"
+echo "==> repo VERSION (after pull): ${REPO_VERSION}"
+echo "==> build arg HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}"
 
 if [ -f scripts/fix-lock-emnapi.cjs ]; then
   echo "==> sync package-lock @emnapi (npm ci in Alpine)"
@@ -41,6 +71,17 @@ done
 
 echo "==> docker compose ps"
 docker compose ps hekoti-app 2>/dev/null || docker compose ps
+
+CONTAINER_VERSION=$(docker compose exec -T hekoti-app sh -c 'tr -d "\r" < /app/VERSION | head -1' 2>/dev/null || echo "unknown")
+RUNTIME_ENV_VERSION=$(docker compose exec -T hekoti-app sh -c 'printf "%s" "$HEKOTI_APP_VERSION"' 2>/dev/null || echo "unknown")
+echo "==> container /app/VERSION: ${CONTAINER_VERSION}"
+echo "==> container HEKOTI_APP_VERSION env: ${RUNTIME_ENV_VERSION}"
+
+if [ "$CONTAINER_VERSION" != "$REPO_VERSION" ]; then
+  echo "WARNING: container VERSION (${CONTAINER_VERSION}) != repo VERSION (${REPO_VERSION})"
+  echo "  Run: NO_CACHE=1 sh scripts/deploy-update.sh"
+  echo "  Verify git: git log -1 --oneline && cat VERSION"
+fi
 
 echo "==> last app logs (if 502 in NPM, check here)"
 docker compose logs --tail=40 hekoti-app 2>/dev/null || true
