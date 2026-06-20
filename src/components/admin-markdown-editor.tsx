@@ -1,5 +1,6 @@
 "use client";
 
+import "@/lib/monaco-setup";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";

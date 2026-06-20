@@ -22,7 +22,6 @@
 /dist
 /public/uploads/*
 !/public/uploads/.gitkeep
-/public/monaco-workers/
 
 # prisma / local db artifacts
 /prisma/dev.db*

@@ -65,7 +65,10 @@ export function AdminContextMenu({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    const onScroll = () => onClose();
+    const onScroll = (e: Event) => {
+      if (ref.current?.contains(e.target as Node)) return;
+      onClose();
+    };
     window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("scroll", onScroll, true);
@@ -88,6 +91,7 @@ export function AdminContextMenu({
         pointerEvents: visible ? "auto" : "none",
       }}
       onClick={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
     >
       {items.map((item) =>
         item.separator ? (

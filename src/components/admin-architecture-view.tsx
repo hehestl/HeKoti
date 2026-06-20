@@ -1,5 +1,6 @@
 "use client";
 
+import "@/lib/monaco-setup";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useAdminPages } from "@/components/admin-workbench/admin-pages-provider";

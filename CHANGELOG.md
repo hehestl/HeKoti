@@ -10,6 +10,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Monaco: workers с same-origin `/monaco-workers/` (CSP `worker-src 'self'` блокировал jsdelivr); ранняя инициализация `monaco-setup` до монтирования редактора; workers в git и проверка в Docker build
+
 ## [0.4.0] — 2026-06-21
 
 ### Added
