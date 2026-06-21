@@ -1,18 +1,81 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { buildHeronLoginUrl, safeReturnPath, startHeronLogin } from "@/lib/heron-auth-client";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  buildHeronLoginUrl,
+  parseHeronAccessTokenFromHash,
+  safeReturnPath,
+  startHeronLogin,
+  stripHistoryAccessToken,
+} from "@/lib/heron-auth-client";
+
+async function exchangeHeronToken(
+  accessToken: string,
+  returnTo: string,
+): Promise<{ ok?: boolean; returnTo?: string; message?: string }> {
+  stripHistoryAccessToken();
+  const res = await fetch("/api/auth/heron/exchange", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ accessToken, returnTo }),
+  });
+  return (await res.json()) as { ok?: boolean; returnTo?: string; message?: string };
+}
 
 function HeronLoginInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const isAuto = searchParams.get("auto") === "1";
   const returnTo = safeReturnPath(searchParams.get("returnTo") || "/");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuto) return;
-    startHeronLogin(returnTo);
-  }, [isAuto, returnTo]);
+    let cancelled = false;
+    void (async () => {
+      const hashToken = parseHeronAccessTokenFromHash(window.location.hash);
+      if (hashToken) {
+        try {
+          const body = await exchangeHeronToken(hashToken, returnTo);
+          if (cancelled) return;
+          if (!body.ok) {
+            setError(body.message ?? "Heron sign-in failed.");
+            return;
+          }
+          router.replace(safeReturnPath(body.returnTo ?? returnTo));
+          return;
+        } catch {
+          if (!cancelled) setError("Heron sign-in failed.");
+          return;
+        }
+      }
+
+      if (!isAuto) return;
+      startHeronLogin(returnTo);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuto, returnTo, router]);
+
+  if (error) {
+    return (
+      <main style={{ display: "grid", placeItems: "center", minHeight: "50vh", padding: 16 }}>
+        <section style={{ maxWidth: 420, textAlign: "center" }}>
+          <p style={{ color: "var(--muted)" }}>{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = buildHeronLoginUrl(returnTo);
+            }}
+            style={{ marginTop: 12 }}
+          >
+            Try again
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   if (isAuto) {
     return (

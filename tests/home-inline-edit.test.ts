@@ -7,6 +7,7 @@ import {
   buildTreeFromCategoryDraft,
   categoryMapsEqual,
   cloneCategoryMap,
+  getSiblingMoveTarget,
   treeToCategoryMaps,
 } from "@/components/home-inline-edit-types";
 
@@ -88,6 +89,24 @@ describe("applyReorderPatchesToDraft", () => {
 });
 
 describe("buildHomePatchPayloads", () => {
+  it("diffs excerpt changes", () => {
+    const tree = [
+      node("/en/a", "a", {
+        id: "a",
+        path: "/en/a",
+        title: "A",
+        navOrder: 0,
+        isCategory: true,
+        excerpt: "Old",
+      }),
+    ];
+    const baseline = treeToCategoryMaps(tree, lang);
+    const draft = cloneCategoryMap(baseline);
+    draft.set("/en/a", { ...draft.get("/en/a")!, excerpt: "New summary" });
+    const patches = buildHomePatchPayloads(baseline, draft, lang);
+    expect(patches).toEqual([{ id: "a", payload: { excerpt: "New summary" } }]);
+  });
+
   it("diffs by id after pathKey rename in draft", () => {
     const tree = [
       node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
@@ -127,6 +146,21 @@ describe("buildHomePatchPayloads", () => {
       ]),
     );
     expect(categoryMapsEqual(next, cloneCategoryMap(next))).toBe(true);
+  });
+});
+
+describe("getSiblingMoveTarget", () => {
+  it("returns before target for move up", () => {
+    const tree = [
+      node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
+      node("/en/b", "b", { id: "b", path: "/en/b", title: "B", navOrder: 10, isCategory: true }),
+    ];
+    const draft = treeToCategoryMaps(tree, lang);
+    expect(getSiblingMoveTarget(draft, "/en/b", "up")).toEqual({
+      kind: "page",
+      targetId: "a",
+      mode: "before",
+    });
   });
 });
 

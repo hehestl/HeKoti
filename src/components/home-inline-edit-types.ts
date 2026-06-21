@@ -1,5 +1,5 @@
 import type { PathTreeNode } from "@/lib/page-tree";
-import type { PageMetadataPatch, ReorderPatch } from "@/lib/page-reorder";
+import type { PageMetadataPatch, ReorderPatch, DropTarget } from "@/lib/page-reorder";
 import {
   parentPathKeyFromParts,
   parentPathPartsFromPathKey,
@@ -12,6 +12,7 @@ export type HomeTreePage = {
   path: string;
   title: string;
   navOrder?: number;
+  excerpt?: string | null;
   icon?: string | null;
   isCategory?: boolean;
   systemKey?: string | null;
@@ -40,12 +41,22 @@ export type HomeInlineEditLabels = {
   mascotEdit: string;
   mascotExitEdit: string;
   clearIcon: string;
+  moveUp: string;
+  moveDown: string;
+  changeIcon: string;
+  dropReorder: string;
+  dropNest: string;
+  dropRoot: string;
+  moveBlocked: string;
+  descriptionLabel: string;
+  descriptionPlaceholder: string;
 };
 
 export type EditableHomeCategory = {
   pathKey: string;
   id?: string;
   title: string;
+  excerpt: string;
   icon: string | null;
   navOrder: number;
   parentPathKey: string;
@@ -86,6 +97,7 @@ export function treeToCategoryMaps(
         pathKey: node.pathKey,
         id: page?.id,
         title: page?.title ?? humanizeSegment(node.segment),
+        excerpt: page?.excerpt?.trim() ?? "",
         icon: page?.icon ?? null,
         navOrder: page?.navOrder ?? 0,
         isCategory,
@@ -124,6 +136,7 @@ export function categoryMapsEqual(
     if (
       left.id !== right.id ||
       left.title !== right.title ||
+      left.excerpt !== right.excerpt ||
       left.icon !== right.icon ||
       left.navOrder !== right.navOrder ||
       left.parentPathKey !== right.parentPathKey ||
@@ -238,6 +251,7 @@ export function buildTreeFromCategoryDraft(
             path: cat.pathKey,
             title: cat.title,
             navOrder: cat.navOrder,
+            excerpt: cat.excerpt || null,
             icon: cat.icon,
             isCategory: cat.isCategory,
             systemKey: cat.systemKey,
@@ -278,6 +292,9 @@ export function buildHomePatchPayloads(
 
     const payload: PageMetadataPatch = {};
     if (draftNode.title !== baseNode.title) payload.title = draftNode.title;
+    const draftExcerpt = draftNode.excerpt.trim();
+    const baseExcerpt = baseNode.excerpt.trim();
+    if (draftExcerpt !== baseExcerpt) payload.excerpt = draftExcerpt || null;
     if (draftNode.icon !== baseNode.icon) payload.icon = draftNode.icon;
     if (draftNode.navOrder !== baseNode.navOrder) payload.navOrder = draftNode.navOrder;
     if (draftNode.parentPathKey !== baseNode.parentPathKey) {
@@ -293,4 +310,41 @@ export function buildHomePatchPayloads(
 
 export function parentPathPartsForCategory(cat: EditableHomeCategory, lang: string): string[] {
   return parentPathPartsFromPathKey(cat.parentPathKey, lang);
+}
+
+export function getSiblingMoveTarget(
+  draft: Map<string, EditableHomeCategory>,
+  pathKey: string,
+  direction: "up" | "down",
+): DropTarget | null {
+  const node = draft.get(pathKey);
+  if (!node?.id) return null;
+
+  const siblings = [...draft.values()]
+    .filter((c) => c.parentPathKey === node.parentPathKey && c.id)
+    .sort((a, b) => {
+      if (a.navOrder !== b.navOrder) return a.navOrder - b.navOrder;
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    });
+
+  const idx = siblings.findIndex((s) => s.pathKey === pathKey);
+  if (idx < 0) return null;
+
+  if (direction === "up") {
+    if (idx === 0) return null;
+    const target = siblings[idx - 1]!;
+    return { kind: "page", targetId: target.id!, mode: "before" };
+  }
+
+  if (idx >= siblings.length - 1) return null;
+  const target = siblings[idx + 1]!;
+  return { kind: "page", targetId: target.id!, mode: "after" };
+}
+
+export function canMoveSibling(
+  draft: Map<string, EditableHomeCategory>,
+  pathKey: string,
+  direction: "up" | "down",
+): boolean {
+  return getSiblingMoveTarget(draft, pathKey, direction) !== null;
 }

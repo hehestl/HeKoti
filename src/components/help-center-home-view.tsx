@@ -69,6 +69,7 @@ export function HelpCenterHomeView({
     promoteToCategory,
     saveNow,
     cancelEdit,
+    moveSiblingDraft,
   } = useHomeInlineEdit();
 
   const mounted = useMounted();
@@ -94,6 +95,7 @@ export function HelpCenterHomeView({
             labels={labels}
             onPatch={patchDraft}
             onReorder={reorderDraft}
+            onMoveSibling={moveSiblingDraft}
             onPromote={promoteToCategory}
           />
         </div>

@@ -17,10 +17,15 @@ export function resolveDropPosition(
     return relativeY < rowHeight / 2 ? "before" : "after";
   }
 
-  const quarter = rowHeight / 4;
-  if (relativeY < quarter) return "before";
-  if (relativeY > rowHeight - quarter) return "after";
-  return "inside";
+  const topBand = rowHeight * 0.35;
+  const bottomBand = rowHeight * 0.65;
+  const nestBand = rowHeight * 0.12;
+  const center = rowHeight / 2;
+
+  if (relativeY < topBand) return "before";
+  if (relativeY > bottomBand) return "after";
+  if (Math.abs(relativeY - center) < nestBand) return "inside";
+  return relativeY < center ? "before" : "after";
 }
 
 export function resolveDropPositionFromEvent(

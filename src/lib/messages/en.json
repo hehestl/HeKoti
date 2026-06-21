@@ -50,7 +50,17 @@
       "makeCategory": "Make category",
       "implicitHint": "Will be created on save",
       "leafReadOnly": "article, read-only",
-      "systemReadOnly": "system page"
+      "systemReadOnly": "system page",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "changeIcon": "Change icon",
+      "dropReorder": "Insert here",
+      "dropNest": "Nest inside \"{title}\"",
+      "dropRoot": "Move to top level",
+      "moveBlocked": "Cannot move here",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short summary of this section…",
+      "clearIcon": "Clear icon"
     }
   },
   "collection": {
@@ -72,7 +82,9 @@
     "tocNav": "On this page",
     "tocNavToggle": "Table of contents",
     "diagramCopy": "Copy diagram source",
-    "diagramCopied": "Copied"
+    "diagramCopied": "Copied",
+    "codeCopy": "Copy code",
+    "codeCopied": "Copied"
   },
   "search": {
     "resultsTitle": "Search results for “{q}”",
@@ -413,6 +425,16 @@
       "postTitle": "/post slug — replaced with link on render",
       "wiki": "Wiki",
       "wikiTitle": "Internal link [text](wiki)",
+      "pageLinkTitle": "Link to wiki page",
+      "pageLinkPicker": {
+        "searchPlaceholder": "Search pages…",
+        "formatMarkdown": "Markdown link",
+        "formatPost": "/post slug",
+        "labelField": "Link text",
+        "noResults": "No pages found.",
+        "loading": "Searching…",
+        "draftBadge": "Draft"
+      },
       "url": "URL",
       "urlTitle": "External URL",
       "date": "Date",
@@ -427,6 +449,7 @@
         "strike": "Strike",
         "code": "Code",
         "bullet": "Bullet list",
+        "numbered": "Numbered list",
         "quote": "Quote",
         "hr": "Line",
         "table": "Table",
@@ -434,8 +457,8 @@
         "callout": "Callout",
         "formula": "Formula",
         "wikiLink": "Wiki link...",
+        "pageLink": "Link to page…",
         "externalLink": "External link...",
-        "insertPost": "Insert /post...",
         "insertDateTime": "Date and Time",
         "insertImage": "Insert image...",
         "insertVideo": "Insert video..."

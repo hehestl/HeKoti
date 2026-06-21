@@ -8,6 +8,7 @@ import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import { WikiInlineEditProvider } from "@/components/wiki-inline-edit-context";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
+import { WikiCodeCopyEnhancer } from "@/components/wiki-code-copy-enhancer";
 import { WikiPublicHeader, type WikiPublicHeaderVariant } from "@/components/wiki-public-header";
 import type { HelpCenterSearchLabels } from "@/components/help-center-search-form";
 import type { DonateConfig } from "@/lib/donate-config-shared";
@@ -38,6 +39,8 @@ export function WikiPublicShellClient({
   donateEditLabels,
   diagramCopyLabel,
   diagramCopiedLabel,
+  codeCopyLabel,
+  codeCopiedLabel,
   languageSwitch,
   children,
 }: {
@@ -58,6 +61,8 @@ export function WikiPublicShellClient({
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
   diagramCopiedLabel: string;
+  codeCopyLabel: string;
+  codeCopiedLabel: string;
   languageSwitch: ReactNode;
   children: ReactNode;
 }) {
@@ -67,6 +72,7 @@ export function WikiPublicShellClient({
   const shell = (
     <>
       <WikiDiagramEnhancer copyLabel={diagramCopyLabel} copiedLabel={diagramCopiedLabel} />
+      <WikiCodeCopyEnhancer copyLabel={codeCopyLabel} copiedLabel={codeCopiedLabel} />
       <WikiPublicHeader
         lang={lang}
         searchPlaceholder={searchPlaceholder}
@@ -113,6 +119,15 @@ function defaultHomeInlineEditLabels(wiki: WikiInlineEditLabels): HomeInlineEdit
     leafReadOnly: "",
     systemReadOnly: "",
     clearIcon: "",
+    moveUp: "",
+    moveDown: "",
+    changeIcon: "",
+    dropReorder: "",
+    dropNest: "",
+    dropRoot: "",
+    moveBlocked: "",
+    descriptionLabel: "",
+    descriptionPlaceholder: "",
     save: wiki.save,
     cancel: wiki.cancel,
     saved: wiki.saved,

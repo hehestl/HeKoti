@@ -38,7 +38,8 @@ export default function HeronAuthCallbackPage() {
     void (async () => {
       const { accessToken, returnTo, state } = parseCallback();
 
-      if (!verifyOAuthState(state)) {
+      // Hub silent SSO: token in #fragment without OAuth state (see ecosystem-sso → heron-callback).
+      if (state && !verifyOAuthState(state)) {
         if (!cancelled) {
           setError("Invalid OAuth state. Please sign in again.");
         }

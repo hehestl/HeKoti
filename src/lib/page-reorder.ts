@@ -17,6 +17,7 @@ export type ReorderPatch = {
 
 export type PageMetadataPatch = {
   title?: string;
+  excerpt?: string | null;
   icon?: string | null;
   navOrder?: number;
   parentPathParts?: string[];

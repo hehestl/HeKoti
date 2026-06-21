@@ -10,6 +10,7 @@ export type WikiSearchPage = {
   excerpt: string | null;
   updatedAt: Date;
   searchText?: string;
+  isPublished?: boolean;
 };
 
 const TERM_EDGE_PUNCT = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu;
@@ -110,15 +111,16 @@ export function stripSearchText<T extends { searchText?: string }>(items: T[]): 
   return items.map(({ searchText: _searchText, ...rest }) => rest);
 }
 
-async function fetchPublishedPages(
+async function fetchWikiPages(
   lang: string,
   whereExtra: Prisma.PageWhereInput,
   take: number,
+  opts?: { includeUnpublished?: boolean },
 ): Promise<WikiSearchPage[]> {
   return prisma.page.findMany({
     where: {
       lang,
-      isPublished: true,
+      ...(opts?.includeUnpublished ? {} : { isPublished: true }),
       ...wikiPageWhere,
       ...whereExtra,
     },
@@ -131,6 +133,7 @@ async function fetchPublishedPages(
       excerpt: true,
       updatedAt: true,
       searchText: true,
+      ...(opts?.includeUnpublished ? { isPublished: true } : {}),
     },
   });
 }
@@ -143,8 +146,28 @@ export async function searchPublishedPages(
   const terms = parseSearchTerms(q);
   if (terms.length === 0) return [];
 
-  const rows = await fetchPublishedPages(lang, buildSearchWhere(terms), take);
+  const rows = await fetchWikiPages(lang, buildSearchWhere(terms), take);
   return stripSearchText(rankSearchResults(rows, terms));
+}
+
+export async function searchAdminWikiPages(
+  lang: string,
+  q: string,
+  take = 12,
+): Promise<(WikiSearchPage & { isPublished: boolean })[]> {
+  const terms = parseSearchTerms(q);
+  if (terms.length === 0) return [];
+
+  let rows = await fetchWikiPages(lang, buildSearchWhere(terms), take, { includeUnpublished: true });
+  if (rows.length === 0 && terms.length > 1) {
+    rows = await fetchWikiPages(lang, buildSearchWhereOr(terms), take, { includeUnpublished: true });
+  }
+
+  const ranked = rankSearchResults(rows, terms);
+  return ranked.map((item) => ({
+    ...item,
+    isPublished: item.isPublished ?? true,
+  }));
 }
 
 export async function searchPublishedPagesOr(
@@ -155,7 +178,7 @@ export async function searchPublishedPagesOr(
   const terms = parseSearchTerms(q);
   if (terms.length === 0) return [];
 
-  const rows = await fetchPublishedPages(lang, buildSearchWhereOr(terms), take);
+  const rows = await fetchWikiPages(lang, buildSearchWhereOr(terms), take);
   return stripSearchText(rankSearchResults(rows, terms));
 }
 
@@ -167,11 +190,11 @@ export async function searchPublishedPagesWithFallback(
   const terms = parseSearchTerms(q);
   if (terms.length === 0) return { results: [], partial: false };
 
-  let rows = await fetchPublishedPages(lang, buildSearchWhere(terms), take);
+  let rows = await fetchWikiPages(lang, buildSearchWhere(terms), take);
   let partial = false;
 
   if (rows.length === 0 && terms.length > 1) {
-    rows = await fetchPublishedPages(lang, buildSearchWhereOr(terms), take);
+    rows = await fetchWikiPages(lang, buildSearchWhereOr(terms), take);
     partial = rows.length > 0;
   }
 

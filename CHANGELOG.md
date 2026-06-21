@@ -10,8 +10,16 @@
 
 ## [Unreleased]
 
+## [0.4.6] — 2026-06-17
+
 ### Added
 
+- Editor: link picker — поиск wiki-страниц (incl. drafts) при вставке ссылки, форматы markdown и `/post`
+- Editor: gutter «+» — вставка строки после номера; block menu на Ctrl+./Alt+Shift+B
+- Editor: callouts `[!NOTE|INFO|TIP|WARNING|SUCCESS]`, CSS blockquote/details/table/todo
+- Editor: click-to-copy для `<pre>`/code на read и admin preview
+- Editor: block menu/ПКМ — numbered list, quote, table, details, callout, link to page
+- Home inline edit: описание блока (`excerpt`), icon grid, ↑↓ и ПКМ перемещение, DnD-слоты и root drop
 - Search: `searchText` — индекс заголовков и предложений, pg_trgm GIN, rank по строке, snippet `§ heading`
 - Search: matching по title/content/excerpt/slug, ранжирование, OR-fallback на странице результатов
 - Search: live-подсказки в поле поиска (`GET /api/wiki/search`), клавиатура и переход к статьям
@@ -29,7 +37,6 @@
 - Lang switch: client navigation (`Link` + prefetch) вместо full reload — без «затемнения» и быстрее
 - Admin: выбор иконки страницы — в окне переименования (убран пункт из ПКМ explorer)
 - Home: inline-edit категорий — после «Сохранить» сброс dirty (fix ложного «есть несохранённые изменения»)
-- Mascot: ПКМ на главной — fix цикл registerTree/unregisterTree (React #185)
 
 ## [0.4.5] — 2026-06-21
 

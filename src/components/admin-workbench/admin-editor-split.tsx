@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Clock, ExternalLink } from "lucide-react";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
+import { WikiCodeCopyEnhancer } from "@/components/wiki-code-copy-enhancer";
 import { apiFetch } from "@/lib/api-fetch";
 import { wikiPublicHref } from "@/lib/wiki-path";
 
@@ -111,6 +112,10 @@ export function AdminEditorSplit({
               <WikiDiagramEnhancer
                 copyLabel={dict.diagramCopy ?? "Copy diagram source"}
                 copiedLabel={dict.diagramCopied ?? "Copied"}
+              />
+              <WikiCodeCopyEnhancer
+                copyLabel={dict.codeCopy ?? "Copy code"}
+                copiedLabel={dict.codeCopied ?? "Copied"}
               />
               <div className="wiki-article-body" dangerouslySetInnerHTML={{ __html: html }} />
             </div>

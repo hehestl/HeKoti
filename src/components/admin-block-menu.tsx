@@ -4,7 +4,20 @@ import { useMemo, useState } from "react";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
-export type BlockMenuType = "text" | "h1" | "h2" | "h3" | "h4" | "bullet" | "numbered" | "todo";
+export type BlockMenuType =
+  | "text"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "bullet"
+  | "numbered"
+  | "todo"
+  | "quote"
+  | "table"
+  | "details"
+  | "code"
+  | "pageLink";
 
 type BlockMenuItemDef = {
   id: BlockMenuType | "close" | string;
@@ -16,7 +29,14 @@ type BlockMenuItemDef = {
 const BLOCK_ITEMS: BlockMenuItemDef[] = [
   { id: "h2", label: "Heading 2", shortcut: "##" },
   { id: "bullet", label: "Bulleted list", shortcut: "-" },
+  { id: "numbered", label: "Numbered list", shortcut: "1." },
   { id: "todo", label: "To-do list", shortcut: "- [ ]" },
+  { id: "quote", label: "Quote", shortcut: ">" },
+  { id: "code", label: "Inline code", shortcut: "`" },
+  { id: "sep0", label: "", separator: true },
+  { id: "table", label: "Table" },
+  { id: "details", label: "Details" },
+  { id: "pageLink", label: "Link to page" },
   { id: "sep1", label: "", separator: true },
   { id: "text", label: "Text" },
   { id: "h1", label: "Heading 1", shortcut: "#" },

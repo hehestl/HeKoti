@@ -122,6 +122,26 @@ export function setHeadingLevel(
   editor.focus();
 }
 
+export function insertEmptyLineAfter(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  Mon: typeof monaco,
+  lineNumber: number,
+) {
+  const model = editor.getModel();
+  if (!model) return;
+  const eol = model.getEOL();
+  const insertAt = lineNumber + 1;
+  editor.executeEdits("md-line-insert", [
+    {
+      range: new Mon.Range(insertAt, 1, insertAt, 1),
+      text: eol,
+      forceMoveMarkers: true,
+    },
+  ]);
+  editor.setPosition({ lineNumber: insertAt, column: 1 });
+  editor.focus();
+}
+
 export function insertAtCursor(editor: monaco.editor.IStandaloneCodeEditor, Mon: typeof monaco, text: string) {
   const model = editor.getModel();
   const sel = editor.getSelection();

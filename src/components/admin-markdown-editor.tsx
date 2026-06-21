@@ -8,17 +8,23 @@ import { useTheme } from "next-themes";
 import type * as monaco from "monaco-editor";
 import {
   insertAtCursor,
+  insertEmptyLineAfter,
   insertSnippetBlock,
   setBlockTypeAtLine,
   setHeadingLevel,
   toggleLinePrefix,
   wrapSelection,
 } from "@/lib/monaco-md-helpers";
-import { resolvePostWikiTarget } from "@/lib/wiki-link-expand";
+import { CALLOUT_TYPES, insertCalloutSnippet } from "@/lib/markdown-callouts";
 import type { Dictionary } from "@/lib/i18n";
 import { AdminBlockMenu, type BlockMenuType } from "@/components/admin-block-menu";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { AdminMediaModal } from "@/components/admin-media-modal";
+import {
+  AdminWikiLinkPicker,
+  type AdminWikiLinkFormat,
+} from "@/components/admin-wiki-link-picker";
+import type { AdminWikiPageSearchItem } from "@/hooks/use-admin-wiki-page-search";
 import { DIAGRAM_TEMPLATES, type DiagramTemplateKey } from "@/lib/diagram-templates";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 const MonacoEditor = dynamic(() => import("@/components/admin-monaco"), { ssr: false });
@@ -45,8 +51,7 @@ type Props = {
 };
 
 type LinkModalState =
-  | { mode: "post"; slug: string; error: string }
-  | { mode: "wiki"; slug: string; label: string; error: string }
+  | { mode: "page"; format: AdminWikiLinkFormat; label: string }
   | { mode: "url"; url: string; label: string; error: string };
 
 export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, height = "60vh" }: Props) {
@@ -60,6 +65,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
   const [linkModal, setLinkModal] = useState<LinkModalState | null>(null);
   const [mediaModal, setMediaModal] = useState<"image" | "video" | null>(null);
   const [diagramMenuOpen, setDiagramMenuOpen] = useState(false);
+  const [gutterPlus, setGutterPlus] = useState<null | { line: number; top: number; left: number }>(null);
   const diagramMenuRef = useRef<HTMLDivElement | null>(null);
   const [measuredHeight, setMeasuredHeight] = useState(120);
   const { resolvedTheme } = useTheme();
@@ -116,14 +122,6 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     setBlockMenu({ x, y, line });
   }, []);
 
-  const applyBlockType = useCallback(
-    (type: BlockMenuType) => {
-      withEd((ed, m) => setBlockTypeAtLine(ed, m, blockLineRef.current, type));
-      closeBlockMenu();
-    },
-    [closeBlockMenu, withEd],
-  );
-
   const monacoOptions = useMemo(
     () => ({
       minimap: { enabled: false },
@@ -133,7 +131,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       contextmenu: false,
       automaticLayout: true,
       lineNumbersMinChars: 3,
-      lineNumbers: (lineNumber: number) => `${lineNumber} +`,
+      lineNumbers: "on" as const,
     }),
     [],
   );
@@ -152,17 +150,33 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
         e.event.preventDefault();
         e.event.stopPropagation();
         setBlockMenu(null);
+        setGutterPlus(null);
         setCtx({ x: e.event.browserEvent.clientX, y: e.event.browserEvent.clientY });
+      });
+      editor.onMouseMove((e) => {
+        if (e.target.type !== m.editor.MouseTargetType.GUTTER_LINE_NUMBERS || !e.target.position) {
+          setGutterPlus(null);
+          return;
+        }
+        const line = e.target.position.lineNumber;
+        const coords = editor.getScrolledVisiblePosition({ lineNumber: line, column: 1 });
+        const host = hostRef.current?.getBoundingClientRect();
+        if (!coords || !host) {
+          setGutterPlus(null);
+          return;
+        }
+        setGutterPlus({
+          line,
+          top: host.top + coords.top + coords.height / 2,
+          left: e.event.browserEvent.clientX + 14,
+        });
       });
       editor.onMouseDown((e) => {
         if (e.target.type !== m.editor.MouseTargetType.GUTTER_LINE_NUMBERS || !e.target.position) return;
         e.event.preventDefault();
         e.event.stopPropagation();
-        openBlockMenu(
-          e.target.position.lineNumber,
-          e.event.browserEvent.clientX,
-          e.event.browserEvent.clientY,
-        );
+        insertEmptyLineAfter(editor, m, e.target.position.lineNumber);
+        setGutterPlus(null);
       });
       editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Period, () => {
         const pos = editor.getPosition();
@@ -184,19 +198,56 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     [openBlockMenu, value],
   );
 
-  const insertWikiPost = useCallback(() => {
-    setLinkModal({ mode: "post", slug: "h2", error: "" });
-  }, []);
-
-  const insertWikiLink = useCallback(() => {
+  const insertPageLink = useCallback(() => {
     withEd((ed) => {
       const model = ed.getModel();
       const sel = ed.getSelection();
       if (!model || !sel) return;
       const label = model.getValueInRange(sel) || dict.admin.editor.linkPlaceholder;
-      setLinkModal({ mode: "wiki", slug: "h2", label, error: "" });
+      setLinkModal({ mode: "page", format: "markdown", label });
     });
   }, [withEd, dict.admin.editor.linkPlaceholder]);
+
+  const applyBlockType = useCallback(
+    (type: BlockMenuType) => {
+      if (type === "quote") {
+        withEd((ed, m) => toggleLinePrefix(ed, m, "> "));
+        closeBlockMenu();
+        return;
+      }
+      if (type === "code") {
+        withEd((ed, m) => wrapSelection(ed, m, "`", "`"));
+        closeBlockMenu();
+        return;
+      }
+      if (type === "table") {
+        withEd((ed, m) =>
+          insertSnippetBlock(ed, m, "| Header 1 | Header 2 |\n| --- | --- |\n|  |  |\n|  |  |"),
+        );
+        closeBlockMenu();
+        return;
+      }
+      if (type === "details") {
+        withEd((ed, m) =>
+          insertSnippetBlock(
+            ed,
+            m,
+            "<details>\n<summary>Details</summary>\n\nContent goes here.\n\n</details>",
+          ),
+        );
+        closeBlockMenu();
+        return;
+      }
+      if (type === "pageLink") {
+        insertPageLink();
+        closeBlockMenu();
+        return;
+      }
+      withEd((ed, m) => setBlockTypeAtLine(ed, m, blockLineRef.current, type as import("@/lib/monaco-md-helpers").BlockLineType));
+      closeBlockMenu();
+    },
+    [closeBlockMenu, insertPageLink, withEd],
+  );
 
   const insertExternalLink = useCallback(() => {
     withEd((ed) => {
@@ -208,39 +259,30 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
     });
   }, [withEd, dict]);
 
-  const submitLinkModal = useCallback(() => {
-    if (!linkModal) return;
-    if (linkModal.mode === "post") {
-      const slug = linkModal.slug.trim().replace(/^\//, "");
-      if (!slug) {
-        setLinkModal({ ...linkModal, error: dict.admin.editor.linkPrompt });
-        return;
-      }
-      withEd((ed, m) => insertAtCursor(ed, m, `/post ${slug} `));
-      setLinkModal(null);
-      return;
-    }
-    if (linkModal.mode === "wiki") {
-      const slug = linkModal.slug.trim();
-      if (!slug) {
-        setLinkModal({ ...linkModal, error: dict.admin.editor.linkPrompt });
-        return;
-      }
-      const hit = resolvePostWikiTarget(slug, lang, wikiPages);
-      if (!hit) {
-        setLinkModal({ ...linkModal, error: dict.admin.editor.linkNotFound.replace("{slug}", slug) });
-        return;
-      }
-      withEd((ed) => {
+  const insertPageLinkFromPicker = useCallback(
+    (item: AdminWikiPageSearchItem, format: AdminWikiLinkFormat, linkLabel: string) => {
+      withEd((ed, m) => {
         const model = ed.getModel();
         const sel = ed.getSelection();
         if (!model || !sel) return;
-        ed.executeEdits("link", [{ range: sel, text: `[${linkModal.label}](${hit.href})`, forceMoveMarkers: true }]);
-        ed.focus();
+        const text =
+          format === "post"
+            ? `/post ${item.pathTail} `
+            : `[${linkLabel.trim() || item.title}](${item.href})`;
+        if (sel.isEmpty()) {
+          insertAtCursor(ed, m, text);
+        } else {
+          ed.executeEdits("link", [{ range: sel, text, forceMoveMarkers: true }]);
+          ed.focus();
+        }
       });
       setLinkModal(null);
-      return;
-    }
+    },
+    [withEd],
+  );
+
+  const submitLinkModal = useCallback(() => {
+    if (!linkModal || linkModal.mode !== "url") return;
     const url = linkModal.url.trim();
     if (!url) {
       setLinkModal({ ...linkModal, error: dict.admin.editor.externalLinkPrompt });
@@ -254,7 +296,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       ed.focus();
     });
     setLinkModal(null);
-  }, [dict.admin.editor, lang, linkModal, wikiPages, withEd]);
+  }, [dict.admin.editor.externalLinkPrompt, linkModal, withEd]);
 
   const insertMediaSnippet = useCallback(
     (snippet: string) => {
@@ -304,6 +346,7 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
         h3: () => withEd((ed, m) => setHeadingLevel(ed, m, 3)),
         h4: () => withEd((ed, m) => setHeadingLevel(ed, m, 4)),
         bullet: () => withEd((ed, m) => toggleLinePrefix(ed, m, "- ")),
+        numbered: () => withEd((ed, m) => toggleLinePrefix(ed, m, "1. ")),
         quote: () => withEd((ed, m) => toggleLinePrefix(ed, m, "> ")),
         code: () => withEd((ed, m) => wrapSelection(ed, m, "`", "`")),
         codeBlock: () => withEd((ed, m) => wrapSelection(ed, m, "```\n", "\n```")),
@@ -320,10 +363,16 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
               "<details>\n<summary>Details</summary>\n\nContent goes here.\n\n</details>",
             ),
           ),
-        callout: () => withEd((ed, m) => insertSnippetBlock(ed, m, "> **Important:** content here.")),
+        pageLink: () => insertPageLink(),
         formula: () => withEd((ed, m) => insertSnippetBlock(ed, m, "$$\nE = mc^2\n$$")),
+        ...Object.fromEntries(
+          CALLOUT_TYPES.map((type) => [
+            `callout_${type}`,
+            () => withEd((ed, m) => insertSnippetBlock(ed, m, insertCalloutSnippet(type))),
+          ]),
+        ),
       }) as Record<string, () => void>,
-    [withEd],
+    [insertPageLink, withEd],
   );
 
   const contextMenuItems = useMemo((): AdminContextMenuItem[] => {
@@ -345,22 +394,26 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
       { id: "code", label: cm.code, onClick: () => run("code") },
       { id: "codeBlock", label: dict.admin.editor.codeBlock, onClick: () => run("codeBlock") },
       { id: "bullet", label: cm.bullet, onClick: () => run("bullet") },
+      { id: "numbered", label: cm.numbered, onClick: () => run("numbered") },
       { id: "quote", label: cm.quote, onClick: () => run("quote") },
       { id: "hr", label: cm.hr, onClick: () => run("hr") },
       { id: "table", label: cm.table, onClick: () => run("table") },
       { id: "details", label: cm.details, onClick: () => run("details") },
-      { id: "callout", label: cm.callout, onClick: () => run("callout") },
+      ...CALLOUT_TYPES.map((type) => ({
+        id: `callout-${type}`,
+        label: `${cm.callout} ${type}`,
+        onClick: () => run(`callout_${type}`),
+      })),
       { id: "formula", label: cm.formula, onClick: () => run("formula") },
       { id: "sep3", label: "", separator: true },
       { id: "image", label: cm.insertImage, onClick: () => { openImageModal(); setCtx(null); } },
       { id: "video", label: cm.insertVideo, onClick: () => { openVideoModal(); setCtx(null); } },
       { id: "sep4", label: "", separator: true },
-      { id: "wiki", label: cm.wikiLink, onClick: () => { insertWikiLink(); setCtx(null); } },
+      { id: "pageLink", label: cm.pageLink, onClick: () => { insertPageLink(); setCtx(null); } },
       { id: "ext", label: cm.externalLink, onClick: () => { insertExternalLink(); setCtx(null); } },
-      { id: "post", label: cm.insertPost, onClick: () => { insertWikiPost(); setCtx(null); } },
       { id: "date", label: cm.insertDateTime, onClick: () => { insertDateTime(); setCtx(null); } },
     ];
-  }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertWikiLink, insertWikiPost, openImageModal, openVideoModal]);
+  }, [actions, dict.admin.editor, insertDateTime, insertExternalLink, insertPageLink, openImageModal, openVideoModal]);
 
   const monacoHeight = fillParent ? measuredHeight : height;
 
@@ -405,6 +458,22 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
         </div>
       </div>
       <div className="admin-monaco-editor-host" ref={hostRef}>
+        {gutterPlus ? (
+          <button
+            type="button"
+            className="admin-monaco-gutter-plus"
+            style={{ top: gutterPlus.top, left: gutterPlus.left }}
+            aria-label="+"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              withEd((ed, m) => insertEmptyLineAfter(ed, m, gutterPlus.line));
+              setGutterPlus(null);
+            }}
+          >
+            +
+          </button>
+        ) : null}
         <MonacoEditor
           height={monacoHeight}
           language="markdown"
@@ -468,35 +537,25 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ margin: 0, fontSize: 16 }}>
-              {linkModal.mode === "post"
-                ? dict.admin.editor.postTitle
-                : linkModal.mode === "wiki"
-                  ? dict.admin.editor.wikiTitle
-                  : dict.admin.editor.urlTitle}
+              {linkModal.mode === "page" ? dict.admin.editor.pageLinkTitle : dict.admin.editor.urlTitle}
             </h3>
-            {linkModal.mode === "post" ? (
-              <input
-                style={inputStyle}
-                autoFocus
-                value={linkModal.slug}
-                onChange={(e) => setLinkModal({ ...linkModal, slug: e.target.value, error: "" })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitLinkModal();
-                }}
+            {linkModal.mode === "page" ? (
+              <AdminWikiLinkPicker
+                lang={lang}
+                labels={dict.admin.editor.pageLinkPicker}
+                format={linkModal.format}
+                onFormatChange={(format) => setLinkModal({ ...linkModal, format })}
+                label={linkModal.label}
+                onLabelChange={(label) => setLinkModal({ ...linkModal, label })}
+                onSelect={(item) => insertPageLinkFromPicker(item, linkModal.format, linkModal.label)}
               />
             ) : (
               <>
                 <input
                   style={inputStyle}
                   autoFocus
-                  value={linkModal.mode === "wiki" ? linkModal.slug : linkModal.url}
-                  onChange={(e) =>
-                    setLinkModal(
-                      linkModal.mode === "wiki"
-                        ? { ...linkModal, slug: e.target.value, error: "" }
-                        : { ...linkModal, url: e.target.value, error: "" },
-                    )
-                  }
+                  value={linkModal.url}
+                  onChange={(e) => setLinkModal({ ...linkModal, url: e.target.value, error: "" })}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") submitLinkModal();
                   }}
@@ -508,14 +567,18 @@ export function AdminMarkdownEditor({ value, onChange, lang, wikiPages, dict, he
                 />
               </>
             )}
-            {linkModal.error ? <p style={{ margin: 0, color: "#ff5f7d", fontSize: 13 }}>{linkModal.error}</p> : null}
+            {linkModal.mode === "url" && linkModal.error ? (
+              <p style={{ margin: 0, color: "#ff5f7d", fontSize: 13 }}>{linkModal.error}</p>
+            ) : null}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button type="button" style={tbBtn} onClick={() => setLinkModal(null)}>
                 {dict.common.cancel}
               </button>
-              <button type="button" style={{ ...tbBtn, background: "var(--accent)", color: "#fff" }} onClick={submitLinkModal}>
-                {dict.common.save}
-              </button>
+              {linkModal.mode === "url" ? (
+                <button type="button" style={{ ...tbBtn, background: "var(--accent)", color: "#fff" }} onClick={submitLinkModal}>
+                  {dict.common.save}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

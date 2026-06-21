@@ -130,6 +130,8 @@ export function AdminPostsEditorMain({
               ...wb,
               diagramCopy: dict.article.diagramCopy,
               diagramCopied: dict.article.diagramCopied,
+              codeCopy: dict.article.codeCopy,
+              codeCopied: dict.article.codeCopied,
               revisionHistory: wb.revisionHistory,
             }}
             onOpenHistory={onOpenHistory}

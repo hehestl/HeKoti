@@ -16,6 +16,7 @@ import {
   wrapOrphanSvgs,
 } from "@/lib/wiki-diagrams";
 import { env } from "@/lib/env";
+import { expandCalloutBlocks } from "@/lib/markdown-callouts";
 
 const EXTRA_TAGS = [
   "img",
@@ -103,7 +104,8 @@ function scrubMediaSrc(attribs: Record<string, string>): Record<string, string> 
 }
 
 export function renderMarkdown(markdown: string) {
-  const dirty = marked.parse(markdown, { breaks: true }) as string;
+  const withCallouts = expandCalloutBlocks(markdown);
+  const dirty = marked.parse(withCallouts, { breaks: true }) as string;
   return sanitizeHtml(dirty, {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat([...EXTRA_TAGS]),
     allowedSchemes: MEDIA_SCHEMES,
@@ -133,6 +135,7 @@ export function renderMarkdown(markdown: string) {
       use: SVG_ATTRS,
       marker: SVG_ATTRS,
       style: [],
+      aside: ["class"],
     },
     transformTags: {
       img: (_tag, attribs) => ({ tagName: "img", attribs: scrubMediaSrc(attribs) }),

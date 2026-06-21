@@ -50,7 +50,17 @@
       "makeCategory": "Сделать категорией",
       "implicitHint": "Будет создана при сохранении",
       "leafReadOnly": "статья, только просмотр",
-      "systemReadOnly": "системная страница"
+      "systemReadOnly": "системная страница",
+      "moveUp": "Переместить вверх",
+      "moveDown": "Переместить вниз",
+      "changeIcon": "Сменить иконку",
+      "dropReorder": "Вставить сюда",
+      "dropNest": "Вложить в «{title}»",
+      "dropRoot": "На верхний уровень",
+      "moveBlocked": "Нельзя переместить сюда",
+      "descriptionLabel": "Описание",
+      "descriptionPlaceholder": "Кратко о разделе…",
+      "clearIcon": "Сбросить иконку"
     }
   },
   "collection": {
@@ -72,7 +82,9 @@
     "tocNav": "На этой странице",
     "tocNavToggle": "Оглавление",
     "diagramCopy": "Копировать код схемы",
-    "diagramCopied": "Скопировано"
+    "diagramCopied": "Скопировано",
+    "codeCopy": "Копировать код",
+    "codeCopied": "Скопировано"
   },
   "search": {
     "resultsTitle": "Результаты поиска «{q}»",
@@ -413,6 +425,16 @@
       "postTitle": "/post slug — подставится при показе статьи",
       "wiki": "Вики",
       "wikiTitle": "Внутренняя ссылка [текст](wiki)",
+      "pageLinkTitle": "Ссылка на страницу вики",
+      "pageLinkPicker": {
+        "searchPlaceholder": "Поиск страниц…",
+        "formatMarkdown": "Markdown-ссылка",
+        "formatPost": "/post slug",
+        "labelField": "Текст ссылки",
+        "noResults": "Страницы не найдены.",
+        "loading": "Поиск…",
+        "draftBadge": "Черновик"
+      },
       "url": "URL",
       "urlTitle": "Внешний URL",
       "date": "Дата",
@@ -427,6 +449,7 @@
         "strike": "Зачёрк.",
         "code": "Код",
         "bullet": "Список",
+        "numbered": "Нумерованный список",
         "quote": "Цитата",
         "hr": "Линия",
         "table": "Таблица",
@@ -434,8 +457,8 @@
         "callout": "Выноска",
         "formula": "Формула",
         "wikiLink": "Ссылка вики…",
+        "pageLink": "Ссылка на страницу…",
         "externalLink": "Внешняя ссылка…",
-        "insertPost": "Вставить /post …",
         "insertDateTime": "Дата и время",
         "insertImage": "Вставить изображение…",
         "insertVideo": "Вставить видео…"

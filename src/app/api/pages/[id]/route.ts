@@ -18,6 +18,7 @@ const updateSchema = z.object({
   title: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   contentMd: z.string().optional(),
+  excerpt: z.string().max(500).nullable().optional(),
   isPublished: z.boolean().optional(),
   showToc: z.boolean().optional(),
   isCategory: z.boolean().optional(),
@@ -49,6 +50,7 @@ export async function PATCH(
       payload.title === undefined &&
       payload.slug === undefined &&
       payload.contentMd === undefined &&
+      payload.excerpt === undefined &&
       payload.isPublished === undefined &&
       payload.showToc === undefined &&
       payload.isCategory === undefined &&
@@ -254,6 +256,7 @@ export async function PATCH(
       data: {
         ...(payload.title !== undefined && !titleInSlugTxn ? { title: payload.title } : {}),
         ...(payload.contentMd !== undefined ? { contentMd: payload.contentMd } : {}),
+        ...(payload.excerpt !== undefined ? { excerpt: payload.excerpt } : {}),
         ...searchPatch,
         ...(payload.isPublished !== undefined ? { isPublished: payload.isPublished } : {}),
         ...(payload.showToc !== undefined ? { showToc: payload.showToc } : {}),

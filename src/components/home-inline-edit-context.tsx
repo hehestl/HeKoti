@@ -28,6 +28,7 @@ import {
   parentPathPartsForCategory,
   treeSignature,
   treeToCategoryMaps,
+  getSiblingMoveTarget,
   type EditableHomeCategory,
   type HomeInlineEditLabels,
   type HomeTreePage,
@@ -51,6 +52,7 @@ type HomeInlineEditContextValue = {
   saveNow: () => Promise<boolean>;
   patchDraft: (pathKey: string, patch: Partial<EditableHomeCategory>) => void;
   reorderDraft: (fromId: string, target: DropTarget) => boolean;
+  moveSiblingDraft: (pathKey: string, direction: "up" | "down") => boolean;
   promoteToCategory: (pathKey: string) => void;
   isDirty: boolean;
 };
@@ -160,11 +162,28 @@ export function HomeInlineEditProvider({
       const pages = draftToReorderRows(draft);
       const { newParentParts, targetPageId, mode } = resolveMoveTarget(lang, pages, target);
       const result = calculateSiblingOrders(lang, pages, fromId, newParentParts, targetPageId, mode);
-      if (isReorderError(result)) return false;
+      if (isReorderError(result)) {
+        setStatus(labels.moveBlocked, "error");
+        return false;
+      }
       setDraft(applyReorderPatchesToDraft(lang, draft, result));
+      setStatusText("");
+      setStatusTone("neutral");
       return true;
     },
-    [draft, lang],
+    [draft, labels.moveBlocked, lang, setStatus],
+  );
+
+  const moveSiblingDraft = useCallback(
+    (pathKey: string, direction: "up" | "down"): boolean => {
+      if (!draft) return false;
+      const node = draft.get(pathKey);
+      if (!node?.id) return false;
+      const target = getSiblingMoveTarget(draft, pathKey, direction);
+      if (!target) return false;
+      return reorderDraft(node.id, target);
+    },
+    [draft, reorderDraft],
   );
 
   const promoteToCategory = useCallback((pathKey: string) => {
@@ -199,6 +218,7 @@ export function HomeInlineEditProvider({
             isCategory: true,
             isPublished: true,
             icon: cat.icon,
+            excerpt: cat.excerpt.trim() || null,
             contentMd: "",
           }),
         });
@@ -274,6 +294,7 @@ export function HomeInlineEditProvider({
       saveNow,
       patchDraft,
       reorderDraft,
+      moveSiblingDraft,
       promoteToCategory,
       isDirty,
     }),
@@ -287,6 +308,7 @@ export function HomeInlineEditProvider({
       labels,
       lang,
       patchDraft,
+      moveSiblingDraft,
       promoteToCategory,
       registered,
       reorderDraft,

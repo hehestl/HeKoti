@@ -3394,3 +3394,328 @@ body.wiki-repo-resizing .repo-sidebar-resizer {
     max-height: 220px;
   }
 }
+
+/* Wiki article blocks */
+.wiki-article-body blockquote {
+  margin: 0.75em 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--accent);
+  background: color-mix(in srgb, var(--fg) 4%, var(--panel));
+  border-radius: 0 8px 8px 0;
+  color: var(--fg);
+}
+
+.wiki-article-body details {
+  margin: 0.75em 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fg) 3%, var(--panel));
+}
+
+.wiki-article-body details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.wiki-article-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  display: block;
+  overflow-x: auto;
+}
+
+.wiki-article-body th,
+.wiki-article-body td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.wiki-article-body tr:nth-child(even) {
+  background: color-mix(in srgb, var(--fg) 3%, var(--panel));
+}
+
+.wiki-article-body input[type="checkbox"] {
+  margin-right: 0.35em;
+  accent-color: var(--accent);
+}
+
+.wiki-callout {
+  margin: 0.75em 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+  background: color-mix(in srgb, var(--fg) 4%, var(--panel));
+}
+
+.wiki-callout-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.wiki-callout--note { border-left-color: #6b8cff; }
+.wiki-callout--info { border-left-color: #3b82f6; }
+.wiki-callout--tip { border-left-color: #22c55e; }
+.wiki-callout--warning { border-left-color: #f59e0b; }
+.wiki-callout--success { border-left-color: #10b981; }
+
+.wiki-code-block-wrap {
+  position: relative;
+  margin: 0.75em 0;
+}
+
+.wiki-code-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.wiki-code-copy-btn {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.wiki-code-copy-btn:hover {
+  border-color: var(--accent);
+}
+
+.admin-monaco-editor-host {
+  position: relative;
+}
+
+.admin-monaco-gutter-plus {
+  position: fixed;
+  z-index: 50;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-monaco-gutter-plus:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.admin-wiki-link-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-wiki-link-picker-formats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.admin-wiki-link-picker-format {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-wiki-link-picker-search,
+.admin-wiki-link-picker-label {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.admin-wiki-link-picker-results {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.admin-wiki-link-picker-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.admin-wiki-link-picker-item.is-active,
+.admin-wiki-link-picker-item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.admin-wiki-link-picker-item-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.admin-wiki-link-picker-draft {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.admin-wiki-link-picker-item-snippet {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admin-wiki-link-picker-item-path {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+}
+
+.admin-wiki-link-picker-hint {
+  margin: 0;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wiki-icon-picker-popover {
+  position: fixed;
+  z-index: 12000;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.home-tree-fields {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.home-tree-desc-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.home-tree-move-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.home-tree-move-btn {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--fg);
+  padding: 0;
+  width: 22px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.home-tree-move-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.home-tree-move-spacer {
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.home-tree-drop-slot {
+  height: 10px;
+  margin: 2px 0 2px 24px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.home-tree-drop-slot--active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.home-tree-drop-slot--active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--accent);
+}
+
+.home-tree-drop-slot-label {
+  display: none;
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--panel);
+  padding: 0 4px;
+}
+
+.home-tree-drop-slot--active .home-tree-drop-slot-label {
+  display: inline;
+}
+
+.home-tree-root-drop {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.home-tree-root-drop--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.home-tree-nest-hint {
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.home-tree-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}

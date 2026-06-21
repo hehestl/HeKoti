@@ -29,6 +29,8 @@ export function WikiPublicShell({
   donateEditLabels,
   diagramCopyLabel,
   diagramCopiedLabel,
+  codeCopyLabel,
+  codeCopiedLabel,
   languagePathSuffix = "",
   languageQuery = "",
   children,
@@ -52,6 +54,8 @@ export function WikiPublicShell({
   donateEditLabels?: DonateInlineEditLabels;
   diagramCopyLabel: string;
   diagramCopiedLabel: string;
+  codeCopyLabel: string;
+  codeCopiedLabel: string;
   /** Path after /{lang} for language switcher hrefs, e.g. "/wiki/foo" or "/donate". */
   languagePathSuffix?: string;
   /** Raw query string without leading "?", e.g. "q=test". */
@@ -77,6 +81,8 @@ export function WikiPublicShell({
       donateEditLabels={donateEditLabels}
       diagramCopyLabel={diagramCopyLabel}
       diagramCopiedLabel={diagramCopiedLabel}
+      codeCopyLabel={codeCopyLabel}
+      codeCopiedLabel={codeCopiedLabel}
       languageSwitch={
         <WikiPublicLanguageSwitch
           lang={lang}
