@@ -2,7 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import { WikiErrorView } from "@/components/wiki-error-view";
-import { safeLang } from "@/lib/i18n";
+
+const KNOWN_LANGS = ["en", "ru"] as const;
+
+function langFromPathname(pathname: string): string {
+  const segment = pathname.split("/").filter(Boolean)[0] ?? "en";
+  return (KNOWN_LANGS as readonly string[]).includes(segment) ? segment : "en";
+}
 
 const LABELS: Record<string, { title: string; desc: string; retry: string; backHome: string }> = {
   en: {
@@ -30,7 +36,7 @@ export default function LangError({
   reset: () => void;
 }) {
   const pathname = usePathname() ?? "/en";
-  const lang = safeLang(pathname.split("/").filter(Boolean)[0] ?? "en");
+  const lang = langFromPathname(pathname);
   const labels = labelsFor(lang);
 
   return (

@@ -19,6 +19,10 @@
 - Site: robots.txt и meta robots — `SITE_ROBOTS_INDEX`, блок `/admin`/`/login`/`/api`
 - Site: `/llms.txt` и правила AI-краулеров — `AI_CRAWLERS_ALLOW`, доп. текст в админке
 
+### Fixed
+
+- Build: `[lang]/error.tsx` — client boundary без `@/lib/i18n` (fs/pg не попадают в browser bundle)
+
 ### Changed
 
 - Lang switch: client navigation (`Link` + prefetch) вместо full reload — без «затемнения» и быстрее
