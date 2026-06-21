@@ -276,6 +276,11 @@ export async function getSamplePageTitles(lang: string, limit = 30): Promise<str
   const pages = await getLangPages(lang);
   return pages
     .filter((p) => !p.isCategory && p.title.trim())
+    .sort((a, b) => {
+      const aTime = a.updatedAt?.getTime() ?? 0;
+      const bTime = b.updatedAt?.getTime() ?? 0;
+      return bTime - aTime;
+    })
     .map((p) => p.title.trim())
     .slice(0, limit);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { AdminContextMenuItem } from "@/types/admin-workbench";
 
 const VIEWPORT_OFFSET = 8;
@@ -46,37 +47,38 @@ export function AdminContextMenu({
   header?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [coords, setCoords] = useState({ x: -9999, y: -9999 });
   const [visible, setVisible] = useState(false);
 
   useLayoutEffect(() => {
-    setVisible(false);
     const el = ref.current;
     if (!el) return;
 
     const menuRect = el.getBoundingClientRect();
     const next = clampMenuPosition(x, y, menuRect);
 
-    setCoords(next);
+    setCoords((prev) => (prev.x === next.x && prev.y === next.y ? prev : next));
     setVisible(true);
-  }, [x, y, items]);
+  }, [x, y]);
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
     const raf = window.requestAnimationFrame(() => {
       const onClickOutside = (e: MouseEvent) => {
         if (ref.current?.contains(e.target as Node)) return;
-        onClose();
+        onCloseRef.current();
       };
       const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") onClose();
+        if (e.key === "Escape") onCloseRef.current();
       };
       const onScroll = (e: Event) => {
         if (!dismissOnScroll) return;
         if (ref.current?.contains(e.target as Node)) return;
         const target = e.target;
         if (target instanceof Element && target.closest(".monaco-scrollable-element")) return;
-        onClose();
+        onCloseRef.current();
       };
       window.addEventListener("click", onClickOutside);
       window.addEventListener("keydown", onKeyDown);
@@ -95,9 +97,9 @@ export function AdminContextMenu({
       window.cancelAnimationFrame(raf);
       cleanup?.();
     };
-  }, [dismissOnScroll, onClose]);
+  }, [dismissOnScroll]);
 
-  return (
+  const menu = (
     <div
       ref={ref}
       className="admin-context-menu"
@@ -134,4 +136,6 @@ export function AdminContextMenu({
       )}
     </div>
   );
+
+  return createPortal(menu, document.body);
 }

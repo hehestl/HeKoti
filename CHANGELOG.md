@@ -10,6 +10,13 @@
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-06-21
+
+### Fixed
+
+- Mascot: ПКМ admin-меню на главной — React #185 (HomeInlineEdit + unstable items в AdminContextMenu)
+- Home: typewriter в поиске — sample titles по updatedAt (новые статьи в пуле)
+
 ## [0.4.4] — 2026-06-21
 
 ### Fixed

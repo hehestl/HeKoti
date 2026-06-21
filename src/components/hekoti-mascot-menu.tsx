@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
@@ -57,6 +57,7 @@ export function HekotiMascotMenu({
       ? donateEdit.canEdit
       : !!inlineEdit?.canEdit;
   const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   const onContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -67,42 +68,63 @@ export function HekotiMascotMenu({
     [adminOnly, isAdmin],
   );
 
-  if (adminOnly && !isAdmin) {
-    return <HekotiMascotLink lang={lang} className={className} imageSize={imageSize} priority={priority} />;
-  }
+  const inlineIsEditing = inlineEdit?.isEditing ?? false;
+  const inlineStartEdit = inlineEdit?.startEdit;
+  const inlineCancelEdit = inlineEdit?.cancelEdit;
 
-  const items: AdminContextMenuItem[] = [];
-  if (showOpenSite) {
-    items.push({ id: "site", label: openSiteLabel ?? "Site", onClick: () => router.push(`/${lang}`) });
-    items.push({ id: "sep0", label: "", separator: true });
-  }
-  if (inlineEditMenuVisible && editLabel && exitEditLabel && inlineEdit) {
-    if (inlineEdit.isEditing) {
-      items.push({
-        id: "exit-edit",
-        label: exitEditLabel,
-        onClick: () => inlineEdit.cancelEdit(),
-      });
-    } else {
-      items.push({
-        id: "edit",
-        label: editLabel,
-        onClick: () => inlineEdit.startEdit(),
+  const items = useMemo((): AdminContextMenuItem[] => {
+    const menuItems: AdminContextMenuItem[] = [];
+    if (showOpenSite) {
+      menuItems.push({ id: "site", label: openSiteLabel ?? "Site", onClick: () => router.push(`/${lang}`) });
+      menuItems.push({ id: "sep0", label: "", separator: true });
+    }
+    if (inlineEditMenuVisible && editLabel && exitEditLabel && inlineStartEdit && inlineCancelEdit) {
+      if (inlineIsEditing) {
+        menuItems.push({
+          id: "exit-edit",
+          label: exitEditLabel,
+          onClick: () => inlineCancelEdit(),
+        });
+      } else {
+        menuItems.push({
+          id: "edit",
+          label: editLabel,
+          onClick: () => inlineStartEdit(),
+        });
+      }
+      menuItems.push({ id: "sep-edit", label: "", separator: true });
+    }
+    menuItems.push({ id: "admin", label: adminLabel, onClick: () => router.push(`/${lang}/admin`) });
+    if (appVersion) {
+      menuItems.push({ id: "sep1", label: "", separator: true });
+      menuItems.push({
+        id: "version",
+        label: `${versionLabel} v${appVersion}`,
+        disabled: true,
+        onClick: () => {
+          void navigator.clipboard.writeText(appVersion);
+        },
       });
     }
-    items.push({ id: "sep-edit", label: "", separator: true });
-  }
-  items.push({ id: "admin", label: adminLabel, onClick: () => router.push(`/${lang}/admin`) });
-  if (appVersion) {
-    items.push({ id: "sep1", label: "", separator: true });
-    items.push({
-      id: "version",
-      label: `${versionLabel} v${appVersion}`,
-      disabled: true,
-      onClick: () => {
-        void navigator.clipboard.writeText(appVersion);
-      },
-    });
+    return menuItems;
+  }, [
+    adminLabel,
+    appVersion,
+    editLabel,
+    exitEditLabel,
+    inlineCancelEdit,
+    inlineEditMenuVisible,
+    inlineIsEditing,
+    inlineStartEdit,
+    lang,
+    openSiteLabel,
+    router,
+    showOpenSite,
+    versionLabel,
+  ]);
+
+  if (adminOnly && !isAdmin) {
+    return <HekotiMascotLink lang={lang} className={className} imageSize={imageSize} priority={priority} />;
   }
 
   return (
@@ -115,7 +137,7 @@ export function HekotiMascotMenu({
           x={menu.x}
           y={menu.y}
           items={items}
-          onClose={() => setMenu(null)}
+          onClose={closeMenu}
         />
       ) : null}
     </>
