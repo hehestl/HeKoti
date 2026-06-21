@@ -31,10 +31,15 @@
 .DS_Store
 *.pem
 
-# Cursor: локальные правила и сессия (не в git; см. AGENTS.md — правила в .cursor/rules/)
+# Cursor / IDE: локальные правила, сессия, история редактора (не в git; см. AGENTS.md)
 .cursor/
 .cursor/**
 .history/
+.history/**
+
+# Секреты и локальная конфигурация агентов (вне репозитория)
+agent-transcripts/
+mcps/
 
 # debug
 npm-debug.log*

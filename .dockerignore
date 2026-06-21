@@ -16,4 +16,7 @@ npm-debug.log*
 .cursor
 .cursor/**
 .history
+.history/**
+agent-transcripts
+mcps
 .github
