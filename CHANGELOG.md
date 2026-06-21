@@ -22,6 +22,7 @@
 ### Fixed
 
 - Build: `[lang]/error.tsx` — client boundary без `@/lib/i18n` (fs/pg не попадают в browser bundle)
+- Mascot: ПКМ на главной — fix цикл registerTree/unregisterTree (нестабильный pathTree) + заморозка items меню
 
 ### Changed
 

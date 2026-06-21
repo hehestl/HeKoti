@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { HomeCategoryTreeEditor } from "@/components/home-category-tree-editor";
 import { useHomeInlineEdit } from "@/components/home-inline-edit-context";
+import { treeSignature, treeToCategoryMaps, type HomeTreePage } from "@/components/home-inline-edit-types";
 import { InlineEditToolbar } from "@/components/inline-edit-toolbar";
-import type { HomeTreePage } from "@/components/home-inline-edit-types";
 import type { PathTreeNode } from "@/lib/page-tree";
 
 function useMounted() {
@@ -28,13 +28,21 @@ function HomeInlineEditRegister({
   const { registerTree, unregisterTree } = useHomeInlineEdit();
   const registerTreeRef = useRef(registerTree);
   const unregisterTreeRef = useRef(unregisterTree);
+  const pathTreeRef = useRef(pathTree);
   registerTreeRef.current = registerTree;
   unregisterTreeRef.current = unregisterTree;
+  pathTreeRef.current = pathTree;
+
+  const treeSig = useMemo(
+    () => treeSignature(treeToCategoryMaps(pathTree, lang)),
+    [pathTree, lang],
+  );
 
   useEffect(() => {
-    registerTreeRef.current(lang, pathTree, searchMode);
-    return () => unregisterTreeRef.current();
-  }, [lang, pathTree, searchMode]);
+    registerTreeRef.current(lang, pathTreeRef.current, searchMode);
+  }, [lang, treeSig, searchMode]);
+
+  useEffect(() => () => unregisterTreeRef.current(), []);
 
   return null;
 }

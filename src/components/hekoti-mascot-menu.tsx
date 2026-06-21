@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
@@ -56,25 +56,13 @@ export function HekotiMascotMenu({
     inlineEditSource === "donate" && donateEdit && isAdmin
       ? donateEdit.canEdit
       : !!inlineEdit?.canEdit;
-  const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
+  const [menu, setMenu] = useState<null | { x: number; y: number; items: AdminContextMenuItem[] }>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
 
   const inlineEditRef = useRef(inlineEdit);
   inlineEditRef.current = inlineEdit;
 
-  const onContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      if (adminOnly && !isAdmin) return;
-      e.preventDefault();
-      e.stopPropagation();
-      setMenu({ x: e.clientX, y: e.clientY });
-    },
-    [adminOnly, isAdmin],
-  );
-
-  const inlineIsEditing = inlineEdit?.isEditing ?? false;
-
-  const items = useMemo((): AdminContextMenuItem[] => {
+  const buildMenuItems = useCallback((): AdminContextMenuItem[] => {
     const edit = inlineEditRef.current;
     const menuItems: AdminContextMenuItem[] = [];
     if (showOpenSite) {
@@ -82,7 +70,7 @@ export function HekotiMascotMenu({
       menuItems.push({ id: "sep0", label: "", separator: true });
     }
     if (inlineEditMenuVisible && editLabel && exitEditLabel && edit) {
-      if (inlineIsEditing) {
+      if (edit.isEditing) {
         menuItems.push({
           id: "exit-edit",
           label: exitEditLabel,
@@ -116,13 +104,22 @@ export function HekotiMascotMenu({
     editLabel,
     exitEditLabel,
     inlineEditMenuVisible,
-    inlineIsEditing,
     lang,
     openSiteLabel,
     router,
     showOpenSite,
     versionLabel,
   ]);
+
+  const onContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (adminOnly && !isAdmin) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setMenu({ x: e.clientX, y: e.clientY, items: buildMenuItems() });
+    },
+    [adminOnly, buildMenuItems, isAdmin],
+  );
 
   if (adminOnly && !isAdmin) {
     return <HekotiMascotLink lang={lang} className={className} imageSize={imageSize} priority={priority} />;
@@ -140,7 +137,7 @@ export function HekotiMascotMenu({
         <AdminContextMenu
           x={menu.x}
           y={menu.y}
-          items={items}
+          items={menu.items}
           onClose={closeMenu}
           dismissOnScroll={false}
         />
