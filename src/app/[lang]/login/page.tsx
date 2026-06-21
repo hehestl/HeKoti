@@ -1,19 +1,32 @@
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import { WikiBreadcrumbs } from "@/components/wiki-breadcrumbs";
 import { WikiPublicShell } from "@/components/wiki-public-shell";
-import { redirectIfAuthenticated } from "@/lib/auth-routes";
-import { env } from "@/lib/env";
+import { isHeronSsoEnabled, redirectIfAuthenticated } from "@/lib/auth-routes";
 import { buildAuthLoginPath } from "@/lib/heron-auth-client";
 import { safeLang, getDictionary } from "@/lib/i18n";
 import { staticBreadcrumbChain } from "@/lib/wiki-collection";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
 
-export default async function LoginPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function LoginPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<{ local?: string }>;
+}) {
   const { lang: inputLang } = await params;
+  const { local: localParam } = await searchParams;
   const lang = safeLang(inputLang);
   await redirectIfAuthenticated(lang);
+
+  const allowLocalLogin = localParam === "1";
+  if (isHeronSsoEnabled() && !allowLocalLogin) {
+    redirect(buildAuthLoginPath(`/${lang}/admin`, true));
+  }
+
   const [dict, shell] = await Promise.all([getDictionary(lang), getWikiShellProps(lang)]);
-  const heronEnabled = env.HEKOTI_HERON_AUTH_ENABLED === "1";
+  const heronEnabled = isHeronSsoEnabled();
   const heronLoginHref = buildAuthLoginPath(`/${lang}/admin`, true);
 
   return (

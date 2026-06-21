@@ -10,6 +10,19 @@
 4. Callback проверяет `state` → `POST /api/auth/heron/exchange` → cookie `hekoti_session`.
 5. Редирект на `returnTo` (admin для `ADMIN`, иначе `/`).
 
+### Heron-first (после включения SSO)
+
+Без сессии wiki сразу отправляет на Heron, без промежуточной страницы `/ru/login`:
+
+| URL | Поведение |
+|-----|-----------|
+| `/ru/admin` | → `/auth/login?auto=1&returnTo=/ru/admin` → Heron → admin |
+| `/ru/a`, `/ru/l` | то же (алиасы админки) |
+| `/ru/login` | auto-redirect на Heron |
+| `/ru/login?local=1` | локальный email/password (escape hatch) |
+
+Реализация: [`src/lib/auth-routes.ts`](../src/lib/auth-routes.ts) — `redirectToLogin()`, `isHeronSsoEnabled()`.
+
 ### Пример URL (бот → wiki)
 
 ```
@@ -45,6 +58,7 @@ ON CONFLICT (user_id, service_key) DO UPDATE SET role = EXCLUDED.role;
 | Variable | Description |
 |----------|-------------|
 | `HEKOTI_HERON_AUTH_ENABLED` | `1` — включить SSO |
+| `APP_URL` | Публичный URL wiki (`https://wiki.hehestl.com`) — Secure cookie за прокси |
 | `NEXT_PUBLIC_HERON_AUTH_URL` | Публичный UI Heron (default `https://heron.hehestl.com`) |
 | `HERON_AUTH_API_URL` | API для `/api/auth/me` и `/api/auth/me/service-grants` |
 | `HERON_JWT_ISSUER` | JWT issuer |
@@ -85,10 +99,13 @@ HEKOTI_HERON_DEFAULT_RETURN=/ru/admin
 
 - [ ] Миграция `0123_heron_service_grants` накатана на Hedra
 - [ ] Grant `hekoti:admin` для вашего Heron user
-- [ ] `HEKOTI_HERON_AUTH_ENABLED=1` + JWT env на wiki
+- [ ] `HEKOTI_HERON_AUTH_ENABLED=1` + JWT env + `APP_URL=https://wiki.hehestl.com` на wiki
 - [ ] Allowlist обновлён, heron-auth перезапущен
-- [ ] Открыть wiki через SSO URL → `/ru/admin` без формы (admin grant)
+- [ ] `/ru/admin` без cookie → Heron → `/ru/admin` (admin grant)
+- [ ] `/auth/login?auto=1&returnTo=/ru/admin` → то же
+- [ ] Heron Hub → плитка Hekoti → `/ru/admin`
 - [ ] Пользователь без grant → READER, `/ru/admin` редирект на главную
+- [ ] `/ru/login?local=1` → форма email/password
 - [ ] `HEKOTI_HERON_AUTH_ENABLED=0` → старый login email/password
 
 ## Отключение

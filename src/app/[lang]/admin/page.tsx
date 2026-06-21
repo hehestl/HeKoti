@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AdminDashboard } from "@/components/admin-dashboard";
+import { redirectToLogin } from "@/lib/auth-routes";
 import { getSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/user-role";
 import { ensureDefaultChannel } from "@/lib/agent-chat";
@@ -36,7 +37,7 @@ export default async function AdminPage({
   }
   const dict = await getDictionary(adminLanguage);
   const user = await getSessionUser();
-  if (!user) redirect(`/${adminLanguage}/login`);
+  if (!user) redirectToLogin(adminLanguage, `/${adminLanguage}/admin`);
   if (!isAdminRole(user.role)) redirect(`/${adminLanguage}`);
 
   const initialTotpStatus =
