@@ -17,6 +17,7 @@ import { exportArticleCsv, exportArticleMarkdown, exportArticlePdf } from "@/lib
 import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { toSlug } from "@/lib/slug";
+import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 import type { AdminPageRow, AdminPagesByLang, AdminPagesStore } from "@/types/admin-workbench";
 
 type PostsEditorContextValue = {
@@ -87,6 +88,7 @@ export function AdminPostsEditorProvider({
     lang: string;
     title: string;
     slug: string;
+    icon: WikiIconKey | null;
   } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
     id: string;

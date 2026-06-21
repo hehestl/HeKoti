@@ -3,6 +3,7 @@ import { WikiPublicLanguageSwitch } from "@/components/wiki-public-language-swit
 import type { DonateInlineEditLabels } from "@/components/donate-inline-edit-types";
 import type { HomeInlineEditLabels } from "@/components/home-inline-edit-types";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
+import type { HelpCenterSearchLabels } from "@/components/help-center-search-form";
 import type { WikiPublicHeaderVariant } from "@/components/wiki-public-header";
 import type { DonateConfig } from "@/lib/donate-config-shared";
 
@@ -12,6 +13,7 @@ export function WikiPublicShell({
   lang,
   langs,
   searchPlaceholder,
+  searchLabels,
   languageAria,
   variant,
   initialSearchQuery,
@@ -34,6 +36,7 @@ export function WikiPublicShell({
   lang: string;
   langs: LangOption[];
   searchPlaceholder: string;
+  searchLabels: HelpCenterSearchLabels;
   languageAria: string;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
@@ -59,6 +62,7 @@ export function WikiPublicShell({
     <WikiPublicShellClient
       lang={lang}
       searchPlaceholder={searchPlaceholder}
+      searchLabels={searchLabels}
       variant={variant}
       initialSearchQuery={initialSearchQuery}
       searchSampleTitles={searchSampleTitles}

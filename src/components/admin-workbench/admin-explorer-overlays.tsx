@@ -5,7 +5,6 @@ import type { AdminExplorerActions } from "@/components/admin-workbench/admin-ex
 import type { Dictionary } from "@/lib/i18n";
 import { buildAdminExplorerBulkMenuItems, buildAdminExplorerRowMenuItems } from "@/lib/admin-explorer-row-menu";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
-import { WikiIconPickerMenu } from "@/components/wiki-icon-picker-menu";
 
 export function AdminExplorerRowMenu({
   rowMenu,
@@ -17,7 +16,6 @@ export function AdminExplorerRowMenu({
   onClose,
   onExpandSelected,
   onCollapseSelected,
-  onOpenIconPicker,
 }: {
   rowMenu: { id: string; lang: string; x: number; y: number };
   pagesByLang: AdminPagesByLang;
@@ -28,7 +26,6 @@ export function AdminExplorerRowMenu({
   onClose: () => void;
   onExpandSelected: (pages: AdminPageRow[]) => void;
   onCollapseSelected: (pages: AdminPageRow[]) => void;
-  onOpenIconPicker: (id: string, lang: string, x: number, y: number) => void;
 }) {
   const page = (pagesByLang[rowMenu.lang] ?? []).find((p) => p.id === rowMenu.id);
   if (!page) return null;
@@ -40,12 +37,11 @@ export function AdminExplorerRowMenu({
     onExpandSelected,
     onCollapseSelected,
   });
-  const rowItems = buildAdminExplorerRowMenuItems(page, rowMenu.x, rowMenu.y, {
+  const rowItems = buildAdminExplorerRowMenuItems(page, {
     dict,
     isNotes,
     pagesByLang,
     actions,
-    onOpenIconPicker,
   });
   const items = bulk.length > 0 ? [...bulk, { id: "bulk-sep2", label: "", separator: true }, ...rowItems] : rowItems;
 
@@ -54,28 +50,6 @@ export function AdminExplorerRowMenu({
       x={rowMenu.x}
       y={rowMenu.y}
       items={items}
-      onClose={onClose}
-    />
-  );
-}
-
-export function AdminExplorerIconPicker({
-  iconPicker,
-  dict,
-  actions,
-  onClose,
-}: {
-  iconPicker: { id: string; lang: string; x: number; y: number };
-  dict: Dictionary;
-  actions: AdminExplorerActions;
-  onClose: () => void;
-}) {
-  return (
-    <WikiIconPickerMenu
-      x={iconPicker.x}
-      y={iconPicker.y}
-      clearLabel={dict.admin.posts.clearIcon}
-      onSelect={(icon) => actions.onChangeIcon(iconPicker.id, iconPicker.lang, icon)}
       onClose={onClose}
     />
   );

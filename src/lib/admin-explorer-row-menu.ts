@@ -62,17 +62,14 @@ export function buildAdminExplorerBulkMenuItems(
 
 export function buildAdminExplorerRowMenuItems(
   page: AdminPageRow,
-  menuX: number,
-  menuY: number,
   opts: {
     dict: Dictionary;
     isNotes: boolean;
     pagesByLang: AdminPagesByLang;
     actions: AdminExplorerActions;
-    onOpenIconPicker: (id: string, lang: string, x: number, y: number) => void;
   },
 ): AdminContextMenuItem[] {
-  const { dict, isNotes, pagesByLang, actions, onOpenIconPicker } = opts;
+  const { dict, isNotes, pagesByLang, actions } = opts;
   const wb = dict.admin.workbench;
   const childCount = (pagesByLang[page.lang] ?? []).filter(
     (p) => p.path !== page.path && p.path.startsWith(`${page.path}/`),
@@ -95,11 +92,6 @@ export function buildAdminExplorerRowMenuItems(
     ...(page.systemKey
       ? []
       : [{ id: "rename", label: dict.admin.posts.rename, onClick: () => actions.onRename(page.id, page.lang) }]),
-    {
-      id: "icon",
-      label: dict.admin.posts.changeIcon,
-      onClick: () => onOpenIconPicker(page.id, page.lang, menuX, menuY),
-    },
     ...(actions.onTogglePublish
       ? [
           {

@@ -8,7 +8,7 @@ import { env } from "@/lib/env";
 import { safeLang, getDictionary } from "@/lib/i18n";
 import { getExcerptByPath, getLangPathTree, getSamplePageTitles } from "@/lib/wiki-collection";
 import { getWikiShellProps } from "@/lib/wiki-shell-props";
-import { searchPublishedPages } from "@/lib/wiki-search";
+import { searchPublishedPagesWithFallback } from "@/lib/wiki-search";
 import Link from "next/link";
 
 export default async function LanguageHome({
@@ -39,12 +39,14 @@ export default async function LanguageHome({
   const searchMode = qTrim.length > 0;
   const shell = await getWikiShellProps(lang);
 
-  const [pathTree, excerptByPath, searchResults, sampleTitles] = await Promise.all([
+  const [pathTree, excerptByPath, searchBundle, sampleTitles] = await Promise.all([
     getLangPathTree(lang),
     getExcerptByPath(lang),
-    searchMode ? searchPublishedPages(lang, qTrim) : Promise.resolve([]),
+    searchMode ? searchPublishedPagesWithFallback(lang, qTrim) : Promise.resolve({ results: [], partial: false }),
     getSamplePageTitles(lang),
   ]);
+  const searchResults = searchBundle.results;
+  const searchPartial = searchBundle.partial;
 
   const searchCrumbs = [
     { label: dict.collection.allCollections, href: `/${lang}` },
@@ -66,7 +68,13 @@ export default async function LanguageHome({
             items={searchCrumbs}
             pagePath={`/${lang}?q=${encodeURIComponent(qTrim)}`}
           />
-          <WikiSearchResults lang={lang} query={qTrim} results={searchResults} dict={dict.search} />
+          <WikiSearchResults
+            lang={lang}
+            query={qTrim}
+            results={searchResults}
+            partial={searchPartial}
+            dict={dict.search}
+          />
         </>
       ) : (
         <HelpCenterHomeView lang={lang} pathTree={pathTree} searchMode={false}>

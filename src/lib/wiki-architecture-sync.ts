@@ -15,6 +15,7 @@ import {
 } from "@/lib/wiki-architecture-md";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { createPageRevision, pageToRevisionSnapshot } from "@/lib/page-revision-snapshot";
+import { applyPageSearchText } from "@/lib/page-search-index";
 
 async function loadActivePages(lang: string): Promise<ArchPageRef[]> {
   return prisma.page.findMany({
@@ -75,6 +76,7 @@ async function applyCreate(
           icon: op.isCategory ? "folder" : null,
           navOrder: maxNav + 10,
           originalId: sourcePage?.id ?? null,
+          ...applyPageSearchText({ title: op.title, contentMd: "", scope: "WIKI" }),
         },
       });
       await createPageRevision(tx, row, editorId, null, { created: true });
@@ -109,7 +111,11 @@ export async function applyArchitectureOps(
       const prevSnapshot = pageToRevisionSnapshot(existing);
       const updated = await prisma.page.update({
         where: { id: op.id },
-        data: { title: op.title, isCategory: op.isCategory },
+        data: {
+          title: op.title,
+          isCategory: op.isCategory,
+          ...applyPageSearchText({ title: op.title, contentMd: existing.contentMd, scope: existing.scope }),
+        },
       });
       await createPageRevision(prisma, updated, editorId, prevSnapshot);
       await invalidateWikiLangCache(updated.lang);

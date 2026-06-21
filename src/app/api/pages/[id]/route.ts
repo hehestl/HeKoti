@@ -12,6 +12,7 @@ import { createRedirectsForPathUpdates } from "@/lib/page-redirect";
 import { validateSlugInput } from "@/lib/slug";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
+import { applyPageSearchText } from "@/lib/page-search-index";
 
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -242,11 +243,18 @@ export async function PATCH(
 
     const titleInSlugTxn = slugRenamed && payload.title !== undefined;
     const prevSnapshot = pageToRevisionSnapshot(existing);
+    const nextTitle = payload.title !== undefined && !titleInSlugTxn ? payload.title : existing.title;
+    const nextContentMd = payload.contentMd !== undefined ? payload.contentMd : existing.contentMd;
+    const searchPatch =
+      payload.title !== undefined || payload.contentMd !== undefined
+        ? applyPageSearchText({ title: nextTitle, contentMd: nextContentMd, scope: existing.scope })
+        : {};
     const updated = await prisma.page.update({
       where: { id },
       data: {
         ...(payload.title !== undefined && !titleInSlugTxn ? { title: payload.title } : {}),
         ...(payload.contentMd !== undefined ? { contentMd: payload.contentMd } : {}),
+        ...searchPatch,
         ...(payload.isPublished !== undefined ? { isPublished: payload.isPublished } : {}),
         ...(payload.showToc !== undefined ? { showToc: payload.showToc } : {}),
         ...(payload.isCategory !== undefined ? { isCategory: payload.isCategory } : {}),

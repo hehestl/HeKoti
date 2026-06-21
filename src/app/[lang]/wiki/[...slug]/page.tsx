@@ -140,7 +140,7 @@ export async function generateMetadata({
     };
   }
 
-  return { title: "Not found" };
+  return { title: "Not found", robots: { index: false, follow: false } };
 }
 
 export default async function WikiPage({

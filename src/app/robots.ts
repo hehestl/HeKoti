@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
+import { getCrawlerPolicy } from "@/lib/crawler-policy";
 import { env } from "@/lib/env";
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const policy = await getCrawlerPolicy();
   return {
-    rules: [{ userAgent: "*", allow: "/" }],
-    sitemap: `${env.APP_URL}/sitemap.xml`,
+    rules: policy.robotsTxtRules,
+    sitemap: `${env.APP_URL.replace(/\/$/, "")}/sitemap.xml`,
   };
 }

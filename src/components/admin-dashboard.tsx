@@ -50,6 +50,16 @@ function AdminWorkbenchInner({
   headHtml,
   bodyHtml,
   wikiTreeGuideColor,
+  siteTitle,
+  siteDescription,
+  robotsIndexSite,
+  aiCrawlersAllow,
+  llmsTxtExtra,
+  titleFromEnv,
+  descriptionFromEnv,
+  robotsIndexFromEnv,
+  aiCrawlersFromEnv,
+  llmsTxtExtraFromEnv,
   knownLanguages,
   aiAgents,
   onStatusChange,
@@ -75,6 +85,16 @@ function AdminWorkbenchInner({
   headHtml: string;
   bodyHtml: string;
   wikiTreeGuideColor: string | null;
+  siteTitle: string;
+  siteDescription: string;
+  robotsIndexSite: boolean;
+  aiCrawlersAllow: boolean;
+  llmsTxtExtra: string;
+  titleFromEnv: boolean;
+  descriptionFromEnv: boolean;
+  robotsIndexFromEnv: boolean;
+  aiCrawlersFromEnv: boolean;
+  llmsTxtExtraFromEnv: boolean;
   knownLanguages: string[];
   aiAgents: AgentRow[];
   onStatusChange: (text: string, tone: "neutral" | "error") => void;
@@ -118,6 +138,16 @@ function AdminWorkbenchInner({
             headHtml={headHtml}
             bodyHtml={bodyHtml}
             wikiTreeGuideColor={wikiTreeGuideColor}
+            siteTitle={siteTitle}
+            siteDescription={siteDescription}
+            robotsIndexSite={robotsIndexSite}
+            aiCrawlersAllow={aiCrawlersAllow}
+            llmsTxtExtra={llmsTxtExtra}
+            titleFromEnv={titleFromEnv}
+            descriptionFromEnv={descriptionFromEnv}
+            robotsIndexFromEnv={robotsIndexFromEnv}
+            aiCrawlersFromEnv={aiCrawlersFromEnv}
+            llmsTxtExtraFromEnv={llmsTxtExtraFromEnv}
             dict={dict}
           />
         ) : null}
@@ -170,6 +200,16 @@ export function AdminDashboard({
   headHtml,
   bodyHtml,
   wikiTreeGuideColor,
+  siteTitle,
+  siteDescription,
+  robotsIndexSite,
+  aiCrawlersAllow,
+  llmsTxtExtra,
+  titleFromEnv,
+  descriptionFromEnv,
+  robotsIndexFromEnv,
+  aiCrawlersFromEnv,
+  llmsTxtExtraFromEnv,
   enabledLanguages,
   knownLanguages,
   aiAgents,
@@ -191,6 +231,16 @@ export function AdminDashboard({
   headHtml: string;
   bodyHtml: string;
   wikiTreeGuideColor: string | null;
+  siteTitle: string;
+  siteDescription: string;
+  robotsIndexSite: boolean;
+  aiCrawlersAllow: boolean;
+  llmsTxtExtra: string;
+  titleFromEnv: boolean;
+  descriptionFromEnv: boolean;
+  robotsIndexFromEnv: boolean;
+  aiCrawlersFromEnv: boolean;
+  llmsTxtExtraFromEnv: boolean;
   enabledLanguages: string[];
   knownLanguages: string[];
   aiAgents: AgentRow[];
@@ -258,6 +308,16 @@ export function AdminDashboard({
     headHtml,
     bodyHtml,
     wikiTreeGuideColor,
+    siteTitle,
+    siteDescription,
+    robotsIndexSite,
+    aiCrawlersAllow,
+    llmsTxtExtra,
+    titleFromEnv,
+    descriptionFromEnv,
+    robotsIndexFromEnv,
+    aiCrawlersFromEnv,
+    llmsTxtExtraFromEnv,
     knownLanguages,
     aiAgents,
     onStatusChange,

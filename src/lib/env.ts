@@ -13,6 +13,16 @@ const envSchema = z.object({
   REDIS_CACHE_TTL_SECONDS: z.coerce.number().default(300),
   PUBLIC_READ_MODE: z.coerce.boolean().default(true),
   ENABLED_LANGUAGES: z.string().default("en,ru"),
+  /** Site title (tab, og:title). Empty → GlobalSettings → default. */
+  SITE_TITLE: z.string().default(""),
+  /** Meta description. Empty → GlobalSettings → default. */
+  SITE_DESCRIPTION: z.string().default(""),
+  /** 1 = index site, 0 = noindex. Unset → GlobalSettings.robotsIndexSite. */
+  SITE_ROBOTS_INDEX: z.enum(["0", "1"]).optional(),
+  /** 1 = allow AI crawlers, 0 = block in robots.txt. Unset → GlobalSettings. */
+  AI_CRAWLERS_ALLOW: z.enum(["0", "1"]).optional(),
+  /** Extra markdown for /llms.txt. Empty → GlobalSettings.llmsTxtExtra. */
+  LLMS_TXT_EXTRA: z.string().default(""),
   HEKOTI_ADMIN_EMAIL: z.string().default("admin"),
   HEKOTI_ADMIN_PASSWORD: z.string().default("hehe"),
   AUTH_PENDING_SECRET: z.string().optional(),

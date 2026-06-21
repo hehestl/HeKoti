@@ -4,6 +4,8 @@ import { env } from "@/lib/env";
 import { verifyWebhookPayload } from "@/lib/webhooks";
 import { prisma } from "@/lib/db";
 import { normalizePath, toSlug } from "@/lib/slug";
+import { applyPageSearchText } from "@/lib/page-search-index";
+import { invalidateSearchLangCache } from "@/lib/cache";
 
 // Maximum allowed payload size (1MB)
 const MAX_PAYLOAD_SIZE = 1024 * 1024;
@@ -64,6 +66,11 @@ export async function POST(request: Request) {
           title: validatedPayload.title,
           contentMd: validatedPayload.contentMd,
           isPublished: Boolean(validatedPayload.publish),
+          ...applyPageSearchText({
+            title: validatedPayload.title,
+            contentMd: validatedPayload.contentMd,
+            scope: existing.scope,
+          }),
         },
       })
     : await prisma.page.create({
@@ -74,7 +81,13 @@ export async function POST(request: Request) {
           lang: validatedPayload.lang,
           path,
           isPublished: Boolean(validatedPayload.publish),
+          ...applyPageSearchText({
+            title: validatedPayload.title,
+            contentMd: validatedPayload.contentMd,
+            scope: "WIKI",
+          }),
         },
       });
+  await invalidateSearchLangCache(validatedPayload.lang);
   return NextResponse.json({ ok: true, pageId: page.id });
 }

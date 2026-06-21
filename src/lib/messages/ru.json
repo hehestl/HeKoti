@@ -78,7 +78,25 @@
     "resultsTitle": "Результаты поиска «{q}»",
     "noResults": "Ничего не найдено.",
     "updatedAt": "Обновлено {date}",
-    "breadcrumbLabel": "Поиск"
+    "breadcrumbLabel": "Поиск",
+    "partialResultsHint": "Похожие результаты — не все слова совпали.",
+    "backHome": "На главную",
+    "tryDifferentWords": "Попробуйте другие слова или более короткий запрос.",
+    "suggestionsAria": "Подсказки поиска",
+    "loading": "Ищем…",
+    "noSuggestions": "Подходящих статей нет",
+    "viewAllResults": "Все результаты",
+    "loginHint": "Вход в админку",
+    "suggestionsError": "Не удалось загрузить подсказки",
+    "snippetHeadingPrefix": "§ {heading}"
+  },
+  "errors": {
+    "notFoundTitle": "Страница не найдена",
+    "notFoundDesc": "Запрошенная страница не существует или была перенесена.",
+    "serverErrorTitle": "Что-то пошло не так",
+    "serverErrorDesc": "Произошла непредвиденная ошибка. Можно повторить попытку или вернуться на главную.",
+    "retry": "Повторить",
+    "backHome": "На главную"
   },
   "admin": {
     "workbench": {
@@ -212,6 +230,18 @@
     "defaultLanguage": "Язык по умолчанию",
     "defaultLanguageDesc": "Язык, используемый для гостей и как базовый для интерфейса.",
     "wikiTreeGuideColor": "Цвет линий дерева wiki",
+    "siteSeo": {
+      "title": "SEO и краулеры",
+      "desc": "Title и description для <head>, Open Graph и /llms.txt. Если заданы переменные ENV — они имеют приоритет над полями ниже.",
+      "siteTitle": "Заголовок сайта",
+      "siteDescription": "Описание сайта",
+      "robotsIndexSite": "Индексировать сайт для поисковиков",
+      "aiCrawlersAllow": "Разрешить AI-краулеры (GPTBot, ClaudeBot, …)",
+      "llmsTxtExtra": "Доп. текст для /llms.txt",
+      "llmsTxtExtraPlaceholder": "## Дополнительный раздел\nКонтекст для AI-агентов…",
+      "envLocked": "Задано в .env — значение из админки игнорируется",
+      "envLockedOnSave": "Часть полей заблокирована .env и не была сохранена."
+    },
     "telemetry": {
       "title": "HTML-терминал / телеметрия (без SSH)",
       "desc": "Вставляйте фрагменты, как если бы правили на сервере: Яндекс.Метрика, Google Analytics, пиксели. В разметку сайта попадают только теги <script>, <meta>, <link> и <noscript> (см. корневой layout). Замените плейсхолдеры (COUNTER_ID, G-…) и нажмите Сохранить.",

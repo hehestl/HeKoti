@@ -78,7 +78,25 @@
     "resultsTitle": "Search results for “{q}”",
     "noResults": "No articles match your search.",
     "updatedAt": "Updated {date}",
-    "breadcrumbLabel": "Search"
+    "breadcrumbLabel": "Search",
+    "partialResultsHint": "Showing similar results — not all words matched.",
+    "backHome": "Back to home",
+    "tryDifferentWords": "Try different keywords or fewer words.",
+    "suggestionsAria": "Search suggestions",
+    "loading": "Searching…",
+    "noSuggestions": "No matching articles",
+    "viewAllResults": "View all results",
+    "loginHint": "Sign in to admin",
+    "suggestionsError": "Could not load suggestions",
+    "snippetHeadingPrefix": "§ {heading}"
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundDesc": "The page you requested does not exist or was moved.",
+    "serverErrorTitle": "Something went wrong",
+    "serverErrorDesc": "An unexpected error occurred. You can try again or return home.",
+    "retry": "Try again",
+    "backHome": "Back to home"
   },
   "admin": {
     "workbench": {
@@ -212,6 +230,18 @@
     "defaultLanguage": "Default Language",
     "defaultLanguageDesc": "The language used for guests and as a base for the interface.",
     "wikiTreeGuideColor": "Wiki tree guide line color",
+    "siteSeo": {
+      "title": "SEO and crawlers",
+      "desc": "Site title and description for <head>, Open Graph, and /llms.txt. ENV variables override these fields when set.",
+      "siteTitle": "Site title",
+      "siteDescription": "Site description",
+      "robotsIndexSite": "Allow search engine indexing",
+      "aiCrawlersAllow": "Allow AI crawlers (GPTBot, ClaudeBot, …)",
+      "llmsTxtExtra": "Extra /llms.txt content",
+      "llmsTxtExtraPlaceholder": "## Optional section\nMore context for AI agents…",
+      "envLocked": "Set in .env — admin value ignored",
+      "envLockedOnSave": "Some fields are locked by .env and were not saved."
+    },
     "telemetry": {
       "title": "HTML / telemetry (no SSH)",
       "desc": "Paste snippets like on the server: Yandex.Metrica, Google Analytics, pixels. Only <script>, <meta>, <link>, and <noscript> tags are injected into the site (see root layout). Replace placeholders (COUNTER_ID, G-…) before saving.",

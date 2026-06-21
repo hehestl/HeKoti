@@ -106,6 +106,28 @@ describe("buildHomePatchPayloads", () => {
       },
     ]);
   });
+
+  it("emits navOrder patches for sibling reorder", () => {
+    const tree = [
+      node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
+      node("/en/b", "b", { id: "b", path: "/en/b", title: "B", navOrder: 10, isCategory: true }),
+    ];
+    const baseline = treeToCategoryMaps(tree, lang);
+    const draft = cloneCategoryMap(baseline);
+    const next = applyReorderPatchesToDraft(lang, draft, [
+      { id: "b", navOrder: 0, parentPathParts: [] },
+      { id: "a", navOrder: 10, parentPathParts: [] },
+    ]);
+    const patches = buildHomePatchPayloads(baseline, next, lang);
+    expect(patches).toHaveLength(2);
+    expect(patches).toEqual(
+      expect.arrayContaining([
+        { id: "b", payload: { navOrder: 0 } },
+        { id: "a", payload: { navOrder: 10 } },
+      ]),
+    );
+    expect(categoryMapsEqual(next, cloneCategoryMap(next))).toBe(true);
+  });
 });
 
 describe("buildTreeFromCategoryDraft", () => {

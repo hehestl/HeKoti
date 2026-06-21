@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { HomeCategoryTreeEditor } from "@/components/home-category-tree-editor";
 import { useHomeInlineEdit } from "@/components/home-inline-edit-context";
 import { InlineEditToolbar } from "@/components/inline-edit-toolbar";
@@ -26,11 +26,15 @@ function HomeInlineEditRegister({
   searchMode: boolean;
 }) {
   const { registerTree, unregisterTree } = useHomeInlineEdit();
+  const registerTreeRef = useRef(registerTree);
+  const unregisterTreeRef = useRef(unregisterTree);
+  registerTreeRef.current = registerTree;
+  unregisterTreeRef.current = unregisterTree;
 
   useEffect(() => {
-    registerTree(lang, pathTree, searchMode);
-    return unregisterTree;
-  }, [lang, pathTree, searchMode, registerTree, unregisterTree]);
+    registerTreeRef.current(lang, pathTree, searchMode);
+    return () => unregisterTreeRef.current();
+  }, [lang, pathTree, searchMode]);
 
   return null;
 }

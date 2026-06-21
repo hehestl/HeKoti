@@ -66,25 +66,30 @@ export async function invalidateWikiLangCache(lang: string) {
   }
 }
 
-export async function invalidateSearchLangCache(lang: string) {
-  const prefix = `search:${lang}:`;
+async function deleteCachedByPrefixes(prefixes: string[]) {
   const redis = getRedis();
   if (redis) {
-    let cursor = "0";
-    do {
-      const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
-      cursor = next;
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
-    } while (cursor !== "0");
+    for (const prefix of prefixes) {
+      let cursor = "0";
+      do {
+        const [next, keys] = await redis.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
+        cursor = next;
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } while (cursor !== "0");
+    }
     return;
   }
   for (const key of memoryCache.keys()) {
-    if (typeof key === "string" && key.startsWith(prefix)) {
+    if (typeof key === "string" && prefixes.some((prefix) => key.startsWith(prefix))) {
       memoryCache.delete(key);
     }
   }
+}
+
+export async function invalidateSearchLangCache(lang: string) {
+  await deleteCachedByPrefixes([`search:${lang}:`, `search:suggest:${lang}:`]);
 }
 
 export async function bumpRateLimitKey(key: string, windowSec: number) {

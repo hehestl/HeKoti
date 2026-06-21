@@ -8,6 +8,7 @@ import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { activePageWhere } from "@/lib/page-query";
 import { createPageRevision, pageToRevisionSnapshot } from "@/lib/page-revision-snapshot";
+import { applyPageSearchText } from "@/lib/page-search-index";
 
 type LocalizedPayload = { title: string; contentMd: string };
 
@@ -64,6 +65,11 @@ export async function localizePageToLanguage(input: {
           title: localized.title,
           contentMd: localized.contentMd,
           originalId: canonicalPageId(source),
+          ...applyPageSearchText({
+            title: localized.title,
+            contentMd: localized.contentMd,
+            scope: before.scope,
+          }),
         },
       });
       await createPageRevision(tx, row, input.editorId, pageToRevisionSnapshot(before));
@@ -104,6 +110,11 @@ export async function localizePageToLanguage(input: {
         path,
         navOrder: maxNav + 10,
         originalId: canonicalPageId(source),
+        ...applyPageSearchText({
+          title: localized.title,
+          contentMd: localized.contentMd,
+          scope: source.scope,
+        }),
       },
     });
     await createPageRevision(tx, row, input.editorId, null, { created: true });
@@ -291,7 +302,7 @@ export async function localizeTitlesBranch(input: {
   for (const pageId of pageIds) {
     const source = await prisma.page.findFirst({
       where: { id: pageId, ...activePageWhere },
-      select: { id: true, path: true, lang: true, originalId: true, title: true, excerpt: true, isCategory: true, icon: true },
+      select: { id: true, path: true, lang: true, originalId: true, title: true, excerpt: true, isCategory: true, icon: true, scope: true },
     });
     if (!source) continue;
 
@@ -306,9 +317,21 @@ export async function localizeTitlesBranch(input: {
 
         const existing = await findPageCounterpart(source, targetLang);
         if (existing) {
+          const targetPage = await prisma.page.findUnique({
+            where: { id: existing.id },
+            select: { contentMd: true, scope: true },
+          });
           const updated = await prisma.page.update({
             where: { id: existing.id },
-            data: { title: localizedTitle, originalId: canonicalPageId(source) },
+            data: {
+              title: localizedTitle,
+              originalId: canonicalPageId(source),
+              ...applyPageSearchText({
+                title: localizedTitle,
+                contentMd: targetPage?.contentMd ?? "",
+                scope: targetPage?.scope ?? "WIKI",
+              }),
+            },
           });
           await invalidateWikiLangCache(targetLang);
           results.push({
@@ -353,6 +376,7 @@ export async function localizeTitlesBranch(input: {
               icon: source.icon,
               navOrder: maxNav + 10,
               originalId: canonicalPageId(source),
+              ...applyPageSearchText({ title: localizedTitle, contentMd: "", scope: source.scope }),
             },
           });
         });

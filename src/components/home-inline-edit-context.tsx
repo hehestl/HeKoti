@@ -77,6 +77,8 @@ export function HomeInlineEditProvider({
   const [statusText, setStatusText] = useState("");
   const [statusTone, setStatusTone] = useState<"neutral" | "error">("neutral");
   const lastSignatureRef = useRef("");
+  const baselineRef = useRef<Map<string, EditableHomeCategory> | null>(null);
+  baselineRef.current = baseline;
   const isEditingRef = useRef(false);
   isEditingRef.current = isEditing;
 
@@ -92,19 +94,18 @@ export function HomeInlineEditProvider({
       setRegistered(!nextSearchMode);
       setTree(nextTree);
 
+      // В режиме редактирования draft — источник правды; refresh после save не должен затирать baseline.
+      if (isEditingRef.current) return;
+
       const nextBaseline = treeToCategoryMaps(nextTree, nextLang);
       const sig = treeSignature(nextBaseline);
-      if (sig === lastSignatureRef.current && baseline) return;
+      if (sig === lastSignatureRef.current && baselineRef.current) return;
       lastSignatureRef.current = sig;
 
-      if (!isEditingRef.current) {
-        setBaseline(nextBaseline);
-        setDraft(null);
-        return;
-      }
       setBaseline(nextBaseline);
+      setDraft(null);
     },
-    [baseline],
+    [],
   );
 
   const unregisterTree = useCallback(() => {
@@ -243,6 +244,7 @@ export function HomeInlineEditProvider({
 
       setDraft(workingDraft);
       setBaseline(workingDraft);
+      lastSignatureRef.current = treeSignature(workingDraft);
       setStatus(labels.saved);
       router.refresh();
       return true;

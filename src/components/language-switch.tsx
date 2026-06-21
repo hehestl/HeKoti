@@ -2,6 +2,9 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { buildLanguageHref } from "@/lib/language-href";
 
 type LangOption = { code: string; label: string };
@@ -41,18 +44,36 @@ export function LanguageSwitch({
   pathSuffix?: string;
   queryString?: string;
 }) {
-  if (langs.length === 0) return null;
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   const hrefFor = (code: string) => buildLanguageHref(code, pathSuffix, queryString);
+
+  useEffect(() => {
+    if (langs.length === 0) return;
+    for (const entry of langs) {
+      if (entry.code === lang) continue;
+      router.prefetch(hrefFor(entry.code));
+    }
+  }, [lang, langs, pathSuffix, queryString, router]);
+
+  if (langs.length === 0) return null;
+
   const next = nextLangCode(lang, langs);
 
   return (
     <div className="topbar-lang-switch-wrap" role="group" aria-label={groupAria}>
       <div className="topbar-lang-switch">
-        <a href={hrefFor(next)} className="topbar-lang-current" title={currentLabel(next, langs)}>
+        <Link
+          href={hrefFor(next)}
+          prefetch
+          className="topbar-lang-current"
+          title={currentLabel(next, langs)}
+          onClick={() => setOpen(false)}
+        >
           {currentLabel(lang, langs)}
-        </a>
-        <DropdownMenu.Root modal={false}>
+        </Link>
+        <DropdownMenu.Root modal={false} open={open} onOpenChange={setOpen}>
           <DropdownMenu.Trigger asChild>
             <button type="button" className="topbar-lang-toggle" aria-label={groupAria}>
               <ChevronDown size={14} strokeWidth={2} />
@@ -61,14 +82,15 @@ export function LanguageSwitch({
           <DropdownMenu.Portal>
             <DropdownMenu.Content className="topbar-lang-menu" align="end" sideOffset={6}>
               {langs.map((entry) => (
-                <DropdownMenu.Item key={entry.code} asChild>
-                  <a
+                <DropdownMenu.Item key={entry.code} asChild onSelect={() => setOpen(false)}>
+                  <Link
                     href={hrefFor(entry.code)}
+                    prefetch
                     className="topbar-lang-menu-item"
                     data-active={entry.code === lang ? "" : undefined}
                   >
                     {entry.label}
-                  </a>
+                  </Link>
                 </DropdownMenu.Item>
               ))}
             </DropdownMenu.Content>

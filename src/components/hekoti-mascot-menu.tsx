@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminContextMenu } from "@/components/admin-workbench/admin-context-menu";
 import { HekotiMascotLink } from "@/components/hekoti-mascot-link";
@@ -59,37 +59,40 @@ export function HekotiMascotMenu({
   const [menu, setMenu] = useState<null | { x: number; y: number }>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
 
+  const inlineEditRef = useRef(inlineEdit);
+  inlineEditRef.current = inlineEdit;
+
   const onContextMenu = useCallback(
     (e: React.MouseEvent) => {
       if (adminOnly && !isAdmin) return;
       e.preventDefault();
+      e.stopPropagation();
       setMenu({ x: e.clientX, y: e.clientY });
     },
     [adminOnly, isAdmin],
   );
 
   const inlineIsEditing = inlineEdit?.isEditing ?? false;
-  const inlineStartEdit = inlineEdit?.startEdit;
-  const inlineCancelEdit = inlineEdit?.cancelEdit;
 
   const items = useMemo((): AdminContextMenuItem[] => {
+    const edit = inlineEditRef.current;
     const menuItems: AdminContextMenuItem[] = [];
     if (showOpenSite) {
       menuItems.push({ id: "site", label: openSiteLabel ?? "Site", onClick: () => router.push(`/${lang}`) });
       menuItems.push({ id: "sep0", label: "", separator: true });
     }
-    if (inlineEditMenuVisible && editLabel && exitEditLabel && inlineStartEdit && inlineCancelEdit) {
+    if (inlineEditMenuVisible && editLabel && exitEditLabel && edit) {
       if (inlineIsEditing) {
         menuItems.push({
           id: "exit-edit",
           label: exitEditLabel,
-          onClick: () => inlineCancelEdit(),
+          onClick: () => edit.cancelEdit(),
         });
       } else {
         menuItems.push({
           id: "edit",
           label: editLabel,
-          onClick: () => inlineStartEdit(),
+          onClick: () => edit.startEdit(),
         });
       }
       menuItems.push({ id: "sep-edit", label: "", separator: true });
@@ -112,10 +115,8 @@ export function HekotiMascotMenu({
     appVersion,
     editLabel,
     exitEditLabel,
-    inlineCancelEdit,
     inlineEditMenuVisible,
     inlineIsEditing,
-    inlineStartEdit,
     lang,
     openSiteLabel,
     router,
@@ -129,7 +130,10 @@ export function HekotiMascotMenu({
 
   return (
     <>
-      <div className={className ? `${className} hekoti-mascot-menu-wrap` : "hekoti-mascot-menu-wrap"} onContextMenu={onContextMenu}>
+      <div
+        className={className ? `${className} hekoti-mascot-menu-wrap` : "hekoti-mascot-menu-wrap"}
+        onContextMenuCapture={onContextMenu}
+      >
         <HekotiMascotLink lang={lang} className="hekoti-mascot-menu-link" imageSize={imageSize} priority={priority} />
       </div>
       {menu ? (
@@ -138,6 +142,7 @@ export function HekotiMascotMenu({
           y={menu.y}
           items={items}
           onClose={closeMenu}
+          dismissOnScroll={false}
         />
       ) : null}
     </>

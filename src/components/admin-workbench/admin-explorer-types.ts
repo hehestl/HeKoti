@@ -1,5 +1,4 @@
 import type { AdminPageRow } from "@/types/admin-workbench";
-import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 
 export type AdminExplorerActions = {
   onSelectPage: (page: AdminPageRow) => void;
@@ -20,7 +19,6 @@ export type AdminExplorerActions = {
   onCreateAtRoot: (lang: string) => void;
   onCreateCategory: (lang: string, parentParts: string[]) => void;
   onRefresh: (lang: string | "all") => void;
-  onChangeIcon: (id: string, lang: string, icon: WikiIconKey | null) => void;
   onLiftUp: (id: string, lang: string) => void;
   onLocalizeBranch: (id: string, lang: string) => void;
   onLocalizeAll: (id: string, lang: string) => void;

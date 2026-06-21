@@ -7,6 +7,7 @@ import { normalizePath, toSlug, validateSlugInput } from "@/lib/slug";
 import { getSiblingGroupPaths } from "@/lib/wiki-path";
 import { isWikiIconKey } from "@/lib/wiki-icon-presets";
 import { buildSearchWhere, parseSearchTerms } from "@/lib/wiki-search";
+import { applyPageSearchText } from "@/lib/page-search-index";
 import { emitOutgoingWebhook } from "@/lib/webhook-dispatch";
 import { createPageRevision } from "@/lib/page-revision-snapshot";
 import { activePageWhere, wikiPageWhere } from "@/lib/page-query";
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
             path: normalizePath(targetLang, segs),
             navOrder: maxNav + 10,
             originalId,
+            ...applyPageSearchText({ title: source.title, contentMd: source.contentMd, scope: source.scope }),
           },
         });
         await createPageRevision(tx, created, user.id, null, { created: true });
@@ -160,6 +162,7 @@ export async function POST(request: Request) {
           path,
           navOrder: maxNav + 10,
           scope,
+          ...applyPageSearchText({ title: payload.title, contentMd: payload.contentMd, scope }),
         },
       });
       await createPageRevision(tx, created, user.id, null, { created: true });

@@ -10,6 +10,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- Search: `searchText` — индекс заголовков и предложений, pg_trgm GIN, rank по строке, snippet `§ heading`
+- Search: matching по title/content/excerpt/slug, ранжирование, OR-fallback на странице результатов
+- Search: live-подсказки в поле поиска (`GET /api/wiki/search`), клавиатура и переход к статьям
+- Errors: локализованные `not-found` / `error` / `global-error` с маскотом Hekoti
+- Site: robots.txt и meta robots — `SITE_ROBOTS_INDEX`, блок `/admin`/`/login`/`/api`
+- Site: `/llms.txt` и правила AI-краулеров — `AI_CRAWLERS_ALLOW`, доп. текст в админке
+
+### Changed
+
+- Lang switch: client navigation (`Link` + prefetch) вместо full reload — без «затемнения» и быстрее
+- Admin: выбор иконки страницы — в окне переименования (убран пункт из ПКМ explorer)
+- Home: inline-edit категорий — после «Сохранить» сброс dirty (fix ложного «есть несохранённые изменения»)
+- Mascot: ПКМ на главной — fix цикл registerTree/unregisterTree (React #185)
+
 ## [0.4.5] — 2026-06-21
 
 ### Fixed

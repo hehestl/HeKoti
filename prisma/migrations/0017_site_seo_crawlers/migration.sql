@@ -1,0 +1,6 @@
+ALTER TABLE "GlobalSettings"
+  ADD COLUMN "siteTitle" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN "siteDescription" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN "robotsIndexSite" BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN "aiCrawlersAllow" BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN "llmsTxtExtra" TEXT NOT NULL DEFAULT '';

@@ -12,6 +12,7 @@ import {
   resolveMoveTarget,
 } from "@/lib/page-reorder";
 import { pathSegmentsAfterLang, wikiPublicHref } from "@/lib/wiki-path";
+import { isWikiIconKey, type WikiIconKey } from "@/lib/wiki-icon-presets";
 import { normalizePath, toSlug, validateSlugInput } from "@/lib/slug";
 import type { AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import type { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
@@ -35,7 +36,13 @@ type PatchPageApi = (
 ) => Promise<AdminPageRow>;
 
 type CreateModal = { lang: string; parentParts: string[]; isCategory?: boolean } | null;
-type RenameModal = { id: string; lang: string; title: string; slug: string } | null;
+type RenameModal = {
+  id: string;
+  lang: string;
+  title: string;
+  slug: string;
+  icon: WikiIconKey | null;
+} | null;
 type DeleteModal = { id: string; lang: string; title: string; childCount: number } | null;
 
 export function useAdminPostsPageOps({
@@ -203,10 +210,11 @@ export function useAdminPostsPageOps({
     const page = getPage(renameModal.id, renameModal.lang);
     if (!page) return;
     const slugChanged = slug !== page.slug;
+    const icon = renameModal.icon;
 
-    patchPageLocal(renameModal.id, renameModal.lang, { title, slug });
+    patchPageLocal(renameModal.id, renameModal.lang, { title, slug, icon });
     try {
-      const saved = await patchPageApi(renameModal.id, renameModal.lang, { title, slug });
+      const saved = await patchPageApi(renameModal.id, renameModal.lang, { title, slug, icon });
       if (slugChanged) {
         await refreshPagesForLang(renameModal.lang);
         tabs.openPageTab(saved);
@@ -214,7 +222,11 @@ export function useAdminPostsPageOps({
       }
       setStatus(dict.admin.posts.saved);
     } catch (e) {
-      patchPageLocal(renameModal.id, renameModal.lang, { title: page.title, slug: page.slug });
+      patchPageLocal(renameModal.id, renameModal.lang, {
+        title: page.title,
+        slug: page.slug,
+        icon: page.icon,
+      });
       const code = (e as Error & { code?: string }).code;
       if (code === "SLUG_COLLISION") setStatus(dict.admin.posts.slugConflict, "error");
       else if (code === "SLUG_INVALID") setStatus(dict.admin.posts.slugInvalid, "error");
@@ -396,7 +408,13 @@ export function useAdminPostsPageOps({
       onRename: (id, lang) => {
         const page = getPage(id, lang);
         if (!page || page.systemKey) return;
-        setRenameModal({ id, lang, title: page.title, slug: page.slug });
+        setRenameModal({
+          id,
+          lang,
+          title: page.title,
+          slug: page.slug,
+          icon: page.icon && isWikiIconKey(page.icon) ? page.icon : null,
+        });
       },
       onDelete: (id, lang) => {
         const page = getPage(id, lang);
@@ -501,15 +519,6 @@ export function useAdminPostsPageOps({
             );
           }
           setStatus(dict.admin.workbench.refreshed);
-        } catch (e) {
-          setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
-        }
-      },
-      onChangeIcon: async (id, lang, icon) => {
-        patchPageLocal(id, lang, { icon });
-        try {
-          await patchPageApi(id, lang, { icon });
-          setStatus(dict.admin.posts.saved);
         } catch (e) {
           setStatus(e instanceof Error ? e.message : dict.admin.posts.failed, "error");
         }

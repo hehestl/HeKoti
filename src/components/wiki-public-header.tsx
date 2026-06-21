@@ -1,7 +1,7 @@
 "use client";
 
 import { HekotiMascotMenu } from "@/components/hekoti-mascot-menu";
-import { HelpCenterSearchForm } from "@/components/help-center-search-form";
+import { HelpCenterSearchForm, type HelpCenterSearchLabels } from "@/components/help-center-search-form";
 import type { ReactNode } from "react";
 
 export type WikiPublicHeaderVariant = "home" | "compact";
@@ -9,6 +9,7 @@ export type WikiPublicHeaderVariant = "home" | "compact";
 export function WikiPublicHeader({
   lang,
   searchPlaceholder,
+  searchLabels,
   variant,
   initialSearchQuery,
   searchSampleTitles = [],
@@ -24,6 +25,7 @@ export function WikiPublicHeader({
 }: {
   lang: string;
   searchPlaceholder: string;
+  searchLabels: HelpCenterSearchLabels;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
   searchSampleTitles?: string[];
@@ -56,6 +58,7 @@ export function WikiPublicHeader({
           <HelpCenterSearchForm
             lang={lang}
             placeholder={searchPlaceholder}
+            labels={searchLabels}
             initialQuery={initialSearchQuery}
             searchSampleTitles={searchSampleTitles}
             enableTypewriterPlaceholder={enableTypewriterPlaceholder}

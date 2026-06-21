@@ -9,6 +9,7 @@ import { WikiInlineEditProvider } from "@/components/wiki-inline-edit-context";
 import type { WikiInlineEditLabels } from "@/components/wiki-inline-edit-types";
 import { WikiDiagramEnhancer } from "@/components/wiki-diagram-enhancer";
 import { WikiPublicHeader, type WikiPublicHeaderVariant } from "@/components/wiki-public-header";
+import type { HelpCenterSearchLabels } from "@/components/help-center-search-form";
 import type { DonateConfig } from "@/lib/donate-config-shared";
 
 const DonateInlineEditProvider = dynamic(
@@ -22,6 +23,7 @@ const DonateInlineEditProvider = dynamic(
 export function WikiPublicShellClient({
   lang,
   searchPlaceholder,
+  searchLabels,
   variant,
   initialSearchQuery,
   searchSampleTitles = [],
@@ -41,6 +43,7 @@ export function WikiPublicShellClient({
 }: {
   lang: string;
   searchPlaceholder: string;
+  searchLabels: HelpCenterSearchLabels;
   variant: WikiPublicHeaderVariant;
   initialSearchQuery?: string;
   searchSampleTitles?: string[];
@@ -67,6 +70,7 @@ export function WikiPublicShellClient({
       <WikiPublicHeader
         lang={lang}
         searchPlaceholder={searchPlaceholder}
+        searchLabels={searchLabels}
         variant={variant}
         initialSearchQuery={initialSearchQuery}
         searchSampleTitles={searchSampleTitles}

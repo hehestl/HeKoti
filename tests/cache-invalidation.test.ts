@@ -4,11 +4,13 @@ import { getCached, invalidateSearchLangCache, invalidateWikiLangCache, setCache
 describe("cache invalidation", () => {
   it("invalidates search cache by language prefix", async () => {
     await setCached("search:en:test-query", JSON.stringify({ ok: 1 }), 60);
+    await setCached("search:suggest:en:docker:8", JSON.stringify({ items: [] }), 60);
     await setCached("search:ru:test-query", JSON.stringify({ ok: 2 }), 60);
 
     await invalidateSearchLangCache("en");
 
     expect(await getCached("search:en:test-query")).toBeNull();
+    expect(await getCached("search:suggest:en:docker:8")).toBeNull();
     expect(await getCached("search:ru:test-query")).not.toBeNull();
   });
 

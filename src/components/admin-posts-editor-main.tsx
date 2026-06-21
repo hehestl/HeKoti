@@ -8,6 +8,7 @@ import { AdminPostsEditorModals } from "@/components/admin-posts-editor-modals";
 import type { Dictionary } from "@/lib/i18n";
 import type { useAdminOpenTabs } from "@/hooks/use-admin-open-tabs";
 import type { useAdminPageSave } from "@/hooks/use-admin-page-save";
+import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 import type { AdminPageRow } from "@/types/admin-workbench";
 
 const inputStyle: CSSProperties = {
@@ -22,7 +23,7 @@ type OpenTabs = ReturnType<typeof useAdminOpenTabs>;
 type PageSave = ReturnType<typeof useAdminPageSave>;
 
 type CreateModal = { lang: string; parentParts: string[]; isCategory?: boolean } | null;
-type RenameModal = { id: string; lang: string; title: string; slug: string } | null;
+type RenameModal = { id: string; lang: string; title: string; slug: string; icon: WikiIconKey | null } | null;
 type DeleteModal = { id: string; lang: string; title: string; childCount: number } | null;
 
 export function AdminPostsEditorMain({
@@ -82,7 +83,7 @@ export function AdminPostsEditorMain({
   renameModal: RenameModal;
   renamePreviewPath: string;
   renameSlugValid: boolean;
-  onRenameChange: (patch: Partial<{ title: string; slug: string }>) => void;
+  onRenameChange: (patch: Partial<{ title: string; slug: string; icon: WikiIconKey | null }>) => void;
   onRenameCancel: () => void;
   onRenameSubmit: () => void;
   deleteModal: DeleteModal;

@@ -113,6 +113,7 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next();
 
   response = applySecurityHeaders(request, response, csp);
+  response.headers.set("x-pathname", pathname);
 
   // Validate Content-Type for state-changing requests
   const contentTypeError = validateContentType(request);

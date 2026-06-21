@@ -8,6 +8,7 @@ import { ensureDefaultChannel } from "@/lib/agent-chat";
 import { prisma } from "@/lib/db";
 import { getDictionary, getGlobalSettings, getAvailableMessageLocales } from "@/lib/i18n";
 import { getSiteConfig } from "@/lib/site-config";
+import { getSiteMetadataForAdmin } from "@/lib/site-metadata";
 import { getAppVersion } from "@/lib/version";
 import { notesPageWhere, wikiPageWhere } from "@/lib/page-query";
 import { ensureSystemNotes } from "@/lib/system-notes";
@@ -23,9 +24,10 @@ export default async function AdminPage({
 }) {
   const { lang: inputLang } = await params;
   const { tab: rawTab, activePath: rawActivePath } = await searchParams;
-  const [{ enabledLanguages, aiAgents, knownLanguages }, settings] = await Promise.all([
+  const [{ enabledLanguages, aiAgents, knownLanguages }, settings, siteSeo] = await Promise.all([
     getSiteConfig(),
     getGlobalSettings(),
+    getSiteMetadataForAdmin(),
   ]);
   const adminLanguage = settings.adminLanguage;
   if (inputLang !== adminLanguage) {
@@ -156,6 +158,16 @@ export default async function AdminPage({
           headHtml={settings.headHtml}
           bodyHtml={settings.bodyHtml}
           wikiTreeGuideColor={settings.wikiTreeGuideColor}
+          siteTitle={siteSeo.titleFromEnv ? siteSeo.title : siteSeo.dbTitle}
+          siteDescription={siteSeo.descriptionFromEnv ? siteSeo.description : siteSeo.dbDescription}
+          robotsIndexSite={siteSeo.robotsIndexFromEnv ? siteSeo.robotsIndexSite : siteSeo.dbRobotsIndexSite}
+          aiCrawlersAllow={siteSeo.aiCrawlersFromEnv ? siteSeo.aiCrawlersAllow : siteSeo.dbAiCrawlersAllow}
+          llmsTxtExtra={siteSeo.llmsTxtExtraFromEnv ? siteSeo.llmsTxtExtra : siteSeo.dbLlmsTxtExtra}
+          titleFromEnv={siteSeo.titleFromEnv}
+          descriptionFromEnv={siteSeo.descriptionFromEnv}
+          robotsIndexFromEnv={siteSeo.robotsIndexFromEnv}
+          aiCrawlersFromEnv={siteSeo.aiCrawlersFromEnv}
+          llmsTxtExtraFromEnv={siteSeo.llmsTxtExtraFromEnv}
           enabledLanguages={enabledLanguages}
           knownLanguages={knownLanguages}
           initialAdminLanguage={adminLanguage}

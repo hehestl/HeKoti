@@ -61,6 +61,7 @@ model Page {
   path         String
   navOrder     Int            @default(0)
   contentMd    String         @default("")
+  searchText   String         @default("")
   excerpt      String?
   icon         String?
   isCategory   Boolean        @default(false)
@@ -167,6 +168,16 @@ model GlobalSettings {
   cryptoDonationJson   String   @default("")
   /** JSON contact links on donate page. */
   donateContactsJson   String   @default("")
+  /** Site title when SITE_TITLE env is empty. */
+  siteTitle            String   @default("")
+  /** Meta description when SITE_DESCRIPTION env is empty. */
+  siteDescription      String   @default("")
+  /** Allow search engine indexing when SITE_ROBOTS_INDEX env is unset. */
+  robotsIndexSite      Boolean  @default(true)
+  /** Allow AI crawlers when AI_CRAWLERS_ALLOW env is unset. */
+  aiCrawlersAllow      Boolean  @default(true)
+  /** Extra llms.txt body when LLMS_TXT_EXTRA env is empty. */
+  llmsTxtExtra         String   @default("")
   updatedAt            DateTime @updatedAt
 }
 

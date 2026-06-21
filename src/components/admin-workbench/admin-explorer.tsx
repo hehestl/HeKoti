@@ -5,7 +5,6 @@ import { ChevronRight } from "lucide-react";
 import { AdminPathTree, type ExplorerDropState } from "@/components/admin-workbench/admin-explorer-tree";
 import { ExplorerHeaderActions } from "@/components/admin-workbench/admin-explorer-header";
 import {
-  AdminExplorerIconPicker,
   AdminExplorerRowMenu,
   AdminExplorerSectionMenu,
 } from "@/components/admin-workbench/admin-explorer-overlays";
@@ -61,24 +60,20 @@ export function AdminExplorer({
   const [dragOver, setDragOver] = useState<DropState>(null);
   const [rowMenu, setRowMenu] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const [sectionMenu, setSectionMenu] = useState<null | { lang: string; x: number; y: number }>(null);
-  const [iconPicker, setIconPicker] = useState<null | { id: string; lang: string; x: number; y: number }>(null);
   const selection = useAdminExplorerSelection();
 
   const closeAllMenus = useCallback(() => {
     setRowMenu(null);
     setSectionMenu(null);
-    setIconPicker(null);
   }, []);
 
   const openRowMenu = useCallback((id: string, lang: string, x: number, y: number) => {
     setSectionMenu(null);
-    setIconPicker(null);
     setRowMenu({ id, lang, x, y });
   }, []);
 
   const openSectionMenu = useCallback((lang: string, x: number, y: number) => {
     setRowMenu(null);
-    setIconPicker(null);
     setSectionMenu({ lang, x, y });
   }, []);
 
@@ -355,11 +350,6 @@ export function AdminExplorer({
           onClose={closeAllMenus}
           onExpandSelected={expandBranchesForPages}
           onCollapseSelected={collapseBranchesForPages}
-          onOpenIconPicker={(id, lang, x, y) => {
-            setRowMenu(null);
-            setSectionMenu(null);
-            setIconPicker({ id, lang, x, y });
-          }}
         />
       ) : sectionMenu ? (
         <AdminExplorerSectionMenu
@@ -368,13 +358,6 @@ export function AdminExplorer({
           actions={actions}
           onCollapseSection={collapseSection}
           onExpandSection={expandSection}
-          onClose={closeAllMenus}
-        />
-      ) : iconPicker ? (
-        <AdminExplorerIconPicker
-          iconPicker={iconPicker}
-          dict={dict}
-          actions={actions}
           onClose={closeAllMenus}
         />
       ) : null}

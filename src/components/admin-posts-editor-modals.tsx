@@ -1,7 +1,9 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import { WikiIconPickerGrid } from "@/components/wiki-icon-picker-grid";
 import type { Dictionary } from "@/lib/i18n";
+import type { WikiIconKey } from "@/lib/wiki-icon-presets";
 
 const inputStyle: CSSProperties = {
   border: "1px solid var(--line)",
@@ -92,10 +94,10 @@ export function AdminPostsEditorModals({
   onCreateSlugChange: (v: string) => void;
   onCreateCancel: () => void;
   onCreateSubmit: () => void;
-  renameModal: { title: string; slug: string } | null;
+  renameModal: { title: string; slug: string; icon: WikiIconKey | null } | null;
   renamePreviewPath: string;
   renameSlugValid: boolean;
-  onRenameChange: (patch: Partial<{ title: string; slug: string }>) => void;
+  onRenameChange: (patch: Partial<{ title: string; slug: string; icon: WikiIconKey | null }>) => void;
   onRenameCancel: () => void;
   onRenameSubmit: () => void;
   deleteModal: { title: string; childCount: number } | null;
@@ -197,6 +199,12 @@ export function AdminPostsEditorModals({
                 {dict.admin.posts.renameSlugPreview.replace("{path}", renamePreviewPath)}
               </p>
             ) : null}
+            <WikiIconPickerGrid
+              label={dict.admin.posts.changeIcon}
+              clearLabel={dict.admin.posts.clearIcon}
+              value={renameModal.icon}
+              onChange={(icon) => onRenameChange({ icon })}
+            />
           </div>
         </ModalCard>
       ) : null}
