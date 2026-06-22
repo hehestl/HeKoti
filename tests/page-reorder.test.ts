@@ -56,6 +56,29 @@ describe("calculateSiblingOrders", () => {
     expect(result.find((p) => p.id === "a")?.navOrder).toBe(10);
   });
 
+  it("reorders after target among root siblings", () => {
+    const result = calculateSiblingOrders(lang, pages, "a", [], "b", "after");
+    expect(isReorderError(result)).toBe(false);
+    if (isReorderError(result)) return;
+    expect(result.find((p) => p.id === "a")?.navOrder).toBe(10);
+    expect(result.find((p) => p.id === "b")?.navOrder).toBe(0);
+  });
+
+  it("sorts siblings by navOrder before insert", () => {
+    const shuffled = [
+      page("b", "/en/b", 10),
+      page("a", "/en/a", 0),
+      page("c", "/en/c", 20),
+    ];
+    const result = calculateSiblingOrders(lang, shuffled, "c", [], "a", "before");
+    expect(isReorderError(result)).toBe(false);
+    if (isReorderError(result)) return;
+    const byId = new Map(result.map((p) => [p.id, p.navOrder]));
+    expect(byId.get("c")).toBe(0);
+    expect(byId.get("a")).toBe(10);
+    expect(byId.get("b")).toBe(20);
+  });
+
   it("moves inside folder with parentPathParts", () => {
     const result = calculateSiblingOrders(lang, pages, "b", ["a"], null, "inside");
     expect(isReorderError(result)).toBe(false);

@@ -7,7 +7,8 @@ import {
   buildTreeFromCategoryDraft,
   categoryMapsEqual,
   cloneCategoryMap,
-  getSiblingMoveTarget,
+  getReorderableSiblings,
+  moveSiblingInDraft,
   treeToCategoryMaps,
 } from "@/components/home-inline-edit-types";
 
@@ -149,18 +150,42 @@ describe("buildHomePatchPayloads", () => {
   });
 });
 
-describe("getSiblingMoveTarget", () => {
-  it("returns before target for move up", () => {
+describe("moveSiblingInDraft", () => {
+  it("swaps adjacent reorderable categories at root", () => {
+    const tree = [
+      node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
+      node("/en/b", "b", { id: "b", path: "/en/b", title: "B", navOrder: 10, isCategory: true }),
+      node("/en/c", "c", { id: "c", path: "/en/c", title: "C", navOrder: 20, isCategory: true }),
+    ];
+    const draft = treeToCategoryMaps(tree, lang);
+    const next = moveSiblingInDraft(draft, "/en/b", "up");
+    expect(next).not.toBeNull();
+    const siblings = getReorderableSiblings(next!, "/en");
+    expect(siblings.map((s) => s.pathKey)).toEqual(["/en/b", "/en/a", "/en/c"]);
+    expect(siblings.map((s) => s.navOrder)).toEqual([0, 10, 20]);
+  });
+
+  it("ignores leaf articles when moving categories", () => {
+    const tree = [
+      node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
+      node("/en/leaf", "leaf", { id: "leaf", path: "/en/leaf", title: "Leaf", navOrder: 5, isCategory: false }),
+      node("/en/b", "b", { id: "b", path: "/en/b", title: "B", navOrder: 10, isCategory: true }),
+    ];
+    const draft = treeToCategoryMaps(tree, lang);
+    const next = moveSiblingInDraft(draft, "/en/b", "up");
+    expect(next).not.toBeNull();
+    const siblings = getReorderableSiblings(next!, "/en");
+    expect(siblings.map((s) => s.id)).toEqual(["b", "a"]);
+  });
+
+  it("moves down one step", () => {
     const tree = [
       node("/en/a", "a", { id: "a", path: "/en/a", title: "A", navOrder: 0, isCategory: true }),
       node("/en/b", "b", { id: "b", path: "/en/b", title: "B", navOrder: 10, isCategory: true }),
     ];
     const draft = treeToCategoryMaps(tree, lang);
-    expect(getSiblingMoveTarget(draft, "/en/b", "up")).toEqual({
-      kind: "page",
-      targetId: "a",
-      mode: "before",
-    });
+    const next = moveSiblingInDraft(draft, "/en/a", "down");
+    expect(getReorderableSiblings(next!, "/en").map((s) => s.pathKey)).toEqual(["/en/b", "/en/a"]);
   });
 });
 

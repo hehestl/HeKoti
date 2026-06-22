@@ -109,18 +109,27 @@ export function calculateSiblingOrders(
   }
 
   const siblingKey = newParentParts.join("/");
-  const siblingIds = pages
+  const siblingPages = pages
     .filter((p) => getParentPathParts(p.path, lang).join("/") === siblingKey)
-    .map((p) => p.id);
-
-  let insertAt = siblingIds.length;
-  if (targetPageId && mode !== "inside") {
-    const targetIndex = siblingIds.indexOf(targetPageId);
-    if (targetIndex >= 0) insertAt = mode === "before" ? targetIndex : targetIndex + 1;
-  }
+    .sort((a, b) => {
+      if (a.navOrder !== b.navOrder) return a.navOrder - b.navOrder;
+      return a.path.localeCompare(b.path);
+    });
+  const siblingIds = siblingPages.map((p) => p.id);
 
   const ordered = siblingIds.filter((id) => id !== fromId);
-  ordered.splice(insertAt, 0, fromId);
+
+  if (targetPageId && mode !== "inside") {
+    const targetIndex = ordered.indexOf(targetPageId);
+    if (targetIndex >= 0) {
+      const insertAt = mode === "before" ? targetIndex : targetIndex + 1;
+      ordered.splice(insertAt, 0, fromId);
+    } else {
+      ordered.push(fromId);
+    }
+  } else {
+    ordered.push(fromId);
+  }
 
   return ordered.map((id, i) => {
     const patch: ReorderPatch = { id, navOrder: i * 10 };

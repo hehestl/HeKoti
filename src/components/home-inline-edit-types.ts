@@ -312,33 +312,48 @@ export function parentPathPartsForCategory(cat: EditableHomeCategory, lang: stri
   return parentPathPartsFromPathKey(cat.parentPathKey, lang);
 }
 
-export function getSiblingMoveTarget(
-  draft: Map<string, EditableHomeCategory>,
-  pathKey: string,
-  direction: "up" | "down",
-): DropTarget | null {
-  const node = draft.get(pathKey);
-  if (!node?.id) return null;
+function isReorderableHomeRow(cat: EditableHomeCategory): boolean {
+  return !!cat.id && cat.canEdit && (cat.isCategory || cat.hasChildren);
+}
 
-  const siblings = [...draft.values()]
-    .filter((c) => c.parentPathKey === node.parentPathKey && c.id)
+export function getReorderableSiblings(
+  draft: Map<string, EditableHomeCategory>,
+  parentPathKey: string,
+): EditableHomeCategory[] {
+  return [...draft.values()]
+    .filter((c) => c.parentPathKey === parentPathKey && isReorderableHomeRow(c))
     .sort((a, b) => {
       if (a.navOrder !== b.navOrder) return a.navOrder - b.navOrder;
       return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
     });
+}
 
+/** Swap with adjacent reorderable sibling and reassign navOrder (home ↑↓ buttons). */
+export function moveSiblingInDraft(
+  draft: Map<string, EditableHomeCategory>,
+  pathKey: string,
+  direction: "up" | "down",
+): Map<string, EditableHomeCategory> | null {
+  const node = draft.get(pathKey);
+  if (!node || !isReorderableHomeRow(node)) return null;
+
+  const siblings = getReorderableSiblings(draft, node.parentPathKey);
   const idx = siblings.findIndex((s) => s.pathKey === pathKey);
   if (idx < 0) return null;
 
-  if (direction === "up") {
-    if (idx === 0) return null;
-    const target = siblings[idx - 1]!;
-    return { kind: "page", targetId: target.id!, mode: "before" };
-  }
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= siblings.length) return null;
 
-  if (idx >= siblings.length - 1) return null;
-  const target = siblings[idx + 1]!;
-  return { kind: "page", targetId: target.id!, mode: "after" };
+  const reordered = siblings.slice();
+  [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx]!, reordered[idx]!];
+
+  const next = cloneCategoryMap(draft);
+  for (let i = 0; i < reordered.length; i++) {
+    const s = reordered[i]!;
+    const current = next.get(s.pathKey)!;
+    next.set(s.pathKey, { ...current, navOrder: i * 10 });
+  }
+  return next;
 }
 
 export function canMoveSibling(
@@ -346,5 +361,11 @@ export function canMoveSibling(
   pathKey: string,
   direction: "up" | "down",
 ): boolean {
-  return getSiblingMoveTarget(draft, pathKey, direction) !== null;
+  const node = draft.get(pathKey);
+  if (!node || !isReorderableHomeRow(node)) return false;
+
+  const siblings = getReorderableSiblings(draft, node.parentPathKey);
+  const idx = siblings.findIndex((s) => s.pathKey === pathKey);
+  if (idx < 0) return false;
+  return direction === "up" ? idx > 0 : idx < siblings.length - 1;
 }

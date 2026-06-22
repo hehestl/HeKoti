@@ -28,7 +28,8 @@ import {
   parentPathPartsForCategory,
   treeSignature,
   treeToCategoryMaps,
-  getSiblingMoveTarget,
+  getReorderableSiblings,
+  moveSiblingInDraft,
   type EditableHomeCategory,
   type HomeInlineEditLabels,
   type HomeTreePage,
@@ -177,13 +178,14 @@ export function HomeInlineEditProvider({
   const moveSiblingDraft = useCallback(
     (pathKey: string, direction: "up" | "down"): boolean => {
       if (!draft) return false;
-      const node = draft.get(pathKey);
-      if (!node?.id) return false;
-      const target = getSiblingMoveTarget(draft, pathKey, direction);
-      if (!target) return false;
-      return reorderDraft(node.id, target);
+      const next = moveSiblingInDraft(draft, pathKey, direction);
+      if (!next) return false;
+      setDraft(next);
+      setStatusText("");
+      setStatusTone("neutral");
+      return true;
     },
-    [draft, reorderDraft],
+    [draft],
   );
 
   const promoteToCategory = useCallback((pathKey: string) => {
