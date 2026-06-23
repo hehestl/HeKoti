@@ -33,7 +33,7 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `PUBLIC_READ_MODE`
 - `ENABLED_LANGUAGES`
 - `HEKOTI_ADMIN_EMAIL`
-- `HEKOTI_ADMIN_PASSWORD`
+- `HEKOTI_ADMIN_PASSWORD` — bootstrap-админ при пустой таблице `User` (дефолты `admin` / `hehe` из `.env.example`; в production задайте свои значения). Смена пароля после входа: **Админка → Аккаунт**.
 - `AI_AGENTS_JSON`
 - `DONATE_LINKS_JSON`
 - `CRYPTO_DONATION_JSON`

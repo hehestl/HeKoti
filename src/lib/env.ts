@@ -58,6 +58,7 @@ const envSchema = z.object({
   HERON_JWT_ISSUER: z.string().optional(),
   HERON_JWT_AUDIENCE: z.string().optional(),
   HERON_JWT_PUBLIC_KEY_PEM: z.string().optional(),
+  HERON_JWT_PUBLIC_KEY_PATH: z.string().optional(),
   HERON_FETCH_TIMEOUT_MS: z.string().optional(),
   HEKOTI_HERON_DEFAULT_RETURN: z.string().default("/ru/admin"),
   HEKOTI_HERON_EXCHANGE_RATE_LIMIT: z.coerce.number().default(20),

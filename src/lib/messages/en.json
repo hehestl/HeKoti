@@ -521,8 +521,6 @@
       "failed": "Login failed",
       "invalidCode": "Invalid code",
       "adminLogin": "Admin login",
-      "publicInfo": "Public users can read pages. Editing requires admin session.",
-      "dockerInfo": "Docker: default login is admin / hehe (if DB is empty). Change it in Admin → Account.",
       "heronHint": "Sign in with your Heron Auth account. Wiki admins need a hekoti grant in Heron.",
       "heronLogin": "Sign in with Heron",
       "emailFallback": "Email and password"

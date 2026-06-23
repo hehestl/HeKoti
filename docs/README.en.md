@@ -33,7 +33,7 @@ Key variables:
 - `PUBLIC_READ_MODE`
 - `ENABLED_LANGUAGES`
 - `HEKOTI_ADMIN_EMAIL`
-- `HEKOTI_ADMIN_PASSWORD`
+- `HEKOTI_ADMIN_PASSWORD` — bootstrap admin when the `User` table is empty (defaults `admin` / `hehe` from `.env.example`; set your own in production). Change password after login: **Admin → Account**.
 - `AI_AGENTS_JSON`
 - `DONATE_LINKS_JSON`
 - `CRYPTO_DONATION_JSON`

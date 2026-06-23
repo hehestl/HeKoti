@@ -63,7 +63,8 @@ ON CONFLICT (user_id, service_key) DO UPDATE SET role = EXCLUDED.role;
 | `HERON_AUTH_API_URL` | API для `/api/auth/me` и `/api/auth/me/service-grants` |
 | `HERON_JWT_ISSUER` | JWT issuer |
 | `HERON_JWT_AUDIENCE` | JWT audience (e.g. `hehe-ecosystem`) |
-| `HERON_JWT_PUBLIC_KEY_PEM` | EdDSA public key PEM |
+| `HERON_JWT_PUBLIC_KEY_PATH` | Prod: bind mount EdDSA public PEM (preferred) |
+| `HERON_JWT_PUBLIC_KEY_PEM` | Dev: inline PEM |
 | `HEKOTI_HERON_DEFAULT_RETURN` | После входа admin (default `/ru/admin`) |
 | `HEKOTI_HERON_EXCHANGE_RATE_LIMIT` | Exchange requests per minute per IP/sub (default 20) |
 
@@ -89,7 +90,7 @@ HEKOTI_HERON_DEFAULT_RETURN=/ru/admin
 | Symptom | Fix |
 |---------|-----|
 | Нет `#access_token` в callback | Проверить allowlist; завершить login в Heron |
-| 401 Invalid token | `HERON_JWT_PUBLIC_KEY_PEM`, `HERON_JWT_ISSUER`, `HERON_JWT_AUDIENCE` |
+| 401 Invalid token | `HERON_JWT_PUBLIC_KEY_PATH` / PEM, `HERON_JWT_ISSUER`, `HERON_JWT_AUDIENCE` — см. [`heron-jwt-public-key-consumers.md`](../../hehestl-db-hedra/ops/heron-auth/docs/heron-jwt-public-key-consumers.md) |
 | 401 Heron profile unavailable | `HERON_AUTH_API_URL`, сеть до Heron |
 | READER вместо ADMIN | Нет grant `hekoti:admin` в `heron.service_grants` |
 | Cookie не ставится | `APP_URL` https или `X-Forwarded-Proto: https`; `SESSION_COOKIE_INSECURE=1` только для HTTP dev |

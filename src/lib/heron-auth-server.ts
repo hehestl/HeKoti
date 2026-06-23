@@ -1,6 +1,14 @@
-import { createPublicKey } from "crypto";
-import { importSPKI, jwtVerify, type JWTPayload } from "jose";
+import { type JWTPayload } from "jose";
 import { env } from "@/lib/env";
+import {
+  HeronJwtPublicKeyError,
+  formatHeronJwtVerifyDockerHint,
+} from "@/lib/heron-jwt-public-key-errors";
+import {
+  importHeronJwtPublicKeysFromPemBlocks,
+  jwtVerifyWithHeronPublicKeys,
+} from "@/lib/heron-jwt-verify-with-keys";
+import { readHeronJwtPublicKeyPemBlocks } from "@/lib/read-heron-jwt-public-pem";
 
 export type VerifiedHeronToken = {
   sub: string;
@@ -14,7 +22,7 @@ type HeronJwtRuntime = {
   apiUrl: string;
   issuer: string;
   audience: string;
-  publicKey: CryptoKey;
+  publicKeys: CryptoKey[];
   fetchTimeoutMs: number;
 };
 
@@ -46,30 +54,39 @@ function readJti(payload: JWTPayload): string | undefined {
   return jti.trim();
 }
 
+async function loadPublicKeys(): Promise<CryptoKey[]> {
+  const blocks = readHeronJwtPublicKeyPemBlocks();
+  return importHeronJwtPublicKeysFromPemBlocks(blocks);
+}
+
 async function getHeronJwtRuntime(): Promise<HeronJwtRuntime | null> {
   if (cachedRuntime !== undefined) return cachedRuntime;
 
   const apiUrl = env.HERON_AUTH_API_URL?.trim().replace(/\/$/, "");
   const issuer = env.HERON_JWT_ISSUER?.trim();
   const audience = env.HERON_JWT_AUDIENCE?.trim();
-  const pem = env.HERON_JWT_PUBLIC_KEY_PEM?.trim();
-  if (!apiUrl || !issuer || !audience || !pem) {
+  if (!apiUrl || !issuer || !audience) {
     cachedRuntime = null;
     return null;
   }
 
   try {
-    const nodeKey = createPublicKey(pem);
-    const spki = nodeKey.export({ type: "spki", format: "pem" }).toString();
-    const publicKey = await importSPKI(spki, "EdDSA");
+    const publicKeys = await loadPublicKeys();
+    if (publicKeys.length === 0) {
+      cachedRuntime = null;
+      return null;
+    }
     const timeoutRaw = env.HERON_FETCH_TIMEOUT_MS?.trim();
     const fetchTimeoutMs =
       timeoutRaw && Number.isFinite(Number(timeoutRaw)) && Number(timeoutRaw) > 0
         ? Math.min(15_000, Number(timeoutRaw))
         : 5000;
-    cachedRuntime = { apiUrl, issuer, audience, publicKey, fetchTimeoutMs };
+    cachedRuntime = { apiUrl, issuer, audience, publicKeys, fetchTimeoutMs };
     return cachedRuntime;
-  } catch {
+  } catch (err) {
+    if (err instanceof HeronJwtPublicKeyError) {
+      console.error(`[heron-jwt] ${err.message}. ${formatHeronJwtVerifyDockerHint()}`);
+    }
     cachedRuntime = null;
     return null;
   }
@@ -86,10 +103,9 @@ export async function verifyHeronAccessToken(token: string): Promise<VerifiedHer
   if (!raw) return null;
 
   try {
-    const { payload } = await jwtVerify(raw, cfg.publicKey, {
+    const { payload } = await jwtVerifyWithHeronPublicKeys(raw, cfg.publicKeys, {
       issuer: cfg.issuer,
       audience: cfg.audience,
-      algorithms: ["EdDSA"],
       clockTolerance: 30,
     });
     const sub = readSub(payload);

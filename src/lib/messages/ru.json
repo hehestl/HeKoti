@@ -521,8 +521,6 @@
       "failed": "Ошибка входа",
       "invalidCode": "Неверный код",
       "adminLogin": "Вход для админа",
-      "publicInfo": "Обычные пользователи могут читать страницы. Редактирование требует входа.",
-      "dockerInfo": "Docker: логин по умолчанию admin / hehe. Смените в Админка → Аккаунт.",
       "heronHint": "Войдите через Heron Auth. Админы wiki — при grant hekoti:admin в Heron.",
       "heronLogin": "Войти через Heron",
       "emailFallback": "Email и пароль"

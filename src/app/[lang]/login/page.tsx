@@ -76,15 +76,7 @@ export default async function LoginPage({
               </details>
             </>
           ) : (
-            <>
-              <p style={{ color: "var(--muted)", marginTop: 6, marginBottom: 12 }}>
-                {dict.admin.auth.publicInfo}
-              </p>
-              <p style={{ color: "var(--muted)", marginTop: -6, marginBottom: 12, fontSize: 12, lineHeight: 1.45 }}>
-                {dict.admin.auth.dockerInfo}
-              </p>
-              <LoginForm lang={lang} dict={dict} />
-            </>
+            <LoginForm lang={lang} dict={dict} />
           )}
         </section>
       </main>
