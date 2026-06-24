@@ -112,14 +112,15 @@ Hekoti — open-source self-hosted вики, ориентированная на
 
 ### Внешний PostgreSQL (общий контейнер на hedra)
 
-Сервис в compose называется **`hekoti-app`**, не `app`. Override: [`deploy/docker-compose.external-db.yml`](deploy/docker-compose.external-db.yml).
+Сервис в compose называется **`hekoti-app`**, не `app`. Override: [`deploy/docker-compose.external-db.yml`](deploy/docker-compose.external-db.yml) — снимает `depends_on: hekoti-postgres` через `!reset` (иначе Compose ругается на undefined service).
 
 ```bash
-# Postgres hedra должен быть в сети HEKOTI_DB_DOCKER_NETWORK
-docker network create hedra-db   # или существующая сеть
-docker network connect hedra-db hedra-postgres-postgres-1
+# Postgres hedra должен быть в сети HEKOTI_DB_DOCKER_NETWORK (часто hh-db-net)
+docker network create hh-db-net 2>/dev/null || true
+docker network connect hh-db-net hedra-postgres-postgres-1 2>/dev/null || true
 
 cd /opt/app/prod/hh/core/wiki
+docker compose -f docker-compose.yml -f deploy/docker-compose.external-db.yml config   # smoke
 docker compose -f docker-compose.yml -f deploy/docker-compose.external-db.yml up -d --build
 ```
 
@@ -130,7 +131,7 @@ HEKOTI_INSTANCE=wiki
 COMPOSE_PROJECT_NAME=hh-wiki
 HEKOTI_HOST_PORT=3310
 APP_URL=https://wiki.hehestl.com
-HEKOTI_DB_DOCKER_NETWORK=hedra-db
+HEKOTI_DB_DOCKER_NETWORK=hh-db-net
 POSTGRES_HOST=hedra-postgres-postgres-1
 POSTGRES_DB=hekoti_wiki_db
 POSTGRES_USER=hekoti_wiki_user
