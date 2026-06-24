@@ -8,7 +8,7 @@
 #   POSTGRES_DB=hekoti_wiki_db                # unique per wiki
 #   POSTGRES_USER=...
 #   POSTGRES_PASSWORD=...
-#   HEKOTI_DB_DOCKER_NETWORK=hh-db-net       # external network shared with Postgres
+#   HEKOTI_DB_DOCKER_NETWORK=hh-network       # ecosystem network (hedra Postgres)
 #
 # Do NOT use service name "app" — Hekoti service is hekoti-app.
 
@@ -28,4 +28,4 @@ services:
 networks:
   hh_db:
     external: true
-    name: ${HEKOTI_DB_DOCKER_NETWORK:-hh-db-net}
+    name: ${HEKOTI_DB_DOCKER_NETWORK:-hh-network}

@@ -12,7 +12,8 @@
 
 ### Fixed
 - Heron JWT: `KeyLike` заменён на `CryptoKey` (jose v6, ломал `npm run build` в Docker)
-- Deploy: `deploy/docker-compose.external-db.yml` — сервис `hekoti-app` (не `app`), внешний Postgres; `depends_on: !reset` без `hekoti-postgres`
+- Deploy: internal network по умолчанию `hh-{HEKOTI_INSTANCE}-net`; `.env.wiki.example` для hedra
+- Deploy: `deploy/docker-compose.external-db.yml` — `depends_on: !reset`, `HEKOTI_DB_DOCKER_NETWORK` → `hh-network`
 
 ## [0.4.8] — 2026-06-24
 

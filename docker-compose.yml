@@ -124,7 +124,8 @@ services:
 
 networks:
   internal:
-    name: ${HEKOTI_DOCKER_NETWORK:-hh-hekoti-net}
+    # Per-instance bridge; override via HEKOTI_DOCKER_NETWORK (legacy chat: hh-network).
+    name: ${HEKOTI_DOCKER_NETWORK:-hh-${HEKOTI_INSTANCE:-hekoti}-net}
     driver: bridge
   npm_proxy:
     external: true
