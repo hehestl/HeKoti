@@ -1,0 +1,29 @@
+# Optional override: external PostgreSQL (shared or neighbor container).
+# Disables embedded hekoti-postgres; app joins HEKOTI_DB_DOCKER_NETWORK.
+#
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.external-db.yml up -d --build
+#
+# .env (per instance):
+#   POSTGRES_HOST=hedra-postgres-postgres-1   # neighbor container DNS name
+#   POSTGRES_DB=hekoti_wiki_db                # unique per wiki
+#   POSTGRES_USER=...
+#   POSTGRES_PASSWORD=...
+#   HEKOTI_DB_DOCKER_NETWORK=hedra-db        # external network shared with Postgres
+#
+# Do NOT use service name "app" — Hekoti service is hekoti-app.
+
+services:
+  hekoti-postgres:
+    profiles: ["embedded-db"]
+
+  hekoti-app:
+    depends_on:
+      hekoti-redis:
+        condition: service_healthy
+    networks:
+      - hh_db
+
+networks:
+  hh_db:
+    external: true
+    name: ${HEKOTI_DB_DOCKER_NETWORK:-hh-db-net}

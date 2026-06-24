@@ -110,6 +110,35 @@ Hekoti — open-source self-hosted вики, ориентированная на
 | `external` | `docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml` | `http://hh-shared-lt:8010` |
 | `off` | без profile | пусто |
 
+### Внешний PostgreSQL (общий контейнер на hedra)
+
+Сервис в compose называется **`hekoti-app`**, не `app`. Override: [`deploy/docker-compose.external-db.yml`](deploy/docker-compose.external-db.yml).
+
+```bash
+# Postgres hedra должен быть в сети HEKOTI_DB_DOCKER_NETWORK
+docker network create hedra-db   # или существующая сеть
+docker network connect hedra-db hedra-postgres-postgres-1
+
+cd /opt/app/prod/hh/core/wiki
+docker compose -f docker-compose.yml -f deploy/docker-compose.external-db.yml up -d --build
+```
+
+В `.env` экземпляра (уникальная БД на вики):
+
+```env
+HEKOTI_INSTANCE=wiki
+COMPOSE_PROJECT_NAME=hh-wiki
+HEKOTI_HOST_PORT=3310
+APP_URL=https://wiki.hehestl.com
+HEKOTI_DB_DOCKER_NETWORK=hedra-db
+POSTGRES_HOST=hedra-postgres-postgres-1
+POSTGRES_DB=hekoti_wiki_db
+POSTGRES_USER=hekoti_wiki_user
+POSTGRES_PASSWORD=...
+```
+
+Без `external-db.yml` поднимается свой `hh-{instance}-pg` в стеке — проще для старта.
+
 Общий LT (рекомендуется для 2+ вики):
 
 ```bash

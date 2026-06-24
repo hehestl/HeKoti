@@ -12,6 +12,7 @@
 
 ### Fixed
 - Heron JWT: `KeyLike` заменён на `CryptoKey` (jose v6, ломал `npm run build` в Docker)
+- Deploy: `deploy/docker-compose.external-db.yml` — сервис `hekoti-app` (не `app`), внешний Postgres
 
 ## [0.4.8] — 2026-06-24
 

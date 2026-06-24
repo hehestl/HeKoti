@@ -44,6 +44,9 @@ if (!fs.existsSync(path.join(root, "deploy/docker-compose.shared-lt.yml"))) {
 if (!fs.existsSync(path.join(root, "deploy/docker-compose.external-lt.yml"))) {
   warn("missing deploy/docker-compose.external-lt.yml");
 }
+if (!fs.existsSync(path.join(root, "deploy/docker-compose.external-db.yml"))) {
+  warn("missing deploy/docker-compose.external-db.yml");
+}
 
 if (warnings > 0) {
   console.warn(`[hh-standards] ${warnings} warning(s)`);
