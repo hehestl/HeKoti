@@ -27,7 +27,7 @@ async function main() {
   await loadDotenvOptional();
   const connectionString =
     process.env.DATABASE_URL?.trim() ||
-    `postgresql://${process.env.POSTGRES_USER ?? "hekoti_user"}:${process.env.POSTGRES_PASSWORD ?? "hekoti_password"}@hekoti-postgres:5432/${process.env.POSTGRES_DB ?? "hekoti_db"}?schema=public`;
+    `postgresql://${process.env.POSTGRES_USER ?? "hekoti_user"}:${process.env.POSTGRES_PASSWORD ?? "hekoti_password"}@${process.env.POSTGRES_HOST ?? "hekoti-postgres"}:5432/${process.env.POSTGRES_DB ?? "hekoti_db"}?schema=public`;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set.");
   }

@@ -83,6 +83,56 @@ Hekoti — open-source self-hosted вики, ориентированная на
 - `GET /api/health/ready`
 - `POST /api/spellcheck` — прокси к LanguageTool (только админ, нужен `LANGUAGETOOL_URL`)
 
+## Несколько экземпляров на одной VM (2–4+)
+
+Один репозиторий — несколько deploy-корней (`/opt/app/ops/hh/chat`, `world`, `lore` …). Конфликты Docker снимаются через **уникальный `.env`** в каждом корне, не правками `docker-compose.yml`.
+
+| Экземпляр | `HEKOTI_INSTANCE` | `COMPOSE_PROJECT_NAME` | host port | internal network |
+|-----------|-------------------|------------------------|-----------|------------------|
+| chat (legacy) | `hekoti` | `hh-hekoti` | 3310 | `hh-network` |
+| world | `world` | `hh-world` | 3311 | `hh-world-net` |
+| lore (3-й) | `lore` | `hh-lore` | 3312 | `hh-lore-net` |
+
+### Чеклист перед `docker compose up`
+
+1. `HEKOTI_INSTANCE` и `COMPOSE_PROJECT_NAME` уникальны
+2. `HEKOTI_HOST_PORT` свободен (`ss -tlnp`)
+3. `POSTGRES_*` и секреты (`WEBHOOK_SECRET`, …) — новые, не копипаста
+4. `SESSION_COOKIE_NAME` и `APP_URL` — свои (поддомен на экземпляр)
+5. Slug ≤ ~15 символов (`hh-{slug}-app` ≤ 24)
+6. Запись в ops / port-registry
+
+### LanguageTool
+
+| `HEKOTI_LT_MODE` | Compose | `LANGUAGETOOL_URL` |
+|------------------|---------|-------------------|
+| `embedded` | `COMPOSE_PROFILES=embedded-lt` | `http://hekoti-languagetool:8010` |
+| `external` | `docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml` | `http://hh-shared-lt:8010` |
+| `off` | без profile | пусто |
+
+Общий LT (рекомендуется для 2+ вики):
+
+```bash
+docker network create hh-shared-net   # один раз
+docker compose -f deploy/docker-compose.shared-lt.yml up -d
+```
+
+Шаблон второго экземпляра: `.env.world.example`, `.agentrules.instance.example`.
+
+### NPM
+
+Upstream только на app-контейнер: `http://hh-{instance}-app:3310` (порт **внутри** контейнера). Postgres и Redis в `proxy-network` не подключаются.
+
+### Деплой world
+
+```bash
+cd /opt/app/ops/hh/world
+cp .env.world.example .env   # отредактировать секреты
+docker network create proxy-network   # если нет
+docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml up -d --build
+curl -sf http://127.0.0.1:3311/api/health
+```
+
 ## Чек-лист эксплуатации
 
 1. Скопируйте `.env.example` в `.env` и смените секреты.

@@ -1,0 +1,35 @@
+# Шаблон .agentrules для дополнительного экземпляра (world, lore, …).
+# Скопируйте в deploy-корень: cp .agentrules.instance.example .agentrules
+
+version: 1
+taxonomy:
+  environment: ops
+  namespace: hh
+  domain: social
+  service: chat
+runtime:
+  kind: ui
+  entry: server.js
+ports:
+  pool: ui
+  host: 3311
+  target_host: 3100
+paths:
+  app: /opt/app/ops/hh/world
+  data: /var/lib/hh/world/data
+  logs: /var/log/hh/world
+migration:
+  status: legacy
+  target_paths:
+    app: /opt/app/prod/hh/social/world
+    data: /var/lib/hh/social/world/data
+    logs: /var/log/hh/social/world
+docker:
+  image: hh-hekoti-app
+  container_name: hh-world-app
+logging:
+  labels:
+    hh_env: ops
+    hh_domain: social
+    hh_service: world
+    hh_instance: world

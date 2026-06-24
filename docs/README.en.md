@@ -83,6 +83,46 @@ Chat is stored in DB (`AgentChannel` / `AgentMessage`) and rendered in the admin
 - `GET /api/health/ready`
 - `POST /api/spellcheck` — LanguageTool proxy (admin only; requires `LANGUAGETOOL_URL`)
 
+## Multiple instances on one VM (2–4+)
+
+One repo — several deploy roots (`/opt/app/ops/hh/chat`, `world`, `lore`, …). Avoid Docker conflicts with a **unique `.env` per root**, not by editing `docker-compose.yml`.
+
+| Instance | `HEKOTI_INSTANCE` | `COMPOSE_PROJECT_NAME` | host port | internal network |
+|----------|-------------------|------------------------|-----------|------------------|
+| chat (legacy) | `hekoti` | `hh-hekoti` | 3310 | `hh-network` |
+| world | `world` | `hh-world` | 3311 | `hh-world-net` |
+| lore (3rd) | `lore` | `hh-lore` | 3312 | `hh-lore-net` |
+
+### Checklist before `docker compose up`
+
+1. Unique `HEKOTI_INSTANCE` and `COMPOSE_PROJECT_NAME`
+2. Free `HEKOTI_HOST_PORT` (`ss -tlnp`)
+3. Fresh `POSTGRES_*` and secrets — do not copy from another wiki
+4. Own `SESSION_COOKIE_NAME` and `APP_URL` (subdomain per instance)
+5. Slug ≤ ~15 chars (`hh-{slug}-app` ≤ 24)
+6. Record in ops / port-registry
+
+### LanguageTool
+
+| `HEKOTI_LT_MODE` | Compose | `LANGUAGETOOL_URL` |
+|------------------|---------|-------------------|
+| `embedded` | `COMPOSE_PROFILES=embedded-lt` | `http://hekoti-languagetool:8010` |
+| `external` | `docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml` | `http://hh-shared-lt:8010` |
+| `off` | no profile | empty |
+
+Shared LT (recommended for 2+ wikis):
+
+```bash
+docker network create hh-shared-net
+docker compose -f deploy/docker-compose.shared-lt.yml up -d
+```
+
+Templates: `.env.world.example`, `.agentrules.instance.example`.
+
+### NPM
+
+Upstream app container only: `http://hh-{instance}-app:3310` (container port). Postgres and Redis are **not** on `proxy-network`.
+
 ## Operations checklist
 
 1. Copy `.env.example` to `.env` and change secrets.

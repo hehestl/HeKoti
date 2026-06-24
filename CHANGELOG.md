@@ -10,6 +10,11 @@
 
 ## [Unreleased]
 
+## [0.4.7] — 2026-06-17
+
+### Added
+- Docker: multi-instance — `HEKOTI_INSTANCE`, `COMPOSE_PROJECT_NAME`, `HEKOTI_HOST_PORT`, изолированные сети/volumes; LT `embedded|external|off`; `deploy/docker-compose.shared-lt.yml`, `.env.world.example`, `.agentrules.instance.example`
+
 ### Fixed
 - Главная (edit): кнопки ↑↓ перемещают только редактируемые категории на одну позицию, без сдвига через 2 и без затрагивания статей-листьев
 - Login: убраны подсказки про публичное чтение и Docker-логин по умолчанию (см. `docs/README.*`)

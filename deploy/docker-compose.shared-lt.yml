@@ -1,0 +1,35 @@
+# Shared LanguageTool for multiple Hekoti instances (saves RAM vs embedded-lt per stack).
+#
+# Bootstrap (once per host):
+#   docker network create hh-shared-net
+#   docker compose -f deploy/docker-compose.shared-lt.yml up -d
+#
+# Each wiki instance with HEKOTI_LT_MODE=external:
+#   LANGUAGETOOL_URL=http://hh-shared-lt:8010
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml up -d
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  hekoti-shared-languagetool:
+    image: erikvl87/languagetool:latest
+    container_name: hh-shared-lt
+    restart: unless-stopped
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8010/v2/languages >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+    networks:
+      - hh_shared
+
+networks:
+  hh_shared:
+    name: hh-shared-net
+    driver: bridge

@@ -1,0 +1,16 @@
+# Optional override: connect hekoti-app to shared LanguageTool (hh-shared-net).
+# Use when HEKOTI_LT_MODE=external and LANGUAGETOOL_URL=http://hh-shared-lt:8010
+#
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.external-lt.yml up -d
+#
+# Prerequisite: deploy/docker-compose.shared-lt.yml running on hh-shared-net.
+
+services:
+  hekoti-app:
+    networks:
+      - hh_shared
+
+networks:
+  hh_shared:
+    external: true
+    name: hh-shared-net

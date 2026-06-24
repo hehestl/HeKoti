@@ -26,7 +26,8 @@ if [ -z "${DATABASE_URL:-}" ]; then
   u="${POSTGRES_USER:-hekoti_user}"
   p="${POSTGRES_PASSWORD:-hekoti_password}"
   d="${POSTGRES_DB:-hekoti_db}"
-  export DATABASE_URL="postgresql://${u}:${p}@hekoti-postgres:5432/${d}?schema=public"
+  h="${POSTGRES_HOST:-hekoti-postgres}"
+  export DATABASE_URL="postgresql://${u}:${p}@${h}:5432/${d}?schema=public"
 fi
 
 if [ "${HEKOTI_SKIP_MIGRATE:-0}" = "1" ]; then

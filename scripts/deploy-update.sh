@@ -8,6 +8,19 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
+# Load deploy .env for HEKOTI_HOST_PORT / COMPOSE_PROFILES (optional)
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . ./.env
+  set +a
+fi
+
+# Backward compat: chat stacks without COMPOSE_PROFILES still get embedded LanguageTool
+if [ "${HEKOTI_LT_MODE:-embedded}" = "embedded" ] && [ -z "${COMPOSE_PROFILES:-}" ]; then
+  export COMPOSE_PROFILES=embedded-lt
+fi
+
 read_repo_version() {
   if [ ! -f VERSION ]; then
     echo "0.0.0"
@@ -47,19 +60,24 @@ if [ -f scripts/fix-lock-emnapi.cjs ]; then
 fi
 
 echo "==> docker compose build hekoti-app"
+COMPOSE_UP_ARGS=""
+if [ -f deploy/docker-compose.external-lt.yml ] && [ "${HEKOTI_LT_MODE:-}" = "external" ]; then
+  COMPOSE_UP_ARGS="-f docker-compose.yml -f deploy/docker-compose.external-lt.yml"
+  echo "==> HEKOTI_LT_MODE=external: using deploy/docker-compose.external-lt.yml"
+fi
 if [ "${NO_CACHE:-0}" = "1" ]; then
-  docker compose build --no-cache hekoti-app
+  docker compose ${COMPOSE_UP_ARGS} build --no-cache hekoti-app
 else
-  docker compose build hekoti-app
+  docker compose ${COMPOSE_UP_ARGS} build hekoti-app
 fi
 
 echo "==> docker compose up -d --force-recreate hekoti-app"
-docker compose up -d --force-recreate hekoti-app
+docker compose ${COMPOSE_UP_ARGS} up -d --force-recreate hekoti-app
 
 echo "==> waiting for health (up to 120s)"
 i=0
 while [ "$i" -lt 24 ]; do
-  if docker compose exec -T hekoti-app node /app/scripts/docker-healthcheck.cjs 2>/dev/null; then
+  if docker compose ${COMPOSE_UP_ARGS} exec -T hekoti-app node /app/scripts/docker-healthcheck.cjs 2>/dev/null; then
     echo "health: ok"
     break
   fi
@@ -68,10 +86,10 @@ while [ "$i" -lt 24 ]; do
 done
 
 echo "==> docker compose ps"
-docker compose ps hekoti-app 2>/dev/null || docker compose ps
+docker compose ${COMPOSE_UP_ARGS} ps hekoti-app 2>/dev/null || docker compose ${COMPOSE_UP_ARGS} ps
 
-CONTAINER_VERSION=$(docker compose exec -T hekoti-app sh -c 'tr -d "\r" < /app/VERSION | head -1' 2>/dev/null || echo "unknown")
-RUNTIME_ENV_VERSION=$(docker compose exec -T hekoti-app sh -c 'printf "%s" "$HEKOTI_APP_VERSION"' 2>/dev/null || echo "unknown")
+CONTAINER_VERSION=$(docker compose ${COMPOSE_UP_ARGS} exec -T hekoti-app sh -c 'tr -d "\r" < /app/VERSION | head -1' 2>/dev/null || echo "unknown")
+RUNTIME_ENV_VERSION=$(docker compose ${COMPOSE_UP_ARGS} exec -T hekoti-app sh -c 'printf "%s" "$HEKOTI_APP_VERSION"' 2>/dev/null || echo "unknown")
 echo "==> container /app/VERSION: ${CONTAINER_VERSION}"
 echo "==> container HEKOTI_APP_VERSION env: ${RUNTIME_ENV_VERSION}"
 
@@ -82,16 +100,16 @@ if [ "$CONTAINER_VERSION" != "$REPO_VERSION" ]; then
 fi
 
 echo "==> last app logs (if 502 in NPM, check here)"
-docker compose logs --tail=40 hekoti-app 2>/dev/null || true
+docker compose ${COMPOSE_UP_ARGS} logs --tail=40 hekoti-app 2>/dev/null || true
 
-PORT="${PORT:-3310}"
-echo "==> smoke: help-center markup on homepage"
-if curl -sf "http://127.0.0.1:${PORT}/en" | grep -q 'help-center'; then
+SMOKE_PORT="${HEKOTI_HOST_PORT:-${PORT:-3310}}"
+echo "==> smoke: help-center markup on homepage (port ${SMOKE_PORT})"
+if curl -sf "http://127.0.0.1:${SMOKE_PORT}/en" | grep -q 'help-center'; then
   echo "help-center: found in HTML"
 else
   echo "help-center: NOT found — old image, wrong port, or changes not in git on this host"
   echo "  try: NO_CACHE=1 sh scripts/deploy-update.sh"
-  echo "  verify: git log -1 --oneline && curl -sI http://127.0.0.1:${PORT}/en | head -5"
+  echo "  verify: git log -1 --oneline && curl -sI http://127.0.0.1:${SMOKE_PORT}/en | head -5"
 fi
 
-docker compose ps hekoti-app
+docker compose ${COMPOSE_UP_ARGS} ps hekoti-app

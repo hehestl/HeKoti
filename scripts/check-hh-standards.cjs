@@ -28,12 +28,22 @@ if (!fs.existsSync(path.join(root, ".agentrules"))) {
 }
 
 const compose = read("docker-compose.yml");
-if (!compose.includes("hh-network")) warn("docker-compose.yml: expected hh-network");
+if (!compose.includes("HEKOTI_INSTANCE")) warn("docker-compose.yml: expected HEKOTI_INSTANCE parametrization");
+if (!compose.includes("HEKOTI_HOST_PORT")) warn("docker-compose.yml: expected HEKOTI_HOST_PORT");
+if (!compose.includes("HEKOTI_DOCKER_NETWORK")) warn("docker-compose.yml: expected HEKOTI_DOCKER_NETWORK");
+if (!compose.includes("npm_proxy")) warn("docker-compose.yml: expected npm_proxy network");
+if (!compose.includes("embedded-lt")) warn("docker-compose.yml: expected embedded-lt profile for LanguageTool");
 if (!compose.includes("max-size: \"10m\"")) warn("docker-compose.yml: expected logging max-size 10m");
-if (!compose.includes("hh-hekoti-lt")) warn("docker-compose.yml: expected container_name hh-hekoti-lt");
-if (!compose.includes("127.0.0.1:3310:3310")) warn("docker-compose.yml: expected 127.0.0.1:3310 bind");
+if (!compose.includes("hh-${HEKOTI_INSTANCE")) warn("docker-compose.yml: expected hh-${HEKOTI_INSTANCE} container_name pattern");
 if (/container_name:\s*hekoti-languagetool/.test(compose)) warn("docker-compose.yml: legacy container_name hekoti-languagetool");
 if (/container_name:\s*[^h\n]*hehe/.test(compose)) warn("docker-compose.yml: hehe in container_name");
+
+if (!fs.existsSync(path.join(root, "deploy/docker-compose.shared-lt.yml"))) {
+  warn("missing deploy/docker-compose.shared-lt.yml");
+}
+if (!fs.existsSync(path.join(root, "deploy/docker-compose.external-lt.yml"))) {
+  warn("missing deploy/docker-compose.external-lt.yml");
+}
 
 if (warnings > 0) {
   console.warn(`[hh-standards] ${warnings} warning(s)`);

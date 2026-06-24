@@ -1,40 +1,21 @@
-# Hekoti stack: Postgres + Redis + app (+ optional LanguageTool).
+# Hekoti stack: Postgres + Redis + app (+ optional embedded LanguageTool).
 #
-# Deploy manifest: .agentrules (taxonomy social/chat, paths Profile B, port 3310)
-# Prod data/logs bind: /var/lib/hh/chat/data, /var/log/hh/chat (see .agentrules paths.*)
+# Multi-instance: set in `.env` per deploy root — HEKOTI_INSTANCE, COMPOSE_PROJECT_NAME,
+# HEKOTI_HOST_PORT, HEKOTI_DOCKER_NETWORK, HEKOTI_LT_MODE, COMPOSE_PROFILES.
+# See `.env.example`, `.env.world.example`, docs/README.*.
 #
-# Faster image builds: `export DOCKER_BUILDKIT=1` (or set in ~/.docker/config.json `"features": { "buildkit": true }`).
+# Deploy manifest: .agentrules (taxonomy, paths Profile B, port registry)
+# Prod data/logs bind: /var/lib/hh/{instance}/data (see .agentrules paths.*)
 #
-# Database URL: you do not need DATABASE_URL in `.env` for Compose. The app
-# container receives POSTGRES_* (defaults below) and `docker-entrypoint.sh`
-# builds `DATABASE_URL` unless you set `DATABASE_URL` yourself (e.g. external DB).
+# WARNING: networks/logging — .cursor/rules/docker-rules.md
+# image: и container_name — .cursor/rules/docker-naming.md
+# Host ports — .cursor/rules/port-registry.md
 #
-# If you see Prisma `AuthenticationFailed`: ensure `DATABASE_URL` (if set) matches
-# `POSTGRES_*`, or remove `DATABASE_URL` so the entrypoint builds it. If you
-# changed `POSTGRES_PASSWORD` after Postgres was first created, reset the volume
-# or align credentials with the existing cluster.
+# Reverse proxy (Nginx Proxy Manager): docker network create proxy-network
+# NPM upstream: http://hh-${HEKOTI_INSTANCE}-app:3310 (container_name on npm_proxy network).
 #
-# Migrations: on each `hekoti-app` start, `docker-entrypoint.sh` runs
-# `prisma migrate deploy`, затем `scripts/ensure-admin.ts` (если User пусто — admin/hehe), потом `node server.js`.
-#
-# Seed DB (tsx is a production dep so it exists in the image; no interactive npx):
-#   docker compose exec hh-hekoti-app npm run db:seed
-#   docker compose exec hh-hekoti-app npx --yes tsx prisma/seed.ts
-#
-# Optional `.env`: use `required: false` so `docker compose up` works with zero
-# files; copy `.env.example` when you want to override secrets or app settings.
-#
-# Postgres troubleshooting:
-# - Compose substitutes POSTGRES_* from a project `.env` file. A stray `POSTGRES_USER=postgres`
-#   (from tutorials) initializes the DB with role `postgres` only — `hekoti_user` will NOT exist.
-# - The official image does NOT create the `postgres` DB role when `POSTGRES_USER` is custom;
-#   use `psql -U "$POSTGRES_USER" ...`, not blindly `-U postgres`.
-# - Diagnose: `docker compose exec hh-hekoti-pg sh -c 'printenv POSTGRES_USER; psql -U "${POSTGRES_USER}" -d postgres -c "\\du"'`
-#
-# Reverse proxy (Nginx Proxy Manager и т.д.): создайте сеть один раз
-#   docker network create proxy-network
-# В NPM укажите upstream http://hh-hekoti-app:3310 (container_name в proxy-network).
-# WARNING: image: и container_name — .cursor/rules/docker-naming.md
+# Embedded LT (default chat): COMPOSE_PROFILES=embedded-lt
+# External shared LT (world+): see deploy/docker-compose.external-lt.yml + deploy/docker-compose.shared-lt.yml
 
 x-logging: &default-logging
   driver: json-file
@@ -45,11 +26,10 @@ x-logging: &default-logging
 services:
   hekoti-postgres:
     image: postgres:17-alpine
-    container_name: hh-hekoti-pg
+    container_name: hh-${HEKOTI_INSTANCE:-hekoti}-pg
     restart: unless-stopped
     logging: *default-logging
     environment:
-      # Defaults match hekoti-app / docker-entrypoint. Override only with matching DB volume or after recreate.
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
@@ -61,11 +41,11 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - hh-network
+      - internal
 
   hekoti-redis:
     image: redis:7-alpine
-    container_name: hh-hekoti-redis
+    container_name: hh-${HEKOTI_INSTANCE:-hekoti}-redis
     restart: unless-stopped
     logging: *default-logging
     command: ["redis-server", "--appendonly", "yes"]
@@ -77,14 +57,14 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - hh-network
+      - internal
 
   hekoti-languagetool:
+    profiles: ["embedded-lt"]
     image: erikvl87/languagetool:latest
-    container_name: hh-hekoti-lt
+    container_name: hh-${HEKOTI_INSTANCE:-hekoti}-lt
     restart: unless-stopped
     logging: *default-logging
-    # Optional: expose to host for debugging — "8010:8010"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8010/v2/languages >/dev/null || exit 1"]
       interval: 20s
@@ -92,7 +72,7 @@ services:
       retries: 15
       start_period: 120s
     networks:
-      - hh-network
+      - internal
 
   hekoti-app:
     image: hh-hekoti-app:latest
@@ -101,30 +81,25 @@ services:
       dockerfile: Dockerfile
       args:
         HEKOTI_APP_VERSION: ${HEKOTI_APP_VERSION:-0.0.0}
-    container_name: hh-hekoti-app
+    container_name: hh-${HEKOTI_INSTANCE:-hekoti}-app
     restart: unless-stopped
     logging: *default-logging
     env_file:
       - path: .env
         required: false
     environment:
-      # Must override Docker-injected HOSTNAME (container id) so Next binds 0.0.0.0, not a single NIC IP.
       HOSTNAME: "0.0.0.0"
       PORT: "3310"
-      # Публичный URL (лучше https://домен за NPM). Cookie Secure также ставится по X-Forwarded-Proto от прокси.
       APP_URL: ${APP_URL:-http://localhost:3310}
       POSTGRES_DB: ${POSTGRES_DB:-hekoti_db}
       POSTGRES_USER: ${POSTGRES_USER:-hekoti_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hekoti_password}
+      POSTGRES_HOST: ${POSTGRES_HOST:-hekoti-postgres}
       REDIS_URL: ${REDIS_URL:-redis://hekoti-redis:6379}
-      # Spellcheck API (`/api/spellcheck`); override with empty in `.env` to disable. LT has no `ports:` here — only app network.
       LANGUAGETOOL_URL: ${LANGUAGETOOL_URL:-http://hekoti-languagetool:8010}
-      # Bootstrap админа после migrate (см. scripts/ensure-admin.ts). Сброс пароля: HEKOTI_FORCE_ADMIN_RESET=1.
       HEKOTI_ADMIN_EMAIL: ${HEKOTI_ADMIN_EMAIL:-admin}
       HEKOTI_ADMIN_PASSWORD: ${HEKOTI_ADMIN_PASSWORD:-hehe}
       HEKOTI_FORCE_ADMIN_RESET: ${HEKOTI_FORCE_ADMIN_RESET:-0}
-      # Production (entrypoint sets HEKOTI_ENFORCE_PROD_SECRETS=1): задайте в `.env`, каждый ≥32 символов.
-      # Сгенерировать: openssl rand -hex 32
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       AUTH_PENDING_SECRET: ${AUTH_PENDING_SECRET:-}
       HEKOTI_TOTP_ENCRYPTION_KEY: ${HEKOTI_TOTP_ENCRYPTION_KEY:-}
@@ -134,10 +109,9 @@ services:
       hekoti-redis:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3310:3310"
+      - "127.0.0.1:${HEKOTI_HOST_PORT:-3310}:3310"
     volumes:
       - hekoti_uploads:/app/public/uploads
-    # scripts/docker-healthcheck.cjs — http.get + timeout (inline fetch may hang).
     healthcheck:
       test: ["CMD", "node", "/app/scripts/docker-healthcheck.cjs"]
       interval: 15s
@@ -145,17 +119,21 @@ services:
       retries: 5
       start_period: 120s
     networks:
-      - hh-network
-      - proxy-network
+      - internal
+      - npm_proxy
 
 networks:
-  hh-network:
-    name: hh-network
+  internal:
+    name: ${HEKOTI_DOCKER_NETWORK:-hh-hekoti-net}
     driver: bridge
-  proxy-network:
+  npm_proxy:
     external: true
+    name: ${NPM_PROXY_NETWORK:-proxy-network}
 
 volumes:
   hekoti_pg_data:
+    name: hh-${HEKOTI_INSTANCE:-hekoti}-pg-data
   hekoti_redis_data:
+    name: hh-${HEKOTI_INSTANCE:-hekoti}-redis-data
   hekoti_uploads:
+    name: hh-${HEKOTI_INSTANCE:-hekoti}-uploads
