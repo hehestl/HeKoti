@@ -5,6 +5,8 @@ const { spawn } = require("node:child_process");
 process.env.NODE_ENV = process.env.NODE_ENV || "production";
 process.env.HEKOTI_ENFORCE_PROD_SECRETS = process.env.HEKOTI_ENFORCE_PROD_SECRETS || "1";
 
+const { ensureProdSecrets } = require("./ensure-prod-secrets.cjs");
+
 function requireStrongSecret(name, minLength = 32) {
   const value = (process.env[name] || "").trim();
   if (!value || value.length < minLength) {
@@ -21,6 +23,7 @@ function requireNonDefaultAdminCredentials() {
 }
 
 if (process.env.NODE_ENV === "production" && process.env.HEKOTI_ENFORCE_PROD_SECRETS === "1") {
+  ensureProdSecrets();
   requireStrongSecret("WEBHOOK_SECRET");
   requireStrongSecret("AUTH_PENDING_SECRET");
   requireStrongSecret("HEKOTI_TOTP_ENCRYPTION_KEY");

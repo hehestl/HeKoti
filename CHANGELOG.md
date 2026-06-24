@@ -10,6 +10,11 @@
 
 ## [Unreleased]
 
+## [0.4.8] — 2026-06-24
+
+### Added
+- Ops: автогенерация `WEBHOOK_SECRET` / `AUTH_PENDING_SECRET` / `HEKOTI_TOTP_ENCRYPTION_KEY` при старте (`scripts/ensure-prod-secrets.cjs`, том uploads)
+
 ## [0.4.7] — 2026-06-17
 
 ### Added

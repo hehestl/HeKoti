@@ -97,7 +97,7 @@ Hekoti — open-source self-hosted вики, ориентированная на
 
 1. `HEKOTI_INSTANCE` и `COMPOSE_PROJECT_NAME` уникальны
 2. `HEKOTI_HOST_PORT` свободен (`ss -tlnp`)
-3. `POSTGRES_*` и секреты (`WEBHOOK_SECRET`, …) — новые, не копипаста
+3. `POSTGRES_*` уникальны; секреты — свои или автоген (`HEKOTI_AUTO_SECRETS=1`, по умолчанию)
 4. `SESSION_COOKIE_NAME` и `APP_URL` — свои (поддомен на экземпляр)
 5. Slug ≤ ~15 символов (`hh-{slug}-app` ≤ 24)
 6. Запись в ops / port-registry

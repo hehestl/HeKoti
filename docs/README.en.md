@@ -97,7 +97,7 @@ One repo — several deploy roots (`/opt/app/ops/hh/chat`, `world`, `lore`, …)
 
 1. Unique `HEKOTI_INSTANCE` and `COMPOSE_PROJECT_NAME`
 2. Free `HEKOTI_HOST_PORT` (`ss -tlnp`)
-3. Fresh `POSTGRES_*` and secrets — do not copy from another wiki
+3. Fresh `POSTGRES_*`; secrets optional — auto-generated on first boot (`HEKOTI_AUTO_SECRETS=1`, default)
 4. Own `SESSION_COOKIE_NAME` and `APP_URL` (subdomain per instance)
 5. Slug ≤ ~15 chars (`hh-{slug}-app` ≤ 24)
 6. Record in ops / port-registry
