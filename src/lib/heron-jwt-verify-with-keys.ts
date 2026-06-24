@@ -2,7 +2,6 @@ import {
   importSPKI,
   jwtVerify,
   type JWTVerifyOptions,
-  type KeyLike,
 } from "jose";
 
 import {
@@ -14,7 +13,7 @@ type VerifyOptions = Omit<JWTVerifyOptions, "algorithms">;
 
 export async function jwtVerifyWithHeronPublicKeys(
   token: string,
-  publicKeys: KeyLike | KeyLike[],
+  publicKeys: CryptoKey | CryptoKey[],
   options: VerifyOptions,
 ) {
   const keys = Array.isArray(publicKeys) ? publicKeys : [publicKeys];
