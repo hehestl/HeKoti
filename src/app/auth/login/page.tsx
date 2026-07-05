@@ -3,19 +3,21 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  buildHeronLoginUrl,
+  isHeronOidcLegacyFragment,
   parseHeronAccessTokenFromHash,
   safeReturnPath,
+  shouldUseSilentOidc,
   startHeronLogin,
   stripHistoryAccessToken,
 } from "@/lib/heron-auth-client";
+import { apiFetch } from "@/lib/api-fetch";
 
 async function exchangeHeronToken(
   accessToken: string,
   returnTo: string,
 ): Promise<{ ok?: boolean; returnTo?: string; message?: string }> {
   stripHistoryAccessToken();
-  const res = await fetch("/api/auth/heron/exchange", {
+  const res = await apiFetch("/api/auth/heron/exchange", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ accessToken, returnTo }),
@@ -27,36 +29,40 @@ function HeronLoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isAuto = searchParams.get("auto") === "1";
+  const forceInteractive = searchParams.get("interactive") === "1";
   const returnTo = safeReturnPath(searchParams.get("returnTo") || "/");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const hashToken = parseHeronAccessTokenFromHash(window.location.hash);
-      if (hashToken) {
-        try {
-          const body = await exchangeHeronToken(hashToken, returnTo);
-          if (cancelled) return;
-          if (!body.ok) {
-            setError(body.message ?? "Heron sign-in failed.");
+      if (isHeronOidcLegacyFragment()) {
+        const hashToken = parseHeronAccessTokenFromHash(window.location.hash);
+        if (hashToken) {
+          try {
+            const body = await exchangeHeronToken(hashToken, returnTo);
+            if (cancelled) return;
+            if (!body.ok) {
+              setError(body.message ?? "Heron sign-in failed.");
+              return;
+            }
+            router.replace(safeReturnPath(body.returnTo ?? returnTo));
+            return;
+          } catch {
+            if (!cancelled) setError("Heron sign-in failed.");
             return;
           }
-          router.replace(safeReturnPath(body.returnTo ?? returnTo));
-          return;
-        } catch {
-          if (!cancelled) setError("Heron sign-in failed.");
-          return;
         }
       }
 
       if (!isAuto) return;
-      startHeronLogin(returnTo);
+      const wantSilent = shouldUseSilentOidc() && !forceInteractive;
+      startHeronLogin(returnTo, { silent: wantSilent });
     })();
     return () => {
       cancelled = true;
     };
-  }, [isAuto, returnTo, router]);
+  }, [forceInteractive, isAuto, returnTo, router]);
 
   if (error) {
     return (
@@ -66,7 +72,7 @@ function HeronLoginInner() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = buildHeronLoginUrl(returnTo);
+              startHeronLogin(returnTo, { silent: false });
             }}
             style={{ marginTop: 12 }}
           >
@@ -105,7 +111,7 @@ function HeronLoginInner() {
         <button
           type="button"
           onClick={() => {
-            window.location.href = buildHeronLoginUrl(returnTo);
+            startHeronLogin(returnTo, { silent: false });
           }}
           style={{
             width: "100%",

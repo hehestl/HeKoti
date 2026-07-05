@@ -10,10 +10,28 @@
 
 ## [Unreleased]
 
+### Added
+- Heron SSO: OIDC Authorization Code + PKCE (`src/lib/heron-shared/`, silent Hub SSO, legacy fragment opt-out)
+- Docs: `docs/ops-wiki-pkce-deploy.md`, PKCE flow в `docs/auth-heron.md`
+- Deploy: `deploy/docker-compose.external-deps.yml` (app-only без embedded PG/Redis)
+- Ops: `check-hh-standards.cjs` — scan `src/` на hardcoded домены (exit 1)
+- Heron anti-loop: `sessionStorage` silent-failed flag, `interactive=1`, `isRetryableOidcError`
+- Ops: `scripts/preflight-wiki-heron.sh`, `scripts/smoke-wiki-heron-pkce.sh`
+- API: `GET /api/health/heron` — JWT/BFF config probe (без секретов)
+
+### Changed
+- Heron SSO: убран hardcode `heron.hehestl.com` / `wiki.hehestl.com`; `NEXT_PUBLIC_*` bake при Docker build из `.env`
+- `exchange/route.ts`: strict env guards для `HERON_AUTH_API_URL`, `HERON_JWT_ISSUER`, `HERON_OAUTH_CLIENT_ID`
+- `docker-compose.yml`: Heron runtime env + build.args для `NEXT_PUBLIC_*`
+- `exchange/route.ts`: structured logs `[hekoti:heron-exchange]` (mode, token_exchange, jwt_verify, session)
+- `buildAuthLoginPath`: optional `interactive=1` для принудительного interactive login
+
 ### Fixed
 - Heron JWT: `KeyLike` заменён на `CryptoKey` (jose v6, ломал `npm run build` в Docker)
 - Deploy: internal network по умолчанию `hh-{HEKOTI_INSTANCE}-net`; `.env.wiki.example` для hedra
 - Deploy: `deploy/docker-compose.external-db.yml` — `depends_on: !reset`, `HEKOTI_DB_DOCKER_NETWORK` → `hh-network`
+- Heron auth loop (wiki): silent SSO не повторяется после `login_required` / `invalid_request`
+- Heron auth loop (id): password login возвращает `oauthResume` из pending OIDC cookie (heron-auth FE)
 
 ## [0.4.8] — 2026-06-24
 

@@ -57,6 +57,7 @@ const envSchema = z.object({
   HERON_AUTH_API_URL: z.string().optional(),
   HERON_JWT_ISSUER: z.string().optional(),
   HERON_JWT_AUDIENCE: z.string().optional(),
+  HERON_OAUTH_CLIENT_ID: z.string().optional(),
   HERON_JWT_PUBLIC_KEY_PEM: z.string().optional(),
   HERON_JWT_PUBLIC_KEY_PATH: z.string().optional(),
   HERON_FETCH_TIMEOUT_MS: z.string().optional(),
@@ -76,10 +77,26 @@ function requireStrongSecret(name: string, value?: string, minLength = 32) {
   }
 }
 
+function requireHeronPkceEnv() {
+  const missing: string[] = [];
+  if (!parsed.HERON_AUTH_API_URL?.trim()) missing.push("HERON_AUTH_API_URL");
+  if (!parsed.HERON_JWT_ISSUER?.trim()) missing.push("HERON_JWT_ISSUER");
+  if (!parsed.HERON_OAUTH_CLIENT_ID?.trim()) missing.push("HERON_OAUTH_CLIENT_ID");
+  if (missing.length) {
+    throw new Error(
+      `Heron PKCE enabled but missing: ${missing.join(", ")}. Set in .env / docker-compose.`,
+    );
+  }
+}
+
 if (parsed.NODE_ENV === "production" && process.env.HEKOTI_ENFORCE_PROD_SECRETS === "1") {
   requireStrongSecret("WEBHOOK_SECRET", parsed.WEBHOOK_SECRET);
   requireStrongSecret("AUTH_PENDING_SECRET", parsed.AUTH_PENDING_SECRET);
   requireStrongSecret("HEKOTI_TOTP_ENCRYPTION_KEY", parsed.HEKOTI_TOTP_ENCRYPTION_KEY);
+}
+
+if (parsed.HEKOTI_HERON_AUTH_ENABLED === "1" && parsed.NODE_ENV === "production") {
+  requireHeronPkceEnv();
 }
 
 export const env = parsed;

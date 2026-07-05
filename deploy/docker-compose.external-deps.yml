@@ -1,0 +1,44 @@
+# App only: no embedded Postgres / Redis (use external).
+#
+#   docker compose -f docker-compose.yml \
+#     -f deploy/docker-compose.external-deps.yml \
+#     up -d --build
+#
+# .env:
+#   POSTGRES_HOST=host.docker.internal          # PG на хосте
+#   # или DNS контейнера в общей сети: hedra-postgres-postgres-1
+#   POSTGRES_DB=...
+#   POSTGRES_USER=...
+#   POSTGRES_PASSWORD=...
+#   REDIS_URL=redis://host.docker.internal:6379
+#   # или redis://dragonfly:6379 при сети hehe-net
+#   HEKOTI_LT_MODE=off
+#   COMPOSE_PROFILES=                           # пусто — без embedded-lt
+#
+# Соседний Postgres в Docker-сети:
+#   HEKOTI_DB_DOCKER_NETWORK=hehe-net
+#   POSTGRES_HOST=<container_name>
+
+services:
+  hekoti-postgres:
+    profiles: ["embedded-db"]
+
+  hekoti-redis:
+    profiles: ["embedded-redis"]
+
+  hekoti-app:
+    depends_on: !reset []
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-host.docker.internal}
+      REDIS_URL: ${REDIS_URL:-redis://host.docker.internal:6379}
+    networks:
+      - internal
+      - npm_proxy
+      - hh_db
+
+networks:
+  hh_db:
+    external: true
+    name: ${HEKOTI_DB_DOCKER_NETWORK:-hehe-net}

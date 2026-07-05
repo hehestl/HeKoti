@@ -6,21 +6,107 @@ import { HeronExchangeError, resolveOrCreateUserFromHeron } from "@/lib/heron-ex
 import { isHeronAuthConfigured, verifyHeronAccessToken } from "@/lib/heron-auth-server";
 import { safeReturnPath } from "@/lib/heron-auth-client";
 
-function readBody(body: unknown): { accessToken: string; returnTo?: string } | { error: string } {
+const LOG = "[hekoti:heron-exchange]";
+
+function readBody(
+  body: unknown,
+):
+  | { accessToken: string; returnTo?: string }
+  | { code: string; codeVerifier: string; redirectUri: string; nonce?: string; returnTo?: string }
+  | { error: string } {
   if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
-    return { error: "Expected JSON object with accessToken." };
+    return { error: "Expected JSON object." };
   }
   const raw = body as Record<string, unknown>;
+  const code = typeof raw.code === "string" ? raw.code.trim() : "";
+  if (code) {
+    const codeVerifier =
+      typeof raw.codeVerifier === "string"
+        ? raw.codeVerifier.trim()
+        : typeof raw.code_verifier === "string"
+          ? raw.code_verifier.trim()
+          : "";
+    const redirectUri =
+      typeof raw.redirectUri === "string"
+        ? raw.redirectUri.trim()
+        : typeof raw.redirect_uri === "string"
+          ? raw.redirect_uri.trim()
+          : "";
+    if (!codeVerifier || !redirectUri) {
+      return { error: "codeVerifier and redirectUri are required with code." };
+    }
+    const nonce = typeof raw.nonce === "string" ? raw.nonce.trim() : undefined;
+    const returnTo =
+      typeof raw.returnTo === "string" ? safeReturnPath(raw.returnTo) : undefined;
+    return { code, codeVerifier, redirectUri, nonce, returnTo };
+  }
   const accessToken =
     typeof raw.accessToken === "string"
       ? raw.accessToken.trim()
       : typeof raw.access_token === "string"
         ? raw.access_token.trim()
         : "";
-  if (!accessToken) return { error: "accessToken is required." };
+  if (!accessToken) return { error: "accessToken or code is required." };
   const returnTo =
     typeof raw.returnTo === "string" ? safeReturnPath(raw.returnTo) : undefined;
   return { accessToken, returnTo };
+}
+
+type ResolveAccessTokenResult =
+  | { ok: true; accessToken: string }
+  | { ok: false; status: 503 | 401; message: string };
+
+async function resolveAccessToken(
+  parsed:
+    | { accessToken: string; returnTo?: string }
+    | { code: string; codeVerifier: string; redirectUri: string; nonce?: string; returnTo?: string },
+): Promise<ResolveAccessTokenResult> {
+  if ("accessToken" in parsed) {
+    return { ok: true, accessToken: parsed.accessToken };
+  }
+
+  const apiUrl = env.HERON_AUTH_API_URL?.trim().replace(/\/$/, "");
+  const issuer = env.HERON_JWT_ISSUER?.trim();
+  const clientId = env.HERON_OAUTH_CLIENT_ID?.trim();
+
+  if (!apiUrl || !issuer || !clientId) {
+    console.error(
+      "[Auth Exchange] Missing HERON_AUTH_API_URL, HERON_JWT_ISSUER, or HERON_OAUTH_CLIENT_ID",
+    );
+    return {
+      ok: false,
+      status: 503,
+      message: "Authentication service misconfigured.",
+    };
+  }
+
+  const audience = env.HERON_JWT_AUDIENCE?.trim() || "hehe-ecosystem";
+  const { exchangeHeronAuthorizationCode } = await import(
+    "@/lib/heron-shared/heron-oidc.client"
+  );
+
+  const exchanged = await exchangeHeronAuthorizationCode(
+    {
+      apiUrl,
+      issuer,
+      audiences: [audience],
+      fetchTimeoutMs: Number(env.HERON_FETCH_TIMEOUT_MS) || 5000,
+    },
+    {
+      code: parsed.code,
+      codeVerifier: parsed.codeVerifier,
+      redirectUri: parsed.redirectUri,
+      clientId,
+      nonce: parsed.nonce,
+    },
+  );
+
+  if (!exchanged.ok) {
+    console.warn(`${LOG} token_exchange status=${exchanged.status}`);
+    return { ok: false, status: 401, message: exchanged.message };
+  }
+  console.info(`${LOG} token_exchange status=200`);
+  return { ok: true, accessToken: exchanged.data.accessToken };
 }
 
 export async function POST(request: Request) {
@@ -40,11 +126,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: parsed.error }, { status: 400 });
   }
 
+  const mode = "code" in parsed ? "code" : "accessToken";
+  console.info(`${LOG} mode=${mode}`);
+
+  const resolved = await resolveAccessToken(parsed);
+  if (!resolved.ok) {
+    return NextResponse.json(
+      { ok: false, message: resolved.message },
+      { status: resolved.status },
+    );
+  }
+
   const ip = requestIp(request);
-  const verified = await verifyHeronAccessToken(parsed.accessToken);
+  const verified = await verifyHeronAccessToken(resolved.accessToken);
   if (!verified) {
+    console.warn(`${LOG} jwt_verify fail`);
     return NextResponse.json({ ok: false, message: "Invalid Heron access token." }, { status: 401 });
   }
+  console.info(`${LOG} jwt_verify ok`);
 
   const limit = await limitHeronExchange(
     ip,
@@ -59,7 +158,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await resolveOrCreateUserFromHeron(parsed.accessToken);
+    const result = await resolveOrCreateUserFromHeron(resolved.accessToken);
+    console.info(`${LOG} session created userId=${verified.sub}`);
 
     const defaultReturn =
       result.role === UserRole.ADMIN

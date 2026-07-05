@@ -21,11 +21,18 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM node:22-alpine AS builder
 WORKDIR /app
 ARG HEKOTI_APP_VERSION=0.0.0
+# From compose build.args ← .env (no domain defaults in image).
+ARG NEXT_PUBLIC_HERON_AUTH_URL
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID
 COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}
 ENV NEXT_PUBLIC_HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}
+ENV NEXT_PUBLIC_HERON_AUTH_URL=${NEXT_PUBLIC_HERON_AUTH_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID=${NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID}
 RUN echo "hekoti build version=${HEKOTI_APP_VERSION}" \
     && npm run db:generate && npm run build \
     && test -f public/monaco-workers/editor.worker.js
