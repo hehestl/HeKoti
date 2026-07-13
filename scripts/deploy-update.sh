@@ -1,24 +1,64 @@
 #!/usr/bin/env sh
-# Hekoti: pull + rebuild + recreate app container (Postgres/Redis volumes preserved).
-# Usage (from repo root on the server):
+# Hekoti wiki: pull + rebuild + recreate app (Profile A: /opt/app/prod/hh/core/wiki on hemonea).
+# Usage:
 #   sh scripts/deploy-update.sh
-# Force full rebuild without layer cache:
 #   NO_CACHE=1 sh scripts/deploy-update.sh
+#   SKIP_GIT_PULL=1 NO_CACHE=1 sh scripts/deploy-update.sh
 set -eu
 
 cd "$(dirname "$0")/.."
 
-# Load deploy .env for HEKOTI_HOST_PORT / COMPOSE_PROFILES (optional)
-if [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env
-  set +a
+if [ ! -f scripts/load-dotenv.sh ]; then
+  echo "ERROR: scripts/load-dotenv.sh missing in $(pwd)" >&2
+  exit 1
 fi
 
-# Backward compat: chat stacks without COMPOSE_PROFILES still get embedded LanguageTool
-if [ "${HEKOTI_LT_MODE:-embedded}" = "embedded" ] && [ -z "${COMPOSE_PROFILES:-}" ]; then
-  export COMPOSE_PROFILES=embedded-lt
+normalize_heron_env() {
+  if [ ! -f .env ]; then
+    return 0
+  fi
+  if grep -q 'heron\.hehestl\.com' .env 2>/dev/null; then
+    echo "==> normalize .env: heron.hehestl.com → id.hehestl.su"
+    sed -i 's|https://heron\.hehestl\.com|https://id.hehestl.su|g' .env
+  fi
+  if grep -qE '^NEXT_PUBLIC_HERON_OAUTH_LEGACY_FRAGMENT=' .env 2>/dev/null; then
+    echo "==> normalize .env: remove NEXT_PUBLIC_HERON_OAUTH_LEGACY_FRAGMENT (PKCE only)"
+    sed -i '/^NEXT_PUBLIC_HERON_OAUTH_LEGACY_FRAGMENT=/d' .env
+  fi
+  if grep -qE '^NEXT_PUBLIC_HERON_AUTH_URL=' .env 2>/dev/null; then
+    sed -i 's|^NEXT_PUBLIC_HERON_AUTH_URL=.*|NEXT_PUBLIC_HERON_AUTH_URL=https://id.hehestl.su|' .env
+  else
+    echo "NEXT_PUBLIC_HERON_AUTH_URL=https://id.hehestl.su" >> .env
+  fi
+  if grep -qE '^NPM_PROXY_NETWORK=proxy-network' .env 2>/dev/null; then
+    echo "==> normalize .env: NPM_PROXY_NETWORK proxy-network → hehe-net"
+    sed -i '/^NPM_PROXY_NETWORK=proxy-network/d' .env
+  fi
+  if ! grep -qE '^TRAEFIK_PROXY_NETWORK=' .env 2>/dev/null; then
+    echo "TRAEFIK_PROXY_NETWORK=hehe-net" >> .env
+  fi
+  if [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] && ! grep -qE '^HEKOTI_PUBLIC_HOST=' .env 2>/dev/null; then
+    echo "HEKOTI_PUBLIC_HOST=wiki.hehestl.su" >> .env
+  fi
+  if [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] && ! grep -qE '^COMPOSE_PROJECT_NAME=' .env 2>/dev/null; then
+    echo "COMPOSE_PROJECT_NAME=hh-wiki" >> .env
+  fi
+}
+
+if [ -f .env ]; then
+  normalize_heron_env
+  # shellcheck disable=SC1091
+  . ./scripts/load-dotenv.sh
+  load_dotenv .env
+fi
+
+echo "==> deploy root: $(pwd)"
+echo "==> COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-<unset>} HEKOTI_INSTANCE=${HEKOTI_INSTANCE:-wiki}"
+echo "==> NEXT_PUBLIC_HERON_AUTH_URL=${NEXT_PUBLIC_HERON_AUTH_URL:-<unset>}"
+
+if [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] && [ "${COMPOSE_PROJECT_NAME:-}" != "hh-wiki" ]; then
+  echo "WARN: wiki prod expects COMPOSE_PROJECT_NAME=hh-wiki (got ${COMPOSE_PROJECT_NAME:-<unset>})" >&2
+  echo "  Wrong project creates hh-hekoti-app and port 3310 conflict with hh-wiki-app" >&2
 fi
 
 read_repo_version() {
@@ -26,7 +66,6 @@ read_repo_version() {
     echo "0.0.0"
     return
   fi
-  # first non-empty, non-comment line
   while IFS= read -r line || [ -n "$line" ]; do
     line=$(printf '%s' "$line" | tr -d '\r')
     case "$line" in
@@ -40,39 +79,60 @@ read_repo_version() {
 REPO_VERSION_BEFORE=$(read_repo_version)
 echo "==> repo VERSION (before pull): ${REPO_VERSION_BEFORE}"
 
-echo "==> git pull (--autostash for local compose tweaks on the server)"
-if ! git pull --autostash --ff-only; then
-  echo "ERROR: git pull failed. Local changes block update."
-  echo "  Inspect: git status"
-  echo "  Option A: stash manually — git stash push -m deploy docker-compose.yml && git pull --ff-only"
-  echo "  Option B: commit server-specific compose, then pull/rebase"
-  exit 1
+if [ "${SKIP_GIT_PULL:-0}" = "1" ]; then
+  echo "==> SKIP_GIT_PULL=1 — rebuild only (no git pull)"
+  REPO_VERSION="$REPO_VERSION_BEFORE"
+else
+  echo "==> git pull (--autostash for local compose tweaks on the server)"
+  if ! git pull --autostash --ff-only; then
+    echo "ERROR: git pull failed. Local changes block update." >&2
+    echo "  git status && git stash list" >&2
+    exit 1
+  fi
+  if git stash list | grep -q .; then
+    echo "WARN: git stash not empty after autostash — check compose conflicts: git stash show -p" >&2
+  fi
+  REPO_VERSION=$(read_repo_version)
 fi
 
-REPO_VERSION=$(read_repo_version)
 export HEKOTI_APP_VERSION="${REPO_VERSION}"
-echo "==> repo VERSION (after pull): ${REPO_VERSION}"
-echo "==> build arg HEKOTI_APP_VERSION=${HEKOTI_APP_VERSION}"
+echo "==> repo VERSION (deploy): ${REPO_VERSION}"
 
 if [ -f scripts/fix-lock-emnapi.cjs ]; then
   echo "==> sync package-lock @emnapi (npm ci in Alpine)"
   node scripts/fix-lock-emnapi.cjs
 fi
 
-echo "==> docker compose build hekoti-app"
-COMPOSE_UP_ARGS=""
-if [ -f deploy/docker-compose.external-lt.yml ] && [ "${HEKOTI_LT_MODE:-}" = "external" ]; then
-  COMPOSE_UP_ARGS="-f docker-compose.yml -f deploy/docker-compose.external-lt.yml"
-  echo "==> HEKOTI_LT_MODE=external: using deploy/docker-compose.external-lt.yml"
+if [ -x scripts/validate-compose.sh ]; then
+  sh scripts/validate-compose.sh
 fi
+
+# shellcheck disable=SC1091
+. ./scripts/compose-prod-files.sh
+
+case "$COMPOSE_UP_ARGS" in
+  *external-deps.yml*)
+    echo "==> external deps: remove legacy embedded PG/Redis/LT containers if present"
+    inst="${HEKOTI_INSTANCE:-wiki}"
+    for c in "hh-${inst}-pg" "hh-${inst}-redis" "hh-${inst}-lt"; do
+      docker rm -f "$c" 2>/dev/null || true
+    done
+    ;;
+esac
+
+if [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] && [ -f deploy/docker-compose.wiki-prod.yml ]; then
+  echo "==> HEKOTI_INSTANCE=wiki: Traefik hehe-net (deploy/docker-compose.wiki-prod.yml)"
+fi
+
+echo "==> docker compose build hekoti-app ${COMPOSE_UP_ARGS}"
 if [ "${NO_CACHE:-0}" = "1" ]; then
   docker compose ${COMPOSE_UP_ARGS} build --no-cache hekoti-app
 else
   docker compose ${COMPOSE_UP_ARGS} build hekoti-app
 fi
 
-echo "==> docker compose up -d --force-recreate hekoti-app"
-docker compose ${COMPOSE_UP_ARGS} up -d --force-recreate hekoti-app
+echo "==> docker compose up -d --force-recreate --no-deps hekoti-app"
+docker compose ${COMPOSE_UP_ARGS} up -d --force-recreate --no-deps hekoti-app
 
 echo "==> waiting for health (up to 120s)"
 i=0
@@ -85,31 +145,26 @@ while [ "$i" -lt 24 ]; do
   sleep 5
 done
 
-echo "==> docker compose ps"
-docker compose ${COMPOSE_UP_ARGS} ps hekoti-app 2>/dev/null || docker compose ${COMPOSE_UP_ARGS} ps
-
 CONTAINER_VERSION=$(docker compose ${COMPOSE_UP_ARGS} exec -T hekoti-app sh -c 'tr -d "\r" < /app/VERSION | head -1' 2>/dev/null || echo "unknown")
-RUNTIME_ENV_VERSION=$(docker compose ${COMPOSE_UP_ARGS} exec -T hekoti-app sh -c 'printf "%s" "$HEKOTI_APP_VERSION"' 2>/dev/null || echo "unknown")
 echo "==> container /app/VERSION: ${CONTAINER_VERSION}"
-echo "==> container HEKOTI_APP_VERSION env: ${RUNTIME_ENV_VERSION}"
-
-if [ "$CONTAINER_VERSION" != "$REPO_VERSION" ]; then
-  echo "WARNING: container VERSION (${CONTAINER_VERSION}) != repo VERSION (${REPO_VERSION})"
-  echo "  Run: NO_CACHE=1 sh scripts/deploy-update.sh"
-  echo "  Verify git: git log -1 --oneline && cat VERSION"
-fi
-
-echo "==> last app logs (if 502 in NPM, check here)"
-docker compose ${COMPOSE_UP_ARGS} logs --tail=40 hekoti-app 2>/dev/null || true
 
 SMOKE_PORT="${HEKOTI_HOST_PORT:-${PORT:-3310}}"
-echo "==> smoke: help-center markup on homepage (port ${SMOKE_PORT})"
 if curl -sf "http://127.0.0.1:${SMOKE_PORT}/en" | grep -q 'help-center'; then
   echo "help-center: found in HTML"
 else
-  echo "help-center: NOT found — old image, wrong port, or changes not in git on this host"
-  echo "  try: NO_CACHE=1 sh scripts/deploy-update.sh"
-  echo "  verify: git log -1 --oneline && curl -sI http://127.0.0.1:${SMOKE_PORT}/en | head -5"
+  echo "help-center: NOT found on port ${SMOKE_PORT}"
+fi
+
+if [ -f scripts/diagnose-wiki-heron-bake.sh ]; then
+  bash scripts/diagnose-wiki-heron-bake.sh || true
+fi
+
+if [ -f scripts/probe-wiki-heron-exchange-api.sh ]; then
+  bash scripts/probe-wiki-heron-exchange-api.sh || true
+fi
+
+if [ -f scripts/verify-heron-exchange-bake.sh ]; then
+  bash scripts/verify-heron-exchange-bake.sh || true
 fi
 
 docker compose ${COMPOSE_UP_ARGS} ps hekoti-app

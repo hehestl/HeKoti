@@ -82,9 +82,10 @@ services:
       args:
         HEKOTI_APP_VERSION: ${HEKOTI_APP_VERSION:-0.0.0}
         # Bake from .env (NEXT_PUBLIC_* must be set at build time)
-        NEXT_PUBLIC_HERON_AUTH_URL: ${NEXT_PUBLIC_HERON_AUTH_URL}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-${APP_URL}}
+        NEXT_PUBLIC_HERON_AUTH_URL: ${NEXT_PUBLIC_HERON_AUTH_URL:-https://id.hehestl.su}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-${APP_URL:-https://wiki.hehestl.su}}
         NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID: ${NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID:-hekoti-wiki}
+        NEXT_PUBLIC_HERON_OAUTH_LEGACY_FRAGMENT: ${NEXT_PUBLIC_HERON_OAUTH_LEGACY_FRAGMENT:-}
     container_name: hh-${HEKOTI_INSTANCE:-hekoti}-app
     restart: unless-stopped
     logging: *default-logging
@@ -112,10 +113,10 @@ services:
       HEKOTI_HERON_DEFAULT_RETURN: ${HEKOTI_HERON_DEFAULT_RETURN:-/ru/admin}
       HERON_AUTH_API_URL: ${HERON_AUTH_API_URL:-http://heron-auth:8080}
       HERON_JWT_ISSUER: ${HERON_JWT_ISSUER:-https://id.hehestl.su}
-      HERON_JWT_AUDIENCE: ${HERON_JWT_AUDIENCE:-hehe-ecosystem}
+      HERON_JWT_AUDIENCE: ${HERON_JWT_AUDIENCE:-hekoti-wiki}
       HERON_OAUTH_CLIENT_ID: ${HERON_OAUTH_CLIENT_ID:-hekoti-wiki}
       HERON_JWT_PUBLIC_KEY_PEM: ${HERON_JWT_PUBLIC_KEY_PEM:-}
-      HERON_JWT_PUBLIC_KEY_PATH: ${HERON_JWT_PUBLIC_KEY_PATH:-}
+      HERON_JWT_PUBLIC_KEY_PATH: ${HERON_JWT_PUBLIC_KEY_PATH:-/run/secrets/heron_jwt_public.pem}
       HERON_FETCH_TIMEOUT_MS: ${HERON_FETCH_TIMEOUT_MS:-}
     depends_on:
       hekoti-postgres:
@@ -126,6 +127,7 @@ services:
       - "127.0.0.1:${HEKOTI_HOST_PORT:-3310}:3310"
     volumes:
       - hekoti_uploads:/app/public/uploads
+      - ./secrets/heron_jwt_public.pem:/run/secrets/heron_jwt_public.pem:ro
     healthcheck:
       test: ["CMD", "node", "/app/scripts/docker-healthcheck.cjs"]
       interval: 15s

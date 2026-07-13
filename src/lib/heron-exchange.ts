@@ -6,6 +6,7 @@ import {
   fetchHeronServiceGrants,
   heronSubMatches,
   isHeronAuthConfigured,
+  type VerifiedHeronToken,
   verifyHeronAccessToken,
 } from "@/lib/heron-auth-server";
 import { isValidEmail } from "@/lib/auth";
@@ -31,42 +32,71 @@ export class HeronExchangeError extends Error {
   }
 }
 
-export async function resolveOrCreateUserFromHeron(accessToken: string) {
+export async function resolveOrCreateUserFromHeron(
+  accessToken: string,
+  preVerified?: VerifiedHeronToken,
+) {
   if (!isHeronAuthConfigured()) {
     throw new HeronExchangeError("Heron Auth is not enabled.", 503);
   }
 
-  const verified = await verifyHeronAccessToken(accessToken);
+  const verified = preVerified ?? (await verifyHeronAccessToken(accessToken));
   if (!verified) {
     throw new HeronExchangeError("Invalid Heron access token.", 401);
   }
 
   const me = await fetchHeronMe(accessToken);
-  if (!me?.userId) {
-    throw new HeronExchangeError("Heron profile unavailable.", 401);
-  }
-  if (!heronSubMatches(me.userId, verified.sub)) {
+  const profile =
+    me?.userId != null
+      ? me
+      : (() => {
+          console.warn("[heron_exchange] profile endpoints unavailable; using verified jwt.sub", {
+            sub: verified.sub,
+          });
+          return { userId: verified.sub, email: null as string | null };
+        })();
+
+  if (!heronSubMatches(profile.userId, verified.sub)) {
     throw new HeronExchangeError("Heron identity mismatch.", 401);
   }
 
   const grants = await fetchHeronServiceGrants(accessToken);
-  const targetRole = roleFromGrant(grants);
+  let targetRole = roleFromGrant(grants);
 
   let user = await prisma.user.findUnique({ where: { heronSubjectId: verified.sub } });
 
-  if (!user && me.email && isValidEmail(me.email)) {
-    const byEmail = await prisma.user.findUnique({ where: { email: me.email.trim() } });
+  if (!user) {
+    const heronLinkedCount = await prisma.user.count({
+      where: { heronSubjectId: { not: null } },
+    });
+    const adminCount = await prisma.user.count({ where: { role: UserRole.ADMIN } });
+    if (heronLinkedCount === 0 || adminCount === 0) {
+      console.info("[heron_exchange] first Heron SSO login bootstraps ADMIN", {
+        sub: verified.sub,
+        heronLinkedCount,
+        adminCount,
+      });
+      targetRole = UserRole.ADMIN;
+    }
+  }
+
+  if (!user && profile.email && isValidEmail(profile.email)) {
+    const byEmail = await prisma.user.findUnique({ where: { email: profile.email.trim() } });
     if (byEmail) {
+      const linkedRole =
+        byEmail.role === UserRole.ADMIN ? UserRole.ADMIN : targetRole;
       user = await prisma.user.update({
         where: { id: byEmail.id },
-        data: { heronSubjectId: verified.sub, role: targetRole },
+        data: { heronSubjectId: verified.sub, role: linkedRole },
       });
     }
   }
 
   if (!user) {
     const email =
-      me.email && isValidEmail(me.email) ? me.email.trim() : syntheticSsoEmail(verified.sub);
+      profile.email && isValidEmail(profile.email)
+        ? profile.email.trim()
+        : syntheticSsoEmail(verified.sub);
     user = await prisma.user.create({
       data: {
         email,
@@ -75,14 +105,18 @@ export async function resolveOrCreateUserFromHeron(accessToken: string) {
         passwordHash: null,
       },
     });
-  } else if (user.role !== targetRole || !user.heronSubjectId) {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        heronSubjectId: user.heronSubjectId ?? verified.sub,
-        role: targetRole,
-      },
-    });
+  } else {
+    const data: { heronSubjectId?: string; role?: UserRole } = {};
+    if (!user.heronSubjectId) data.heronSubjectId = verified.sub;
+    if (targetRole === UserRole.ADMIN && user.role !== UserRole.ADMIN) {
+      data.role = UserRole.ADMIN;
+    }
+    if (Object.keys(data).length > 0) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data,
+      });
+    }
   }
 
   await createUserSession(user.id);

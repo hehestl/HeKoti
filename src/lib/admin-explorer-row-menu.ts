@@ -2,7 +2,7 @@ import type { Dictionary } from "@/lib/i18n";
 import { pathSegmentsAfterLang } from "@/lib/wiki-path";
 import type { AdminContextMenuItem, AdminPageRow, AdminPagesByLang } from "@/types/admin-workbench";
 import type { AdminExplorerActions } from "@/components/admin-workbench/admin-explorer-types";
-import { resolveSelectedPages } from "@/lib/admin-explorer-selection";
+import { resolveSelectedPages, collectPagesInSubtree } from "@/lib/admin-explorer-selection";
 
 export function buildAdminExplorerBulkMenuItems(
   selected: Set<string>,
@@ -74,6 +74,11 @@ export function buildAdminExplorerRowMenuItems(
   const childCount = (pagesByLang[page.lang] ?? []).filter(
     (p) => p.path !== page.path && p.path.startsWith(`${page.path}/`),
   ).length;
+  const allInLang = pagesByLang[page.lang] ?? [];
+  const subtree =
+    childCount > 0
+      ? collectPagesInSubtree(page, allInLang).filter((p) => !p.systemKey)
+      : [];
   const deleteLabel =
     childCount > 0
       ? dict.admin.posts.deleteWithChildren.replace("{count}", String(childCount))
@@ -92,6 +97,21 @@ export function buildAdminExplorerRowMenuItems(
     ...(page.systemKey
       ? []
       : [{ id: "rename", label: dict.admin.posts.rename, onClick: () => actions.onRename(page.id, page.lang) }]),
+    ...(subtree.length > 0 && actions.onBulkSetPublished
+      ? [
+          {
+            id: "publish-branch",
+            label: wb.publishBranch.replace("{count}", String(subtree.length)),
+            onClick: () => void actions.onBulkSetPublished!(subtree, true),
+          },
+          {
+            id: "unpublish-branch",
+            label: wb.unpublishBranch.replace("{count}", String(subtree.length)),
+            onClick: () => void actions.onBulkSetPublished!(subtree, false),
+          },
+          { id: "sep-publish-branch", label: "", separator: true },
+        ]
+      : []),
     ...(actions.onTogglePublish
       ? [
           {

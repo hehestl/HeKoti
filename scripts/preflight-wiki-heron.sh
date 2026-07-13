@@ -77,11 +77,20 @@ else
   warn "wiki cannot reach http://${HERON_BFF_HOST}/health (attach hh-network?)"
 fi
 
-# 5. Wiki JWT key configured
+# 5. Wiki JWT key configured (env + mount)
+CONTAINER_PATH="/run/secrets/heron_jwt_public.pem"
 if docker exec "$WIKI_CONTAINER" printenv HERON_JWT_PUBLIC_KEY_PEM 2>/dev/null | grep -q "BEGIN PUBLIC KEY"; then
-  ok "HERON_JWT_PUBLIC_KEY_PEM set in wiki"
+  ok "HERON_JWT_PUBLIC_KEY_PEM set in wiki (dev inline)"
 elif docker exec "$WIKI_CONTAINER" printenv HERON_JWT_PUBLIC_KEY_PATH 2>/dev/null | grep -q .; then
-  ok "HERON_JWT_PUBLIC_KEY_PATH set in wiki"
+  jwt_path="$(docker exec "$WIKI_CONTAINER" printenv HERON_JWT_PUBLIC_KEY_PATH)"
+  ok "HERON_JWT_PUBLIC_KEY_PATH=$jwt_path"
+  if docker exec "$WIKI_CONTAINER" test -r "$CONTAINER_PATH" 2>/dev/null; then
+    docker exec "$WIKI_CONTAINER" head -1 "$CONTAINER_PATH" 2>/dev/null | grep -q 'BEGIN PUBLIC KEY' \
+      && ok "PEM readable at $CONTAINER_PATH" \
+      || warn "PEM at $CONTAINER_PATH has invalid header"
+  else
+    warn "PEM not mounted at $CONTAINER_PATH — bash scripts/sync-heron-jwt-public-pem.sh && docker compose up -d --force-recreate hekoti-app"
+  fi
 else
   warn "wiki missing HERON_JWT_PUBLIC_KEY_PEM or HERON_JWT_PUBLIC_KEY_PATH"
 fi

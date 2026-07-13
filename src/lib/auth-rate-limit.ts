@@ -36,6 +36,12 @@ export async function limitHeronExchange(ip: string, subject: string, maxPerWind
   return { blocked, retryAfterSec };
 }
 
+export async function limitDocsSyncWebhook(ip: string, maxPerWindow = 10) {
+  const windowSec = 60;
+  const count = await bumpRateLimitKey(`rl:webhook:hekoti-docs:ip:${ip}`, windowSec);
+  return { blocked: count > maxPerWindow, retryAfterSec: windowSec };
+}
+
 type AiLocalizeKind = "single" | "all" | "branch";
 
 const AI_LOCALIZE_LIMITS: Record<AiLocalizeKind, { windowSec: number; maxIp: number; maxUser: number }> = {

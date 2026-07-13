@@ -57,20 +57,42 @@ export function AdminExplorerRowMenu({
 
 export function AdminExplorerSectionMenu({
   sectionMenu,
+  pagesByLang,
   dict,
+  isNotes,
   actions,
   onCollapseSection,
   onExpandSection,
   onClose,
 }: {
   sectionMenu: { lang: string; x: number; y: number };
+  pagesByLang: AdminPagesByLang;
   dict: Dictionary;
+  isNotes: boolean;
   actions: AdminExplorerActions;
   onCollapseSection: (lang: string) => void;
   onExpandSection: (lang: string) => void;
   onClose: () => void;
 }) {
   const wb = dict.admin.workbench;
+  const langPages = (pagesByLang[sectionMenu.lang] ?? []).filter((p) => !p.systemKey);
+  const publishItems =
+    !isNotes && actions.onBulkSetPublished && langPages.length > 0
+      ? [
+          { id: "sep-pub", label: "", separator: true },
+          {
+            id: "publish-lang",
+            label: wb.publishLangAll.replace("{count}", String(langPages.length)),
+            onClick: () => void actions.onBulkSetPublished!(langPages, true),
+          },
+          {
+            id: "unpublish-lang",
+            label: wb.unpublishLangAll.replace("{count}", String(langPages.length)),
+            onClick: () => void actions.onBulkSetPublished!(langPages, false),
+          },
+        ]
+      : [];
+
   return (
     <AdminContextMenu
       x={sectionMenu.x}
@@ -88,6 +110,7 @@ export function AdminExplorerSectionMenu({
           label: wb.expandSection,
           onClick: () => onExpandSection(sectionMenu.lang),
         },
+        ...publishItems,
       ]}
       onClose={onClose}
     />

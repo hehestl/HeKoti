@@ -8,6 +8,18 @@ import { safeReturnPath } from "@/lib/heron-auth-client";
 
 const LOG = "[hekoti:heron-exchange]";
 
+function resolveHeronPostLoginReturn(role: UserRole, explicit?: string): string {
+  const path = explicit ? safeReturnPath(explicit) : "";
+  if (role === UserRole.ADMIN) {
+    const isHome =
+      !path || path === "/" || /^\/[a-z]{2}(-[A-Z]{2})?$/i.test(path);
+    if (isHome) {
+      return safeReturnPath(env.HEKOTI_HERON_DEFAULT_RETURN);
+    }
+  }
+  return path || "/";
+}
+
 function readBody(
   body: unknown,
 ):
@@ -54,7 +66,7 @@ function readBody(
 
 type ResolveAccessTokenResult =
   | { ok: true; accessToken: string }
-  | { ok: false; status: 503 | 401; message: string };
+  | { ok: false; status: 503 | 401; message: string; step?: string };
 
 async function resolveAccessToken(
   parsed:
@@ -80,7 +92,7 @@ async function resolveAccessToken(
     };
   }
 
-  const audience = env.HERON_JWT_AUDIENCE?.trim() || "hehe-ecosystem";
+  const audience = env.HERON_JWT_AUDIENCE?.trim() || "hekoti-wiki";
   const { exchangeHeronAuthorizationCode } = await import(
     "@/lib/heron-shared/heron-oidc.client"
   );
@@ -102,8 +114,13 @@ async function resolveAccessToken(
   );
 
   if (!exchanged.ok) {
-    console.warn(`${LOG} token_exchange status=${exchanged.status}`);
-    return { ok: false, status: 401, message: exchanged.message };
+    console.warn(`${LOG} token_exchange status=${exchanged.status} msg=${exchanged.message}`);
+    return {
+      ok: false,
+      status: 401,
+      message: exchanged.message,
+      step: "token_exchange",
+    };
   }
   console.info(`${LOG} token_exchange status=200`);
   return { ok: true, accessToken: exchanged.data.accessToken };
@@ -132,7 +149,7 @@ export async function POST(request: Request) {
   const resolved = await resolveAccessToken(parsed);
   if (!resolved.ok) {
     return NextResponse.json(
-      { ok: false, message: resolved.message },
+      { ok: false, message: resolved.message, step: resolved.step },
       { status: resolved.status },
     );
   }
@@ -141,7 +158,10 @@ export async function POST(request: Request) {
   const verified = await verifyHeronAccessToken(resolved.accessToken);
   if (!verified) {
     console.warn(`${LOG} jwt_verify fail`);
-    return NextResponse.json({ ok: false, message: "Invalid Heron access token." }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, message: "Invalid Heron access token.", step: "jwt_verify" },
+      { status: 401 },
+    );
   }
   console.info(`${LOG} jwt_verify ok`);
 
@@ -158,14 +178,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await resolveOrCreateUserFromHeron(resolved.accessToken);
-    console.info(`${LOG} session created userId=${verified.sub}`);
+    const result = await resolveOrCreateUserFromHeron(resolved.accessToken, verified);
+    console.info(`${LOG} session created userId=${result.user.id} sub=${verified.sub}`);
 
-    const defaultReturn =
-      result.role === UserRole.ADMIN
-        ? safeReturnPath(env.HEKOTI_HERON_DEFAULT_RETURN)
-        : "/";
-    const returnTo = parsed.returnTo ?? defaultReturn;
+    const returnTo = resolveHeronPostLoginReturn(result.role, parsed.returnTo);
 
     return NextResponse.json({
       ok: true,

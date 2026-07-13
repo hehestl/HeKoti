@@ -354,7 +354,9 @@ export function AdminExplorer({
       ) : sectionMenu ? (
         <AdminExplorerSectionMenu
           sectionMenu={sectionMenu}
+          pagesByLang={pagesByLang}
           dict={dict}
+          isNotes={isNotes}
           actions={actions}
           onCollapseSection={collapseSection}
           onExpandSection={expandSection}

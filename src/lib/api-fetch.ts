@@ -20,7 +20,11 @@ export function readCsrfTokenFromDocument(): string | null {
 async function ensureCsrfToken(): Promise<string | null> {
   const existing = readCsrfTokenFromDocument();
   if (existing) return existing;
-  await fetch("/api/health", { credentials: "same-origin" });
+  try {
+    await fetch("/api/health", { credentials: "same-origin" });
+  } catch {
+    return null;
+  }
   return readCsrfTokenFromDocument();
 }
 

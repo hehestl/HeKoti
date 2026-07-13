@@ -1,0 +1,35 @@
+# Wiki prod (hemonea): Traefik hehe-net + external DB/Redis.
+#
+#   docker compose -f docker-compose.yml \
+#     -f deploy/docker-compose.external-deps.yml \
+#     -f deploy/docker-compose.wiki-prod.yml \
+#     up -d --build
+#
+# Required .env: HEKOTI_PUBLIC_HOST, POSTGRES_HOST, REDIS_URL, HEKOTI_DB_DOCKER_NETWORK
+
+services:
+  hekoti-app:
+    depends_on: !reset []
+    networks:
+      - internal
+      - hehe_net
+      - hh_db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_PROXY_NETWORK:-hehe-net}"
+      - "traefik.http.routers.hekoti-${HEKOTI_INSTANCE:-wiki}.rule=Host(`${HEKOTI_PUBLIC_HOST}`)"
+      - "traefik.http.routers.hekoti-${HEKOTI_INSTANCE:-wiki}.entrypoints=websecure"
+      - "traefik.http.routers.hekoti-${HEKOTI_INSTANCE:-wiki}.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.hekoti-${HEKOTI_INSTANCE:-wiki}.middlewares=compress@file,secure-headers@file"
+      - "traefik.http.services.hekoti-${HEKOTI_INSTANCE:-wiki}.loadbalancer.server.port=${HEKOTI_APP_PORT:-3310}"
+
+networks:
+  hehe_net:
+    external: true
+    name: ${TRAEFIK_PROXY_NETWORK:-hehe-net}
+  hh_db:
+    external: true
+    name: ${HEKOTI_DB_DOCKER_NETWORK:-hh-network}
+  npm_proxy:
+    external: true
+    name: ${TRAEFIK_PROXY_NETWORK:-hehe-net}

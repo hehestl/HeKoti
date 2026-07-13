@@ -163,28 +163,92 @@ function parseGrantsBody(body: JsonRecord): HeronServiceGrant[] {
   return grants;
 }
 
-async function heronFetch(path: string, accessToken: string): Promise<Response | null> {
-  const cfg = await getHeronJwtRuntime();
-  if (!cfg) return null;
+function heronProfileBaseUrls(apiUrl: string): string[] {
+  const bases = [apiUrl.replace(/\/$/, "")];
+  const rust = process.env.HERON_AUTH_RUST_API_URL?.trim().replace(/\/$/, "");
+  if (rust && !bases.includes(rust)) bases.push(rust);
+  return bases;
+}
+
+async function fetchHeronProfilePath(
+  apiUrl: string,
+  path: string,
+  accessToken: string,
+  fetchTimeoutMs: number,
+): Promise<HeronMeDto | null> {
   try {
-    return await fetch(`${cfg.apiUrl}${path}`, {
+    const res = await fetch(`${apiUrl}${path}`, {
       headers: {
         Authorization: `Bearer ${accessToken.trim()}`,
         Accept: "application/json",
       },
-      signal: AbortSignal.timeout(cfg.fetchTimeoutMs),
+      signal: AbortSignal.timeout(fetchTimeoutMs),
       cache: "no-store",
     });
-  } catch {
+    if (!res.ok) {
+      console.warn("[heron_me]", { base: apiUrl, path, status: res.status });
+      return null;
+    }
+    const body = (await res.json().catch(() => ({}))) as JsonRecord;
+    return parseMeBody(body);
+  } catch (err) {
+    console.warn("[heron_me]", {
+      base: apiUrl,
+      path,
+      reason: "fetch_error",
+      message: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
 
+async function heronFetchPath(
+  apiUrl: string,
+  path: string,
+  accessToken: string,
+  fetchTimeoutMs: number,
+): Promise<Response | null> {
+  try {
+    return await fetch(`${apiUrl}${path}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken.trim()}`,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(fetchTimeoutMs),
+      cache: "no-store",
+    });
+  } catch (err) {
+    console.warn("[heron_fetch]", {
+      base: apiUrl,
+      path,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+async function heronFetch(path: string, accessToken: string): Promise<Response | null> {
+  const cfg = await getHeronJwtRuntime();
+  if (!cfg) return null;
+  for (const base of heronProfileBaseUrls(cfg.apiUrl)) {
+    const res = await heronFetchPath(base, path, accessToken, cfg.fetchTimeoutMs);
+    if (res?.ok) return res;
+  }
+  return null;
+}
+
 export async function fetchHeronMe(accessToken: string): Promise<HeronMeDto | null> {
-  const res = await heronFetch("/api/auth/me", accessToken);
-  if (!res?.ok) return null;
-  const body = (await res.json().catch(() => ({}))) as JsonRecord;
-  return parseMeBody(body);
+  const cfg = await getHeronJwtRuntime();
+  const token = accessToken.trim();
+  if (!cfg || !token) return null;
+
+  for (const base of heronProfileBaseUrls(cfg.apiUrl)) {
+    const me = await fetchHeronProfilePath(base, "/api/auth/me", token, cfg.fetchTimeoutMs);
+    if (me?.userId) return me;
+    const userinfo = await fetchHeronProfilePath(base, "/oauth2/userinfo", token, cfg.fetchTimeoutMs);
+    if (userinfo?.userId) return userinfo;
+  }
+  return null;
 }
 
 export async function fetchHeronServiceGrants(accessToken: string): Promise<HeronServiceGrant[]> {

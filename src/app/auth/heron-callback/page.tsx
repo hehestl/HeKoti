@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch } from "@/lib/api-fetch";
 import {
   buildHeronCallbackUrl,
   buildHeronLoginUrl,
@@ -89,7 +88,6 @@ function HeronAuthCallbackInner() {
           nonce: pkce.nonce,
           returnTo: returnPath,
         };
-        clearHeronOidcPkce();
       } else if (accessToken && isHeronOidcLegacyFragment()) {
         body = { accessToken, returnTo: returnPath };
       } else {
@@ -98,26 +96,66 @@ function HeronAuthCallbackInner() {
       }
 
       try {
-        const res = await apiFetch("/api/auth/heron/exchange", {
+        console.error("[heron_callback] exchange request", {
+          mode: code ? "pkce" : "legacy_token",
+          redirectUri: "redirectUri" in body ? body.redirectUri : null,
+          codeLen: code?.length ?? null,
+          returnPath,
+        });
+
+        const res = await fetch("/api/auth/heron/exchange", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify(body),
+          credentials: "same-origin",
         });
-        const payload = (await res.json()) as {
+        const raw = await res.text();
+        let payload: {
           ok?: boolean;
           message?: string;
+          step?: string;
           returnTo?: string;
-        };
-        if (!res.ok || !payload.ok) {
-          if (!cancelled) setError(payload.message ?? "Heron sign-in failed.");
+        } = {};
+        try {
+          payload = raw ? (JSON.parse(raw) as typeof payload) : {};
+        } catch {
+          const preview = raw.trim().slice(0, 160);
+          console.error("[heron_callback] non-json response", { status: res.status, preview });
+          if (!cancelled) {
+            setError(
+              `Heron sign-in failed: server returned non-JSON (HTTP ${res.status}). ${preview}`,
+            );
+          }
           return;
         }
+
+        if (!res.ok || !payload.ok) {
+          const detail = payload.message ?? `Heron sign-in failed (HTTP ${res.status})`;
+          const step = payload.step?.trim() ?? "";
+          console.error("[heron_callback] exchange failed", {
+            status: res.status,
+            step,
+            message: detail,
+          });
+          if (!cancelled) {
+            setError(step ? `${detail} (${step})` : detail);
+          }
+          return;
+        }
+
+        console.error("[heron_callback] exchange ok", {
+          role: (payload as { role?: string }).role ?? null,
+          returnTo: payload.returnTo ?? returnPath,
+        });
+        clearHeronOidcPkce();
         if (!cancelled) {
           clearSilentOidcFailed();
-          router.replace(safeReturnPath(payload.returnTo ?? returnPath));
+          window.location.assign(safeReturnPath(payload.returnTo ?? returnPath));
         }
-      } catch {
-        if (!cancelled) setError("Heron sign-in failed.");
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        console.error("[heron_callback] exchange threw", { detail });
+        if (!cancelled) setError(`Heron sign-in failed: ${detail}`);
       }
     })();
     return () => {

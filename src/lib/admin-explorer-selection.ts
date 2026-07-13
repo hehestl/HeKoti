@@ -69,3 +69,9 @@ export function expandablePathKeysForPages(pages: AdminPageRow[], allInLang: Adm
   }
   return keys;
 }
+
+/** Root page plus every descendant in the same language (folder / category subtree). */
+export function collectPagesInSubtree(root: AdminPageRow, allInLang: AdminPageRow[]): AdminPageRow[] {
+  const prefix = `${root.path}/`;
+  return allInLang.filter((p) => p.path === root.path || p.path.startsWith(prefix));
+}
