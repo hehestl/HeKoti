@@ -27,6 +27,7 @@ flowchart TB
   Vhekotipgdata([hekoti_pg_data]) x-. /var/lib/postgresql/data .-x hekotipostgres[hekoti-postgres]
   Vhekotiredisdata([hekoti_redis_data]) x-. /data .-x hekotiredis[hekoti-redis]
   Vhekotiuploads([hekoti_uploads]) x-. /app/public/uploads .-x hekotiapp[hekoti-app]
+  Vsecretsheronjwtpublicpem{{"./secrets/heron_jwt_public.pem"}} -. "/run/secrets/heron_jwt_public.pem" .-x hekotiapp
   hekotiapp --> hekotipostgres
   hekotiapp --> hekotiredis
   hekotipostgres -.- internal[/internal/]
@@ -36,7 +37,7 @@ flowchart TB
   hekotiapp -.- npmproxy[/npm_proxy/]
 
   classDef volumes fill:#fdfae4,stroke:#867a22
-  class Vhekotipgdata,Vhekotiredisdata,Vhekotiuploads volumes
+  class Vhekotipgdata,Vhekotiredisdata,Vhekotiuploads,Vsecretsheronjwtpublicpem volumes
   classDef nets fill:#fbfff7,stroke:#8bc34a
   class internal,npmproxy nets
 ```
