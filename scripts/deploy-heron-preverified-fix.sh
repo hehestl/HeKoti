@@ -25,6 +25,12 @@ host="${HEKOTI_PUBLIC_HOST:-}"
 
 echo "[deploy-heron-preverified] instance=$inst container=$container"
 
+if grep -q 'adm\.mascotHint' src/components/admin-site-config.tsx 2>/dev/null \
+  && ! grep -q '"mascotHint"' src/lib/messages/en.json 2>/dev/null; then
+  echo "[deploy-heron-preverified] patching mascot i18n keys (build blocker)"
+  bash "$ROOT/scripts/patch-mascot-i18n.sh" "$ROOT"
+fi
+
 if ! grep -q 'preVerified' src/lib/heron-exchange.ts 2>/dev/null; then
   echo "[deploy-heron-preverified] SOURCE_MISSING preVerified in src/lib/heron-exchange.ts" >&2
   if [ -f /opt/app/prod/hh-wiki/src/lib/heron-exchange.ts ]; then
