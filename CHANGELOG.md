@@ -11,6 +11,8 @@
 ## [Unreleased]
 
 ### Added
+- Docs: `docs/ops-world-hemonea-deploy.md` — runbook `w.hehestl.su` на hemonea (Traefik, Heron SSO, ADMIN, маскот)
+- Ops: `scripts/diagnose-traefik.sh`, `scripts/deploy-heron-preverified-fix.sh` (world/wiki/lore)
 - Heron SSO: OIDC Authorization Code + PKCE (`src/lib/heron-shared/`, silent Hub SSO, legacy fragment opt-out)
 - Docs: `docs/ops-wiki-pkce-deploy.md`, PKCE flow в `docs/auth-heron.md`
 - Deploy: `deploy/docker-compose.external-deps.yml` (app-only без embedded PG/Redis)
@@ -27,6 +29,8 @@
 - `buildAuthLoginPath`: optional `interactive=1` для принудительного interactive login
 
 ### Fixed
+- Heron SSO: `preVerified` в exchange route — jti replay (`jwt_verify ok` → Invalid token)
+- `.env.world.example` — канон hemonea (`hehe-net`, `hekoti-wiki`, Hedra PG)
 - Heron JWT: `KeyLike` заменён на `CryptoKey` (jose v6, ломал `npm run build` в Docker)
 - Deploy: internal network по умолчанию `hh-{HEKOTI_INSTANCE}-net`; `.env.wiki.example` для hedra
 - Deploy: `deploy/docker-compose.external-db.yml` — `depends_on: !reset`, `HEKOTI_DB_DOCKER_NETWORK` → `hh-network`

@@ -569,7 +569,10 @@
       "langOn": "Язык включён",
       "langOff": "Язык выключен",
       "langKeepOne": "Нужен хотя бы один язык.",
-      "agentNoApi": "API ключ не настроен в .env"
+      "agentNoApi": "API ключ не настроен в .env",
+      "mascotHint": "Маскот сайта (клик — выбрать)",
+      "mascotHekoti": "Hekoti",
+      "mascotHehel": "Hehel"
     },
     "tech": {
       "title": "Технические данные",

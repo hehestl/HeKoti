@@ -178,6 +178,8 @@ model GlobalSettings {
   aiCrawlersAllow      Boolean  @default(true)
   /** Extra llms.txt body when LLMS_TXT_EXTRA env is empty. */
   llmsTxtExtra         String   @default("")
+  /** Site mascot: hekoti | hehel */
+  mascotId             String   @default("hekoti")
   updatedAt            DateTime @updatedAt
 }
 

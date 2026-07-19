@@ -34,13 +34,44 @@ Deploy: [`ops-wiki-pkce-deploy.md`](ops-wiki-pkce-deploy.md).
 | `NEXT_PUBLIC_HERON_OAUTH_CLIENT_ID` | Browser | `hekoti-wiki` — bake at build |
 | `HERON_AUTH_API_URL` | BFF | Internal: `http://heron-auth:8080` or WG IP |
 | `HERON_JWT_ISSUER` | BFF verify | `https://id.hehestl.su` (JWT `iss` claim) |
-| `HERON_OAUTH_CLIENT_ID` | BFF | `hekoti-wiki` |
+| `HERON_JWT_AUDIENCE` | BFF verify | `hekoti-wiki` (OIDC `aud` = client_id) |
+| `HERON_JWT_PUBLIC_KEY_PATH` | BFF verify | `/run/secrets/heron_jwt_public.pem` |
 
 **Never** use `NEXT_PUBLIC_*` in server exchange routes.
 
-## OAuth client
+Redirect URI (per host): `https://{host}/auth/heron-callback` — см. [`ops-world-hemonea-deploy.md`](ops-world-hemonea-deploy.md).
 
-Redirect URI: `https://wiki.hehestl.su/auth/heron-callback` (migration `0138`).
+## JWT audience (OIDC)
+
+Access token из `/oauth2/token` (PKCE) несёт `aud` = **OAuth `client_id`** (`hekoti-wiki`), не `hehe-ecosystem`.
+
+```env
+HERON_JWT_AUDIENCE=hekoti-wiki
+HERON_OAUTH_CLIENT_ID=hekoti-wiki
+```
+
+Отдельного клиента `hekoti-world` в Hedra нет — `wiki` / `world` / `lore` на hemonea используют **`hekoti-wiki`** + свои redirect URI.
+
+## preVerified / jti replay
+
+`POST /api/auth/heron/exchange` верифицирует JWT один раз в route, затем передаёт результат в `resolveOrCreateUserFromHeron(accessToken, verified)`.
+
+Без второго аргумента в **исходнике** `route.ts` второй `verifyHeronAccessToken` падает на `jti_replay` → UI: `Invalid Heron access token` при логе `jwt_verify ok`.
+
+Проверка перед build:
+
+```bash
+grep resolveOrCreateUserFromHeron src/app/api/auth/heron/exchange/route.ts
+# → resolveOrCreateUserFromHeron(resolved.accessToken, verified)
+```
+
+Deploy: `scripts/deploy-heron-preverified-fix.sh`. Runbook world: [`ops-world-hemonea-deploy.md`](ops-world-hemonea-deploy.md).
+
+## Роль ADMIN
+
+Роль из Heron service grant `hekoti` + `admin`. Пустые grants → `READER` → `/en/admin` редиректит на `/en`.
+
+При `profile endpoints unavailable` в логах grants не подтянулись — выдать grant на Hedra или `UPDATE "User" SET role='ADMIN'` (см. runbook).
 
 ## Troubleshooting
 
@@ -50,3 +81,7 @@ Redirect URI: `https://wiki.hehestl.su/auth/heron-callback` (migration `0138`).
 | Exchange timeout | `HERON_AUTH_API_URL` internal, not public URL |
 | Invalid OAuth state | Restart login from `/auth/login` |
 | Old Heron domain in UI | Rebuild with `--no-cache` after `.env` change |
+| `jwt_verify ok` + Invalid token | `route.ts` без `verified` 2nd arg → patch + `NO_CACHE` rebuild |
+| `jwt_verify fail` | `HERON_JWT_AUDIENCE`, PEM mount, `HERON_JWT_ISSUER` |
+| SSO OK, no admin | Grant `hekoti/admin` or DB role; avoid re-login until grant set |
+| PEM is directory | Remove dir, copy file from `hh-heron-auth/secrets/` |

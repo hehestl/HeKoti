@@ -7,7 +7,11 @@ set -eu
 
 COMPOSE_UP_ARGS="-f docker-compose.yml"
 
-if [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] && [ -f deploy/docker-compose.wiki-prod.yml ]; then
+if [ -f deploy/docker-compose.wiki-prod.yml ] \
+  && { [ "${HEKOTI_INSTANCE:-wiki}" = "wiki" ] \
+    || [ "${HEKOTI_INSTANCE:-}" = "world" ] \
+    || [ "${HEKOTI_INSTANCE:-}" = "lore" ] \
+    || [ -n "${HEKOTI_PUBLIC_HOST:-}" ]; }; then
   COMPOSE_UP_ARGS="${COMPOSE_UP_ARGS} -f deploy/docker-compose.wiki-prod.yml"
 elif [ -n "${HEKOTI_PUBLIC_HOST:-}" ] && [ -f deploy/docker-compose.traefik.yml ]; then
   COMPOSE_UP_ARGS="${COMPOSE_UP_ARGS} -f deploy/docker-compose.traefik.yml"

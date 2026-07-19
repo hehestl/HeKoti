@@ -157,13 +157,13 @@ export async function POST(request: Request) {
   const ip = requestIp(request);
   const verified = await verifyHeronAccessToken(resolved.accessToken);
   if (!verified) {
-    console.warn(`${LOG} jwt_verify fail`);
+    console.warn(`${LOG} jwt_verify fail step=jwt_verify`);
     return NextResponse.json(
       { ok: false, message: "Invalid Heron access token.", step: "jwt_verify" },
       { status: 401 },
     );
   }
-  console.info(`${LOG} jwt_verify ok`);
+  console.info(`${LOG} jwt_verify ok sub=${verified.sub} jti=${verified.jti ?? "none"}`);
 
   const limit = await limitHeronExchange(
     ip,
@@ -190,8 +190,22 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof HeronExchangeError) {
-      return NextResponse.json({ ok: false, message: error.message }, { status: error.status });
+      console.warn(`${LOG} resolve fail`, {
+        step: error.step ?? "user_resolve",
+        reason: error.reason,
+        message: error.message,
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          message: error.message,
+          step: error.step ?? "user_resolve",
+          reason: error.reason,
+        },
+        { status: error.status },
+      );
     }
-    return NextResponse.json({ ok: false, message: "Exchange failed." }, { status: 500 });
+    console.error(`${LOG} resolve unexpected error`, error);
+    return NextResponse.json({ ok: false, message: "Exchange failed.", step: "internal" }, { status: 500 });
   }
 }

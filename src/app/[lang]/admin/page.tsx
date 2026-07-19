@@ -24,7 +24,7 @@ export default async function AdminPage({
 }) {
   const { lang: inputLang } = await params;
   const { tab: rawTab, activePath: rawActivePath } = await searchParams;
-  const [{ enabledLanguages, aiAgents, knownLanguages }, settings, siteSeo] = await Promise.all([
+  const [{ enabledLanguages, aiAgents, knownLanguages, mascotId }, settings, siteSeo] = await Promise.all([
     getSiteConfig(),
     getGlobalSettings(),
     getSiteMetadataForAdmin(),
@@ -173,6 +173,7 @@ export default async function AdminPage({
           initialAdminLanguage={adminLanguage}
           messageLocales={messageLocales}
           aiAgents={agentRows}
+          initialMascotId={mascotId}
           tech={tech}
           initialTab={initialTab}
           initialActivePath={initialActivePath}

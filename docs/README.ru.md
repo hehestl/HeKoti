@@ -159,6 +159,8 @@ docker compose -f deploy/docker-compose.shared-lt.yml up -d
 
 Шаблон второго экземпляра: `.env.world.example`, `.agentrules.instance.example`.
 
+**Prod runbook (hemonea, `w.hehestl.su`):** [`docs/ops-world-hemonea-deploy.md`](ops-world-hemonea-deploy.md) — Traefik, Heron SSO, preVerified, ADMIN, маскот.
+
 ### NPM
 
 Upstream только на app-контейнер: `http://hh-{instance}-app:3310` (порт **внутри** контейнера). Postgres и Redis в `proxy-network` не подключаются.

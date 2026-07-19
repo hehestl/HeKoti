@@ -18,6 +18,7 @@ import { AdminActivitySidebar } from "@/components/admin-workbench/admin-activit
 import { useAdminWorkbenchUi } from "@/hooks/use-admin-workbench-ui";
 import type { AdminActivityTab, AdminPagesByLang } from "@/types/admin-workbench";
 import type { Dictionary } from "@/lib/i18n";
+import type { MascotId } from "@/lib/mascots";
 
 type Msg = { id: string; role: string; content: string; createdAt: string };
 type TechInfo = {
@@ -65,6 +66,7 @@ function AdminWorkbenchInner({
   onStatusChange,
   initialAdminLanguage,
   messageLocales,
+  initialMascotId,
 }: {
   tab: AdminActivityTab;
   setTab: (t: AdminActivityTab) => void;
@@ -100,6 +102,7 @@ function AdminWorkbenchInner({
   onStatusChange: (text: string, tone: "neutral" | "error") => void;
   initialAdminLanguage: string;
   messageLocales: string[];
+  initialMascotId: MascotId;
 }) {
   const postsEditor = useAdminPostsEditorOptional();
 
@@ -167,6 +170,7 @@ function AdminWorkbenchInner({
         initialAdminLanguage={initialAdminLanguage}
         messageLocales={messageLocales}
         initialAgents={aiAgents}
+        initialMascotId={initialMascotId}
       />
     );
 
@@ -218,6 +222,7 @@ export function AdminDashboard({
   initialActivePath,
   initialAdminLanguage,
   messageLocales,
+  initialMascotId,
 }: {
   lang: string;
   initialLogin: string;
@@ -249,6 +254,7 @@ export function AdminDashboard({
   initialActivePath?: string;
   initialAdminLanguage: string;
   messageLocales: string[];
+  initialMascotId: MascotId;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -323,6 +329,7 @@ export function AdminDashboard({
     onStatusChange,
     initialAdminLanguage,
     messageLocales,
+    initialMascotId,
   };
 
   return (

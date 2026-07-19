@@ -569,7 +569,10 @@
       "langOn": "Language enabled",
       "langOff": "Language disabled",
       "langKeepOne": "At least one language must stay enabled.",
-      "agentNoApi": "API key not configured in .env"
+      "agentNoApi": "API key not configured in .env",
+      "mascotHint": "Site mascot (click to select)",
+      "mascotHekoti": "Hekoti",
+      "mascotHehel": "Hehel"
     },
     "tech": {
       "title": "Technical info",

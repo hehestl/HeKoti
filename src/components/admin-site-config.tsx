@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api-fetch";
 import { clearNotesOpenTabs } from "@/hooks/use-admin-open-tabs";
 import type { Dictionary } from "@/lib/i18n";
+import { MASCOT_OPTIONS, type MascotId } from "@/lib/mascots";
 
 type AgentRow = { id: string; title: string; enabled: boolean; hasApi: boolean };
 
@@ -23,6 +24,7 @@ type Props = {
   initialAdminLanguage: string;
   messageLocales: string[];
   initialAgents: AgentRow[];
+  initialMascotId: MascotId;
 };
 
 export function AdminSiteConfig({
@@ -33,6 +35,7 @@ export function AdminSiteConfig({
   initialAdminLanguage,
   messageLocales,
   initialAgents,
+  initialMascotId,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +43,7 @@ export function AdminSiteConfig({
   const [enabledLanguages, setEnabledLanguages] = useState(initialEnabledLanguages);
   const [adminLanguage, setAdminLanguage] = useState(initialAdminLanguage);
   const [agents, setAgents] = useState(initialAgents);
+  const [mascotId, setMascotId] = useState<MascotId>(initialMascotId);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -170,6 +174,34 @@ export function AdminSiteConfig({
     [agents, dict],
   );
 
+  const selectMascot = useCallback(
+    async (next: MascotId) => {
+      if (next === mascotId) return;
+      setBusy(true);
+      setStatus(dict.common.loading);
+      try {
+        const res = await apiFetch("/api/admin/site-config", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ mascotId: next }),
+        });
+        const body = (await res.json()) as { ok?: boolean; mascotId?: MascotId; message?: string };
+        if (!res.ok || !body.ok || !body.mascotId) {
+          setStatus(body.message ?? dict.admin.posts.failed);
+          return;
+        }
+        setMascotId(body.mascotId);
+        setStatus(dict.admin.posts.saved);
+        startTransition(() => router.refresh());
+      } catch {
+        setStatus(dict.admin.posts.failed);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [dict, mascotId, router, startTransition],
+  );
+
   const controlsDisabled = busy || isPending;
 
   return (
@@ -229,6 +261,43 @@ export function AdminSiteConfig({
                   }}
                 >
                   {code.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ color: "var(--muted)", fontSize: 13 }}>{adm.mascotHint}</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {MASCOT_OPTIONS.map((option) => {
+              const active = mascotId === option.id;
+              const label = option.labelKey === "hehel" ? adm.mascotHehel : adm.mascotHekoti;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={controlsDisabled}
+                  onClick={() => void selectMascot(option.id)}
+                  title={label}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    border: active
+                      ? "1px solid color-mix(in srgb, var(--accent) 55%, var(--line))"
+                      : "1px solid var(--line)",
+                    borderRadius: 12,
+                    padding: "6px 10px",
+                    background: active
+                      ? "color-mix(in srgb, var(--accent) 18%, var(--panel))"
+                      : "var(--panel)",
+                    cursor: controlsDisabled ? "wait" : "pointer",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={option.src} alt="" width={40} height={40} style={{ borderRadius: 8 }} />
+                  <span style={{ fontSize: 13, color: active ? "var(--accent)" : "var(--fg)" }}>{label}</span>
                 </button>
               );
             })}

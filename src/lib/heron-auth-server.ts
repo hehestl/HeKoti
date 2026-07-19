@@ -96,11 +96,48 @@ export function isHeronAuthConfigured(): boolean {
   return env.HEKOTI_HERON_AUTH_ENABLED === "1";
 }
 
+type HeronJwtVerifyFailReason =
+  | "runtime_not_configured"
+  | "empty_token"
+  | "missing_sub"
+  | "jti_replay"
+  | "audience_mismatch"
+  | "issuer_mismatch"
+  | "token_expired"
+  | "signature_invalid"
+  | "verify_failed";
+
+function mapJoseErrorToReason(err: unknown): HeronJwtVerifyFailReason {
+  if (err && typeof err === "object" && "code" in err) {
+    const code = String((err as { code?: string }).code);
+    if (code === "ERR_JWT_CLAIM_VALIDATION_FAILED") {
+      const claim = (err as { claim?: string }).claim;
+      if (claim === "aud") return "audience_mismatch";
+      if (claim === "iss") return "issuer_mismatch";
+      if (claim === "exp") return "token_expired";
+    }
+    if (code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || code === "ERR_JWT_INVALID") {
+      return "signature_invalid";
+    }
+  }
+  return "verify_failed";
+}
+
+function logJwtVerifyFail(reason: HeronJwtVerifyFailReason, extra?: Record<string, string>): void {
+  console.warn("[heron-jwt-verify] fail", { reason, ...extra });
+}
+
 export async function verifyHeronAccessToken(token: string): Promise<VerifiedHeronToken | null> {
   const cfg = await getHeronJwtRuntime();
-  if (!cfg) return null;
+  if (!cfg) {
+    logJwtVerifyFail("runtime_not_configured");
+    return null;
+  }
   const raw = token.trim();
-  if (!raw) return null;
+  if (!raw) {
+    logJwtVerifyFail("empty_token");
+    return null;
+  }
 
   try {
     const { payload } = await jwtVerifyWithHeronPublicKeys(raw, cfg.publicKeys, {
@@ -109,11 +146,20 @@ export async function verifyHeronAccessToken(token: string): Promise<VerifiedHer
       clockTolerance: 30,
     });
     const sub = readSub(payload);
-    if (!sub) return null;
+    if (!sub) {
+      logJwtVerifyFail("missing_sub");
+      return null;
+    }
     const jti = readJti(payload);
-    if (jti && !consumeJti(jti)) return null;
+    if (jti && !consumeJti(jti)) {
+      logJwtVerifyFail("jti_replay", {
+        hint: "second verify on same token — rebuild with preVerified fix (see scripts/deploy-heron-preverified-fix.sh)",
+      });
+      return null;
+    }
     return { sub, jti };
-  } catch {
+  } catch (err) {
+    logJwtVerifyFail(mapJoseErrorToReason(err));
     return null;
   }
 }

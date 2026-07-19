@@ -11,6 +11,7 @@ import {
   getSiteConfig,
   knownLanguages,
 } from "@/lib/site-config";
+import { isMascotId } from "@/lib/mascots";
 
 const patchSchema = z.object({
   enabledLanguages: z.array(z.string().min(2).max(12)).optional(),
@@ -23,6 +24,7 @@ const patchSchema = z.object({
       }),
     )
     .optional(),
+  mascotId: z.string().min(1).optional(),
 });
 
 export async function GET() {
@@ -40,6 +42,7 @@ export async function GET() {
         enabled: a.enabled,
         hasApi: Boolean(a.apiBaseUrl && a.apiKeyEnv),
       })),
+      mascotId: config.mascotId,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load site config";
@@ -70,11 +73,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: false, message: "Invalid admin language." }, { status: 400 });
     }
 
+    if (body.mascotId && !isMascotId(body.mascotId)) {
+      return NextResponse.json({ ok: false, message: "Invalid mascot." }, { status: 400 });
+    }
+
     const currentAgents = await getAiAgents();
     const update: {
       enabledLanguagesJson?: string;
       aiAgentsJson?: string;
       adminLanguage?: string;
+      mascotId?: string;
     } = {};
 
     if (body.enabledLanguages) {
@@ -90,6 +98,9 @@ export async function PATCH(request: Request) {
         enabled: toggleMap.has(a.id) ? toggleMap.get(a.id)! : a.enabled,
       }));
       update.aiAgentsJson = buildAgentTogglesJson(merged);
+    }
+    if (body.mascotId) {
+      update.mascotId = body.mascotId;
     }
 
     if (Object.keys(update).length === 0) {
@@ -117,6 +128,7 @@ export async function PATCH(request: Request) {
         enabled: a.enabled,
         hasApi: Boolean(a.apiBaseUrl && a.apiKeyEnv),
       })),
+      mascotId: config.mascotId,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Site config update failed";

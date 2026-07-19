@@ -22,10 +22,14 @@ function syntheticSsoEmail(heronSubjectId: string): string {
   return `heron+${heronSubjectId.replace(/-/g, "")}@sso.hekoti.local`;
 }
 
+const LOG = "[hekoti:heron-exchange:resolve]";
+
 export class HeronExchangeError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly step?: string,
+    readonly reason?: string,
   ) {
     super(message);
     this.name = "HeronExchangeError";
@@ -37,12 +41,22 @@ export async function resolveOrCreateUserFromHeron(
   preVerified?: VerifiedHeronToken,
 ) {
   if (!isHeronAuthConfigured()) {
-    throw new HeronExchangeError("Heron Auth is not enabled.", 503);
+    throw new HeronExchangeError("Heron Auth is not enabled.", 503, "resolve", "not_configured");
+  }
+
+  if (preVerified) {
+    console.info(`${LOG} preVerified=yes sub=${preVerified.sub}`);
+  } else {
+    console.warn(
+      `${LOG} preVerified=no — re-verify JWT (old image: causes jti_replay after jwt_verify ok in route)`,
+    );
   }
 
   const verified = preVerified ?? (await verifyHeronAccessToken(accessToken));
   if (!verified) {
-    throw new HeronExchangeError("Invalid Heron access token.", 401);
+    const reason = preVerified ? "resolve_reverify_failed" : "jti_replay_likely";
+    console.warn(`${LOG} fail`, { step: "jwt_reverify", reason, hadPreVerified: !!preVerified });
+    throw new HeronExchangeError("Invalid Heron access token.", 401, "jwt_reverify", reason);
   }
 
   const me = await fetchHeronMe(accessToken);
@@ -50,14 +64,13 @@ export async function resolveOrCreateUserFromHeron(
     me?.userId != null
       ? me
       : (() => {
-          console.warn("[heron_exchange] profile endpoints unavailable; using verified jwt.sub", {
-            sub: verified.sub,
-          });
+          console.warn(`${LOG} profile_unavailable using jwt.sub`, { sub: verified.sub });
           return { userId: verified.sub, email: null as string | null };
         })();
 
   if (!heronSubMatches(profile.userId, verified.sub)) {
-    throw new HeronExchangeError("Heron identity mismatch.", 401);
+    console.warn(`${LOG} fail`, { step: "identity_mismatch", jwtSub: verified.sub, meUserId: profile.userId });
+    throw new HeronExchangeError("Heron identity mismatch.", 401, "identity_mismatch");
   }
 
   const grants = await fetchHeronServiceGrants(accessToken);

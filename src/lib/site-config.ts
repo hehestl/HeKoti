@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import type { AiAgent } from "@/lib/ai-links";
+import { DEFAULT_MASCOT_ID, resolveMascotId, type MascotId } from "@/lib/mascots";
 
 const defaultAgents: AiAgent[] = [
   { id: "openai", title: "OpenAI", enabled: true, url: "https://chat.openai.com", apiBaseUrl: "https://api.openai.com/v1", apiKeyEnv: "OPENAI_API_KEY" },
@@ -89,9 +90,22 @@ export async function getAiAgents(): Promise<AiAgent[]> {
   }
 }
 
+export async function getMascotId(): Promise<MascotId> {
+  try {
+    const settings = await prisma.globalSettings.findUnique({ where: { id: "default" } });
+    return resolveMascotId(settings?.mascotId);
+  } catch {
+    return DEFAULT_MASCOT_ID;
+  }
+}
+
 export async function getSiteConfig() {
-  const [enabledLanguages, aiAgents] = await Promise.all([getEnabledLanguages(), getAiAgents()]);
-  return { enabledLanguages, aiAgents, knownLanguages };
+  const [enabledLanguages, aiAgents, mascotId] = await Promise.all([
+    getEnabledLanguages(),
+    getAiAgents(),
+    getMascotId(),
+  ]);
+  return { enabledLanguages, aiAgents, knownLanguages, mascotId };
 }
 
 export function buildAgentTogglesJson(agents: AiAgent[]): string {
